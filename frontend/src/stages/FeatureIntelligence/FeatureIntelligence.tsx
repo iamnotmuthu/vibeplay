@@ -5,6 +5,7 @@ import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { InsightCard } from '@/components/shared/InsightCard'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
+import { useDomainSubtitle } from '@/lib/useDomainSubtitle'
 import { getPrecomputedFeatures } from './featureData'
 import type { StageId, FeatureResults } from '@/store/types'
 
@@ -14,6 +15,7 @@ export function FeatureIntelligence() {
   const completeStep = usePlaygroundStore((s) => s.completeStep)
   const setStep = usePlaygroundStore((s) => s.setStep)
   const addLog = usePlaygroundStore((s) => s.addLog)
+  const subtitle = useDomainSubtitle('features', 'Autonomously discovering, engineering, and ranking the most predictive features')
 
   const [data, setData] = useState<FeatureResults | null>(null)
   const [visibleBars, setVisibleBars] = useState(0)
@@ -78,10 +80,10 @@ export function FeatureIntelligence() {
   return (
     <div className="flex-1 flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-white">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="flex items-center gap-3">
           <Sparkles className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-900">Feature Intelligence</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Feature Intelligence</h2>
           {phase !== 'complete' && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
           {analysisComplete && (
             <motion.span
@@ -94,15 +96,15 @@ export function FeatureIntelligence() {
           )}
         </div>
         <p className="text-sm text-gray-500 mt-1">
-          Autonomously discovering, engineering, and ranking the most predictive features
+          {subtitle}
         </p>
       </div>
 
       {/* Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Feature Importance Bars */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 border-r border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900">Feature Importance</h3>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 border-r border-gray-200 dark:border-gray-700">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Feature Importance</h3>
           {data && (
             <div className="space-y-2">
               {data.importance.slice(0, visibleBars).map((feat, i) => (
@@ -116,23 +118,22 @@ export function FeatureIntelligence() {
                   <span className="text-xs text-gray-400 w-5 text-right font-mono">
                     {feat.rank}
                   </span>
-                  <span className="text-xs text-gray-700 w-44 truncate font-mono" title={feat.feature}>
+                  <span className="text-xs text-gray-700 dark:text-gray-300 w-44 truncate font-mono" title={feat.feature}>
                     {feat.feature}
                   </span>
-                  <div className="flex-1 h-7 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-7 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(feat.score / maxScore) * 100}%` }}
                       transition={{ duration: 0.8, ease: 'easeOut' }}
-                      className={`h-full rounded-full flex items-center justify-end pr-2 ${
-                        i === 0
+                      className={`h-full rounded-full flex items-center justify-end pr-2 ${i === 0
                           ? 'bg-gradient-to-r from-primary to-primary-dark'
                           : i < 3
                             ? 'bg-primary/80'
                             : i < 5
                               ? 'bg-primary/60'
                               : 'bg-primary/40'
-                      }`}
+                        }`}
                     >
                       <span className="text-[10px] font-bold text-white">
                         {feat.score.toFixed(2)}
@@ -169,8 +170,7 @@ export function FeatureIntelligence() {
                 >
                   <div className="flex items-start gap-2">
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                        entry.action === 'Engineer'
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${entry.action === 'Engineer'
                           ? 'bg-blue-500/20 text-blue-400'
                           : entry.action === 'Encode'
                             ? 'bg-purple-500/20 text-purple-400'
@@ -183,7 +183,7 @@ export function FeatureIntelligence() {
                                   : entry.action === 'Select'
                                     ? 'bg-pink-500/20 text-pink-400'
                                     : 'bg-green-500/20 text-green-400'
-                      }`}
+                        }`}
                     >
                       {entry.action}
                     </span>
@@ -213,15 +213,15 @@ export function FeatureIntelligence() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-6 py-4 bg-gray-50 border-t border-gray-200 space-y-3"
+          className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 space-y-3"
         >
           {/* Summary card */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-gray-900">
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 Engineered <CountUpNumber end={data.newFeatureCount} className="text-primary" /> new features
               </div>
               <div className="text-xs text-gray-500 mt-0.5">

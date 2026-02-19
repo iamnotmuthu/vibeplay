@@ -1,0 +1,374 @@
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+    Phone,
+    Shield,
+    TrendingUp,
+    HeartPulse,
+    Users,
+    Zap,
+    FileSearch,
+    Settings,
+    ArrowRight,
+    Sparkles,
+    ExternalLink,
+    Moon,
+    Sun,
+} from 'lucide-react'
+import { DOMAIN_SCENARIOS, type DomainScenario } from '@/lib/domainData'
+import { PREBUILT_DATASETS } from '@/lib/constants'
+import { usePlaygroundStore } from '@/store/playgroundStore'
+import { useTheme } from '@/hooks/useTheme'
+import type { StageId } from '@/store/types'
+
+const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+    phone: Phone,
+    shield: Shield,
+    'trending-up': TrendingUp,
+    'heart-pulse': HeartPulse,
+    users: Users,
+    zap: Zap,
+    'file-search': FileSearch,
+    settings: Settings,
+}
+
+interface DomainSelectorProps {
+    onSelect: (domainId: string | null) => void
+}
+
+export function DomainSelector({ onSelect }: DomainSelectorProps) {
+    const [hoveredId, setHoveredId] = useState<string | null>(null)
+    const [selectedId, setSelectedId] = useState<string | null>(null)
+    const [launching, setLaunching] = useState(false)
+
+    const { theme, toggleTheme } = useTheme()
+    const setActiveDomain = usePlaygroundStore((s) => s.setActiveDomain)
+    const selectDataset = usePlaygroundStore((s) => s.selectDataset)
+    const selectObjective = usePlaygroundStore((s) => s.selectObjective)
+    const setSessionId = usePlaygroundStore((s) => s.setSessionId)
+    const addLog = usePlaygroundStore((s) => s.addLog)
+    const setStep = usePlaygroundStore((s) => s.setStep)
+
+    const handleLaunch = async (scenario: DomainScenario) => {
+        setSelectedId(scenario.id)
+        setLaunching(true)
+
+        await new Promise((r) => setTimeout(r, 600))
+
+        // Find the dataset
+        const dataset = PREBUILT_DATASETS.find((d) => d.id === scenario.datasetId)
+        const objective = dataset?.objectives.find((o) => o.id === scenario.defaultObjectiveId)
+
+        if (dataset && objective) {
+            const sessionId = `session-${Date.now()}`
+            setActiveDomain(scenario.id)
+            setSessionId(sessionId)
+            selectDataset(dataset)
+            selectObjective(objective)
+            addLog(`Domain: ${scenario.label}`, 'action')
+            addLog(`Dataset: ${dataset.name} (${dataset.rows.toLocaleString()} rows, ${dataset.features} features)`, 'info')
+            addLog(`Objective: ${objective.label}`, 'action')
+            addLog(`Target: ${objective.targetColumn} | Metric: ${objective.metric}`, 'info')
+            addLog('Session initialized — starting autonomous analysis', 'success')
+            setStep(1 as StageId)
+            onSelect(scenario.id)
+        }
+    }
+
+    return (
+        <div
+            className="min-h-screen flex flex-col relative overflow-hidden"
+            style={{
+                background: '#080808',
+                color: '#fff',
+            }}
+        >
+            {/* Ambient background glow matching website */}
+            <div
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] opacity-20 pointer-events-none"
+                style={{
+                    background: 'radial-gradient(ellipse 80% 40% at 50% -10%, rgba(59,130,246,0.5) 0%, transparent 70%)',
+                }}
+            />
+
+            {/* Header */}
+            <header
+                className="h-20 border-b px-6 flex items-center justify-between shrink-0 z-50 sticky top-0"
+                style={{
+                    background: 'rgba(8,8,8,0.6)',
+                    backdropFilter: 'blur(12px)',
+                    borderColor: 'rgba(255,255,255,0.08)',
+                }}
+            >
+                <div className="flex items-center gap-3">
+                    {/* VibeModel logo — clickable home */}
+                    <a
+                        href="https://vibemodel.ai"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center hover:opacity-80 transition-opacity"
+                        aria-label="VibeModel home"
+                    >
+                        <img
+                            src="/VM_Logo_Full Color.png"
+                            alt="VibeModel"
+                            style={{ height: 64, width: 'auto' }}
+                        />
+                    </a>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {/* Dark mode toggle */}
+                    <button
+                        onClick={toggleTheme}
+                        className="p-2 rounded-lg transition-colors border"
+                        style={{
+                            borderColor: 'rgba(255,255,255,0.15)',
+                            color: 'rgba(255,255,255,0.6)',
+                            background: 'transparent',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#fff'
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.6)'
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
+                        }}
+                        aria-label="Toggle theme"
+                    >
+                        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    </button>
+
+                    <a
+                        href="https://vibemodel.ai/#beta-signup"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        style={{
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            color: 'rgba(255,255,255,0.7)',
+                        }}
+                    >
+                        Beta Waitlist
+                    </a>
+                    <motion.a
+                        href="https://vibemodel.ai/book-demo.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        whileHover={{ y: -2, scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-all relative overflow-hidden"
+                        style={{
+                            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                            boxShadow: '0 0 16px rgba(59,130,246,0.3)',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.boxShadow = '0 0 24px rgba(59,130,246,0.5), 0 4px 12px rgba(0,0,0,0.2)'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow = '0 0 16px rgba(59,130,246,0.3)'
+                        }}
+                    >
+                        <motion.div
+                            className="absolute inset-0"
+                            style={{
+                                background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%)',
+                                backgroundSize: '200% 100%',
+                            }}
+                            animate={{ backgroundPosition: ['-100% 0', '300% 0'] }}
+                            transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+                        />
+                        <span className="relative z-10">Book a Demo</span>
+                        <ExternalLink className="w-3.5 h-3.5 relative z-10" />
+                    </motion.a>
+                </div>
+            </header>
+
+            {/* Hero */}
+            <div className="text-center pt-20 pb-12 px-6 relative z-10">
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                >
+                    <div
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-6"
+                        style={{
+                            background: 'rgba(255,255,255,0.06)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            color: 'rgba(255,255,255,0.9)',
+                        }}
+                    >
+                        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                        <span style={{ background: 'linear-gradient(to right, #60a5fa, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                            Autonomous ML Lifecycle
+                        </span>
+                        <span className="text-gray-500">·</span>
+                        <span>End-to-End in Minutes</span>
+                    </div>
+
+                    <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight tracking-tight">
+                        Choose your industry.<br />
+                        <span style={{ background: 'linear-gradient(135deg, #60a5fa, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                            Watch AI build your model.
+                        </span>
+                    </h1>
+                    <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                        Select a domain below and experience the full VibeModel lifecycle — from raw data to a production-ready model — in under 3 minutes.
+                    </p>
+                </motion.div>
+            </div>
+
+            {/* Domain Grid */}
+            <div className="flex-1 px-6 pb-20 relative z-10">
+                <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {DOMAIN_SCENARIOS.map((scenario, i) => {
+                        const IconComp = iconMap[scenario.icon] || Sparkles
+                        const isHovered = hoveredId === scenario.id
+                        const isSelected = selectedId === scenario.id
+
+                        return (
+                            <motion.div
+                                key={scenario.id}
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4, delay: i * 0.05 }}
+                                onHoverStart={() => setHoveredId(scenario.id)}
+                                onHoverEnd={() => setHoveredId(null)}
+                                onClick={() => !launching && handleLaunch(scenario)}
+                                className="relative group cursor-pointer"
+                            >
+                                <motion.div
+                                    animate={{
+                                        scale: isSelected ? 0.98 : isHovered ? 1.02 : 1,
+                                        y: isHovered ? -4 : 0,
+                                    }}
+                                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                                    className="relative rounded-2xl p-6 h-full flex flex-col overflow-hidden"
+                                    style={{
+                                        background: 'rgba(255,255,255,0.03)',
+                                        border: isHovered
+                                            ? `1px solid ${scenario.color}60`
+                                            : '1px solid rgba(255,255,255,0.08)',
+                                        boxShadow: isHovered
+                                            ? `0 12px 40px -12px ${scenario.color}25`
+                                            : 'none',
+                                    }}
+                                >
+                                    {/* Icon + Badge */}
+                                    <div className="flex items-start justify-between mb-5">
+                                        <div
+                                            className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                            style={{
+                                                background: `linear-gradient(135deg, ${scenario.color}20, ${scenario.color}05)`,
+                                                border: `1px solid ${scenario.color}30`,
+                                                boxShadow: `0 0 12px ${scenario.color}15`,
+                                            }}
+                                        >
+                                            <IconComp className="w-6 h-6" style={{ color: scenario.color }} />
+                                        </div>
+                                        <span
+                                            className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+                                            style={{
+                                                background: 'rgba(255,255,255,0.05)',
+                                                color: 'rgba(255,255,255,0.6)',
+                                                border: '1px solid rgba(255,255,255,0.05)',
+                                            }}
+                                        >
+                                            {scenario.badge}
+                                        </span>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1">
+                                        <h3 className="text-base font-bold text-white mb-2">{scenario.label}</h3>
+                                        <p className="text-xs font-medium mb-3" style={{ color: scenario.color }}>
+                                            {scenario.tagline}
+                                        </p>
+                                        <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-3">
+                                            {scenario.heroSubtitle}
+                                        </p>
+                                    </div>
+
+                                    {/* Stats row */}
+                                    <div
+                                        className="flex items-center gap-3 mt-5 pt-4"
+                                        style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+                                    >
+                                        {(() => {
+                                            const ds = PREBUILT_DATASETS.find((d) => d.id === scenario.datasetId)
+                                            return ds ? (
+                                                <>
+                                                    <span className="text-[10px] text-gray-500 font-mono">{ds.rows.toLocaleString()} rows</span>
+                                                    <span className="text-gray-700">·</span>
+                                                    <span className="text-[10px] text-gray-500 font-mono">{ds.features} features</span>
+                                                </>
+                                            ) : null
+                                        })()}
+                                    </div>
+
+                                    {/* CTA */}
+                                    <AnimatePresence>
+                                        {(isHovered || isSelected) && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 5 }}
+                                                className="absolute bottom-6 right-6"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-bold" style={{ color: scenario.color }}>
+                                                        {isSelected && launching ? 'Launching...' : 'Start'}
+                                                    </span>
+                                                    <motion.div
+                                                        animate={{ x: isSelected && launching ? 4 : 0 }}
+                                                        transition={{ repeat: isSelected && launching ? Infinity : 0, duration: 0.6, repeatType: 'reverse' }}
+                                                    >
+                                                        <ArrowRight className="w-4 h-4" style={{ color: scenario.color }} />
+                                                    </motion.div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
+                            </motion.div>
+                        )
+                    })}
+                </div>
+
+            </div>
+
+            {/* Footer */}
+            <footer
+                className="border-t px-6 py-6"
+                style={{
+                    background: 'rgba(0,0,0,0.4)',
+                    borderColor: 'rgba(255,255,255,0.08)',
+                }}
+            >
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-xs text-gray-500">
+                        Built by ML veterans from Amazon & Google · © 2026 VibeModel.ai
+                    </p>
+                    <div className="flex items-center gap-6">
+                        <a
+                            href="https://vibemodel.ai/#beta-signup"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-gray-400 hover:text-blue-400 font-medium transition-colors"
+                        >
+                            Sign up for Beta Waitlist →
+                        </a>
+                        <a
+                            href="mailto:hello@vibemodel.ai"
+                            className="text-xs text-gray-500 hover:text-white transition-colors"
+                        >
+                            hello@vibemodel.ai
+                        </a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    )
+}

@@ -1,3 +1,5 @@
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import "tailwindcss";
 
 @theme {
@@ -12,14 +14,32 @@
   --color-warning: #f97316;
   --color-danger: #ef4444;
   --color-surface-dark: #1e293b;
-  --color-surface: #f8fafc;
-  --color-surface-card: #ffffff;
+  --color-surface: var(--bg-surface);
+  --color-surface-card: var(--bg-card);
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 @layer base {
+  :root {
+    --bg-surface: #f8fafc;
+    --bg-card: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --header-bg: #ffffff;
+    --header-border: #e2e8f0;
+  }
+
+  .dark {
+    --bg-surface: #0a0f1a;
+    --bg-card: #111827;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --header-bg: #0a0a0a;
+    --header-border: rgba(255, 255, 255, 0.08);
+  }
+
   * {
     margin: 0;
     padding: 0;
@@ -28,11 +48,12 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--color-surface);
-    color: #1e293b;
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   #root {
@@ -40,4 +61,72 @@
     display: flex;
     flex-direction: column;
   }
+}
+
+/* ── Dark mode overrides for standard Tailwind classes ── */
+/* This ensures all existing bg-white, text-gray-*, border-gray-* classes */
+/* automatically adapt without modifying each component file. */
+
+.dark .bg-white {
+  background-color: #111827 !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: #0f172a !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #1e293b !important;
+}
+
+.dark .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-800 {
+  color: #e2e8f0 !important;
+}
+
+.dark .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-500 {
+  color: #64748b !important;
+}
+
+.dark .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-300 {
+  color: #64748b !important;
+}
+
+.dark .border-gray-200 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .border-gray-100 {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .border-gray-300 {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #1e293b !important;
+}
+
+.dark .hover\:border-gray-300:hover {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #0f172a !important;
 }

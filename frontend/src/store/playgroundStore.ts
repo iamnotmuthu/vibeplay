@@ -4,12 +4,13 @@ import type {
   BusinessObjective,
   EDAResults,
   PatternResults,
-  FeatureResults,
-  ModelTrainingState,
-  EvaluationResults,
-  DriftSimulation,
+  DimensionResults,
+  ValidationSummaryResults,
+  ModelSelectionResults,
+  DeploymentMode,
   LogEntry,
   StageId,
+  ActiveDomainId,
 } from './types'
 
 interface PlaygroundState {
@@ -27,17 +28,19 @@ interface PlaygroundState {
   selectedDataset: DatasetConfig | null
   selectedObjective: BusinessObjective | null
 
+  // Business Setup (step 2)
+  businessGoal: string | null
+  deploymentMode: DeploymentMode | null
+  llmApiKey: string | null
+
   // Stage results
   edaResults: EDAResults | null
   edaProgress: { moduleId: string; percent: number } | null
   patternResults: PatternResults | null
-  featureResults: FeatureResults | null
-  trainingModels: ModelTrainingState[]
-  champion: string | null
-  evaluationResults: EvaluationResults | null
-  driftSimulation: DriftSimulation | null
-  driftWeek: number
-  retrainingInProgress: boolean
+  dimensionResults: DimensionResults | null
+  validationSummaryResults: ValidationSummaryResults | null
+  modelSelectionResults: ModelSelectionResults | null
+  activeDomainId: ActiveDomainId
 
   // Actions
   setStep: (step: StageId) => void
@@ -48,17 +51,25 @@ interface PlaygroundState {
   setDatasets: (datasets: DatasetConfig[]) => void
   selectDataset: (dataset: DatasetConfig) => void
   selectObjective: (objective: BusinessObjective) => void
+  setBusinessGoal: (goal: string) => void
+  setDeploymentMode: (mode: DeploymentMode) => void
+  setLlmApiKey: (key: string) => void
   setEdaResults: (results: EDAResults) => void
   setEdaProgress: (progress: { moduleId: string; percent: number } | null) => void
   setPatternResults: (results: PatternResults) => void
-  setFeatureResults: (results: FeatureResults) => void
-  setTrainingModels: (models: ModelTrainingState[]) => void
-  updateTrainingModel: (name: string, update: Partial<ModelTrainingState>) => void
-  setChampion: (name: string) => void
-  setEvaluationResults: (results: EvaluationResults) => void
-  setDriftSimulation: (data: DriftSimulation) => void
-  setDriftWeek: (week: number) => void
-  setRetrainingInProgress: (v: boolean) => void
+  setDimensionResults: (results: DimensionResults) => void
+  setValidationSummaryResults: (results: ValidationSummaryResults) => void
+  setModelSelectionResults: (results: ModelSelectionResults) => void
+  setActiveDomain: (id: ActiveDomainId) => void
+
+  // Home navigation
+  shouldGoHome: boolean
+  setShouldGoHome: (value: boolean) => void
+
+  // Theme
+  theme: 'light' | 'dark'
+  toggleTheme: () => void
+
   reset: () => void
 }
 
@@ -71,16 +82,17 @@ const initialState = {
   datasets: [],
   selectedDataset: null,
   selectedObjective: null,
+  businessGoal: null,
+  deploymentMode: null as DeploymentMode | null,
+  llmApiKey: null,
   edaResults: null,
   edaProgress: null,
   patternResults: null,
-  featureResults: null,
-  trainingModels: [],
-  champion: null,
-  evaluationResults: null,
-  driftSimulation: null,
-  driftWeek: 1,
-  retrainingInProgress: false,
+  dimensionResults: null,
+  validationSummaryResults: null,
+  modelSelectionResults: null,
+  activeDomainId: null as ActiveDomainId,
+  shouldGoHome: false,
 }
 
 export const usePlaygroundStore = create<PlaygroundState>((set) => ({
@@ -107,27 +119,35 @@ export const usePlaygroundStore = create<PlaygroundState>((set) => ({
   setDatasets: (datasets) => set({ datasets }),
   selectDataset: (dataset) => set({ selectedDataset: dataset }),
   selectObjective: (objective) => set({ selectedObjective: objective }),
+  setBusinessGoal: (goal) => set({ businessGoal: goal }),
+  setDeploymentMode: (mode) => set({ deploymentMode: mode }),
+  setLlmApiKey: (key) => set({ llmApiKey: key }),
 
   setEdaResults: (results) => set({ edaResults: results }),
   setEdaProgress: (progress) => set({ edaProgress: progress }),
 
   setPatternResults: (results) => set({ patternResults: results }),
-  setFeatureResults: (results) => set({ featureResults: results }),
+  setDimensionResults: (results) => set({ dimensionResults: results }),
+  setValidationSummaryResults: (results) => set({ validationSummaryResults: results }),
+  setModelSelectionResults: (results) => set({ modelSelectionResults: results }),
 
-  setTrainingModels: (models) => set({ trainingModels: models }),
-  updateTrainingModel: (name, update) =>
-    set((state) => ({
-      trainingModels: state.trainingModels.map((m) =>
-        m.name === name ? { ...m, ...update } : m
-      ),
-    })),
-  setChampion: (name) => set({ champion: name }),
+  setActiveDomain: (id) => set({ activeDomainId: id }),
 
-  setEvaluationResults: (results) => set({ evaluationResults: results }),
+  setShouldGoHome: (value) => set({ shouldGoHome: value }),
 
-  setDriftSimulation: (data) => set({ driftSimulation: data }),
-  setDriftWeek: (week) => set({ driftWeek: week }),
-  setRetrainingInProgress: (v) => set({ retrainingInProgress: v }),
+  // Theme
+  theme: (localStorage.getItem('theme') as 'light' | 'dark') || 'light',
+  toggleTheme: () =>
+    set((state) => {
+      const newTheme = state.theme === 'dark' ? 'light' : 'dark'
+      localStorage.setItem('theme', newTheme)
+      if (newTheme === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+      return { theme: newTheme }
+    }),
 
   reset: () => set({ ...initialState, completedSteps: new Set() }),
 }))

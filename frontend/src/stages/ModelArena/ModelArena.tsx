@@ -16,7 +16,7 @@ import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { getPrecomputedTraining } from './modelData'
 import type { StageId, ModelTrainingState, ModelMetrics } from '@/store/types'
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   TrendingUp,
   TreePine,
   Zap,
@@ -86,7 +86,7 @@ export function ModelArena() {
   const addLog = usePlaygroundStore((s) => s.addLog)
 
   const [models, setModels] = useState<ModelTrainingState[]>([])
-  const [completedModels, setCompletedModels] = useState<Set<string>>(new Set())
+  const [_completedModels, setCompletedModels] = useState<Set<string>>(new Set())
   const [leaderboard, setLeaderboard] = useState<
     { name: string; metrics: ModelMetrics; color: string }[]
   >([])
@@ -242,10 +242,10 @@ export function ModelArena() {
       )}
 
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-white">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="flex items-center gap-3">
           <Trophy className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-900">Model Arena</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Model Arena</h2>
           {!allComplete && models.length > 0 && (
             <Loader2 className="w-4 h-4 animate-spin text-primary" />
           )}
@@ -277,13 +277,12 @@ export function ModelArena() {
               <motion.div
                 key={model.name}
                 layout
-                className={`relative bg-white rounded-xl border-2 p-4 transition-all ${
-                  isChampion
+                className={`relative bg-white dark:bg-gray-800 rounded-xl border-2 p-4 transition-all ${isChampion
                     ? 'border-amber-400 shadow-lg shadow-amber-100'
                     : isComplete
-                      ? 'border-green-200'
-                      : 'border-gray-200'
-                }`}
+                      ? 'border-green-200 dark:border-green-700'
+                      : 'border-gray-200 dark:border-gray-600'
+                  }`}
               >
                 {/* Champion badge */}
                 {isChampion && (
@@ -308,7 +307,7 @@ export function ModelArena() {
                     />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-gray-900">{model.name}</div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{model.name}</div>
                     <div className="text-[10px] text-gray-400 uppercase tracking-wider">
                       {model.status === 'complete'
                         ? 'Trained'
@@ -324,7 +323,7 @@ export function ModelArena() {
                   <div className="relative">
                     <ProgressRing progress={model.progress} color={model.color} />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-bold text-gray-700">
+                      <span className="text-sm font-bold text-gray-700 dark:text-gray-200">
                         {Math.round(model.progress)}%
                       </span>
                     </div>
@@ -338,15 +337,15 @@ export function ModelArena() {
                     animate={{ opacity: 1 }}
                     className="grid grid-cols-2 gap-1 text-center"
                   >
-                    <div className="bg-gray-50 rounded px-2 py-1">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded px-2 py-1">
                       <div className="text-[10px] text-gray-400">Accuracy</div>
-                      <div className="text-xs font-bold text-gray-700">
+                      <div className="text-xs font-bold text-gray-700 dark:text-gray-200">
                         {(model.metrics.accuracy * 100).toFixed(1)}%
                       </div>
                     </div>
-                    <div className="bg-gray-50 rounded px-2 py-1">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded px-2 py-1">
                       <div className="text-[10px] text-gray-400">AUC</div>
-                      <div className="text-xs font-bold text-gray-700">
+                      <div className="text-xs font-bold text-gray-700 dark:text-gray-200">
                         {model.metrics.auc.toFixed(3)}
                       </div>
                     </div>
@@ -396,21 +395,19 @@ export function ModelArena() {
                           layout
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          className={`border-t border-gray-700/50 ${
-                            isChamp ? 'bg-amber-500/10' : ''
-                          }`}
+                          className={`border-t border-gray-700/50 ${isChamp ? 'bg-amber-500/10' : ''
+                            }`}
                         >
                           <td className="py-2.5 pl-2">
                             <span
-                              className={`text-xs font-bold ${
-                                i === 0
+                              className={`text-xs font-bold ${i === 0
                                   ? 'text-amber-400'
                                   : i === 1
                                     ? 'text-gray-300'
                                     : i === 2
                                       ? 'text-orange-400'
                                       : 'text-gray-500'
-                              }`}
+                                }`}
                             >
                               #{i + 1}
                             </span>
@@ -466,7 +463,7 @@ export function ModelArena() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'spring', damping: 12 }}
-            className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-xl p-6 text-center"
+            className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-xl p-6 text-center"
           >
             <motion.div
               animate={{ rotate: [0, -5, 5, 0] }}
@@ -474,10 +471,10 @@ export function ModelArena() {
             >
               <Trophy className="w-10 h-10 text-amber-500 mx-auto mb-3" />
             </motion.div>
-            <h3 className="text-lg font-bold text-gray-900">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
               {champion} is the Champion!
             </h3>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
               Achieved the highest AUC score of{' '}
               <span className="font-bold text-amber-600">
                 {leaderboard[0]?.metrics.auc.toFixed(3)}

@@ -1,119 +1,140 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
-import { usePlaygroundStore } from '@/store/playgroundStore'
-import { PREBUILT_DATASETS } from '@/lib/constants'
-import { DatasetCard } from './DatasetCard'
-import { DatasetPreview } from './DatasetPreview'
-import { ObjectiveSelector } from './ObjectiveSelector'
-import type { DatasetConfig, BusinessObjective, StageId } from '@/store/types'
+import { motion } from 'framer-motion'
+import {
+  Database,
+  CheckCircle2,
+  ArrowRight,
+  Hash,
+  Rows3,
+  Tag,
+} from 'lucide-react'
 
-type SubStep = 'browse' | 'objective'
+import { usePlaygroundStore } from '@/store/playgroundStore'
+import { BottomActionBar } from '@/components/layout/BottomActionBar'
+import type { StageId } from '@/store/types'
+
+const domainColorMap: Record<string, string> = {
+  'telco-churn': '#3b82f6',
+  'credit-fraud': '#ef4444',
+  'store-demand': '#10b981',
+  'patient-readmission': '#f59e0b',
+  'employee-attrition': '#8b5cf6',
+  'energy-consumption': '#06b6d4',
+  'insurance-claims': '#ec4899',
+}
+
+const taskTypeLabel: Record<string, string> = {
+  classification: 'Classification',
+  regression: 'Regression',
+  'time-series': 'Time Series',
+}
 
 export function DatasetSelection() {
-  const [subStep, setSubStep] = useState<SubStep>('browse')
-  const [previewDataset, setPreviewDataset] = useState<DatasetConfig | null>(null)
-  const [chosenDataset, setChosenDataset] = useState<DatasetConfig | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  const selectDataset = usePlaygroundStore((s) => s.selectDataset)
-  const selectObjective = usePlaygroundStore((s) => s.selectObjective)
-  const setStep = usePlaygroundStore((s) => s.setStep)
+  const selectedDataset = usePlaygroundStore((s) => s.selectedDataset)
   const completeStep = usePlaygroundStore((s) => s.completeStep)
+  const setStep = usePlaygroundStore((s) => s.setStep)
   const addLog = usePlaygroundStore((s) => s.addLog)
-  const setSessionId = usePlaygroundStore((s) => s.setSessionId)
 
-  const handleDatasetConfirm = () => {
-    if (!previewDataset) return
-    setChosenDataset(previewDataset)
-    setPreviewDataset(null)
-    setSubStep('objective')
-  }
+  if (!selectedDataset) return null
 
-  const handleObjectiveSelect = async (objective: BusinessObjective) => {
-    if (!chosenDataset) return
-    setLoading(true)
+  const color = domainColorMap[selectedDataset.id] || '#3b82f6'
 
-    // Simulate session creation
-    await new Promise((r) => setTimeout(r, 1000))
-    const sessionId = `session-${Date.now()}`
-
-    setSessionId(sessionId)
-    selectDataset(chosenDataset)
-    selectObjective(objective)
-    addLog(`Selected dataset: ${chosenDataset.name}`, 'action')
-    addLog(`Business objective: ${objective.label}`, 'action')
-    addLog(`Target: ${objective.targetColumn} | Metric: ${objective.metric}`, 'info')
-    addLog(`Session initialized (${chosenDataset.rows.toLocaleString()} rows, ${chosenDataset.features} features)`, 'info')
+  const handleNext = () => {
+    addLog(`Dataset confirmed: ${selectedDataset.name}`, 'success')
     completeStep(1)
     setStep(2 as StageId)
-    setLoading(false)
   }
 
   return (
-    <AnimatePresence mode="wait">
-      {subStep === 'browse' ? (
-        <motion.div
-          key="browse"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, x: -40 }}
-          className="flex-1 flex flex-col items-center justify-center px-6 py-12"
-        >
-          {/* Hero */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-2xl mb-10"
+    <div className="flex-1 flex flex-col min-h-0">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-3">
+          <Database className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Dataset Confirmed</h2>
+          <motion.span
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-medium flex items-center gap-1"
           >
-            <motion.div
-              className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5"
-              animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
-            >
-              <Sparkles className="w-8 h-8 text-primary" />
-            </motion.div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">
-              Watch AI Analyze Your Data End-to-End
-            </h1>
-            <p className="text-gray-500 text-lg">
-              Select a dataset below and experience the full autonomous ML lifecycle — from
-              raw data to deployed model — in under 3 minutes.
-            </p>
+            <CheckCircle2 className="w-3 h-3" />
+            Auto-selected
+          </motion.span>
+        </div>
+        <p className="text-sm text-gray-500 mt-1">
+          Your dataset has been pre-loaded based on your selected industry. Review the details below.
+        </p>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-start">
+        <div className="w-full max-w-3xl space-y-5">
+
+          {/* Dataset card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="rounded-2xl overflow-hidden border dark:border-gray-700"
+            style={{ borderColor: `${color}40` }}
+          >
+            {/* Coloured top bar */}
+            <div className="h-1.5" style={{ background: `linear-gradient(to right, ${color}, ${color}80)` }} />
+
+            <div className="bg-white dark:bg-gray-800 p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedDataset.name}</h3>
+                  <p className="text-sm text-gray-500 mt-1 max-w-lg">{selectedDataset.description}</p>
+                </div>
+                <span
+                  className="text-xs font-bold px-3 py-1.5 rounded-full ml-4 shrink-0"
+                  style={{ background: `${color}18`, color, border: `1px solid ${color}35` }}
+                >
+                  {taskTypeLabel[selectedDataset.taskType] || selectedDataset.taskType}
+                </span>
+              </div>
+
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-4 mt-5">
+                {[
+                  { icon: Rows3, label: 'Rows', value: selectedDataset.rows.toLocaleString() },
+                  { icon: Hash, label: 'Features', value: selectedDataset.features.toString() },
+                  { icon: Tag, label: 'Domain', value: selectedDataset.domain },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-xl p-4 text-center"
+                    style={{ background: `${color}08`, border: `1px solid ${color}20` }}
+                  >
+                    <stat.icon className="w-5 h-5 mx-auto mb-2" style={{ color }} />
+                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{stat.value}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
 
-          {/* Dataset Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl w-full">
-            {PREBUILT_DATASETS.map((dataset, i) => (
-              <DatasetCard
-                key={dataset.id}
-                dataset={dataset}
-                index={i}
-                onSelect={setPreviewDataset}
-              />
-            ))}
-          </div>
+          {/* Next step teaser */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="rounded-xl p-4 flex items-center gap-3"
+            style={{ background: `${color}08`, border: `1px solid ${color}20` }}
+          >
+            <ArrowRight className="w-4 h-4 shrink-0" style={{ color }} />
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Next: Define your <span className="font-semibold text-gray-900 dark:text-gray-100">Business Goal</span> and choose a deployment mode to shape the model selection downstream.
+            </p>
+          </motion.div>
+        </div>
+      </div>
 
-          {/* Preview Modal */}
-          <DatasetPreview
-            dataset={previewDataset}
-            onClose={() => setPreviewDataset(null)}
-            onStart={handleDatasetConfirm}
-          />
-        </motion.div>
-      ) : chosenDataset ? (
-        <ObjectiveSelector
-          key="objective"
-          dataset={chosenDataset}
-          onSelect={handleObjectiveSelect}
-          onBack={() => {
-            setChosenDataset(null)
-            setSubStep('browse')
-          }}
-          loading={loading}
-        />
-      ) : null}
-    </AnimatePresence>
+      <BottomActionBar
+        onNext={handleNext}
+        nextLabel="Continue to Business Setup"
+      />
+    </div>
   )
 }

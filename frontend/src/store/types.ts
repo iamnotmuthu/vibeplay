@@ -90,29 +90,20 @@ export interface AIInsight {
   icon?: string
 }
 
+export interface SufficiencyPatternItem {
+  id: number
+  label: string
+  description: string
+  count: number
+  keySignals: string[]
+}
+
 export interface PatternResults {
-  clusters: ClusterData
-  anomalies: AnomalyData
-  temporalPatterns?: TemporalData
+  totalRecords: number
+  sufficient: SufficiencyPatternItem[]
+  insufficient: SufficiencyPatternItem[]
+  helpMe: SufficiencyPatternItem[]
   insights: AIInsight[]
-}
-
-export interface ClusterData {
-  points: { x: number; y: number; cluster: number }[]
-  clusterLabels: { id: number; label: string; description: string; count: number }[]
-}
-
-export interface AnomalyData {
-  points: { x: number; y: number; isAnomaly: boolean; score: number }[]
-  anomalyCount: number
-  anomalyPercent: number
-}
-
-export interface TemporalData {
-  dates: string[]
-  values: number[]
-  trend: number[]
-  seasonal: number[]
 }
 
 export interface FeatureResults {
@@ -180,14 +171,74 @@ export interface LogEntry {
   type: 'info' | 'success' | 'warning' | 'action'
 }
 
-export type StageId = 1 | 2 | 3 | 4 | 5 | 6 | 7
+export type DeploymentMode = 'realtime' | 'batch'
+
+export interface DimensionResults {
+  dimensions: {
+    name: string
+    color: string
+    attributes: string[]
+    coverage: number
+    confidence: number
+    categoricalToggles: string[]
+  }[]
+  insights: AIInsight[]
+}
+
+export interface ValidationCohort {
+  name: string
+  totalCount: number
+  validationSamples: number
+  samplingPct: number
+}
+
+export interface ValidationCategory {
+  count: number
+  percentage: number
+  cohorts: ValidationCohort[]
+}
+
+export interface ValidationSummaryResults {
+  totalCount: number
+  totalCohorts: number
+  sufficient: ValidationCategory
+  insufficient: ValidationCategory
+  helpMe: ValidationCategory
+  augmented: ValidationCategory
+}
+
+export interface ModelComponent {
+  name: string
+  role: string
+  factors: { name: string; value: string }[]
+}
+
+export interface CohortPerformance {
+  category: 'sufficient' | 'insufficient' | 'helpMe'
+  label: string
+  recall: number
+  precision: number
+}
+
+export interface ModelSelectionResults {
+  champion: string
+  modelFunction: string
+  modelType: string
+  components: ModelComponent[]
+  whyThisModel: string
+  performance: CohortPerformance[]
+}
+
+export type StageId = 1 | 2 | 3 | 4 | 5 | 6
 
 export const STAGE_LABELS: Record<StageId, string> = {
-  1: 'Choose Dataset',
-  2: 'Auto-EDA',
-  3: 'Pattern Discovery',
-  4: 'Feature Intelligence',
-  5: 'Model Arena',
-  6: 'Evaluation Hub',
-  7: 'Drift & Retrain',
+  1: 'Dataset',
+  2: 'Business Setup',
+  3: 'Auto EDA',
+  4: 'Pattern Recognition',
+  5: 'Validation Summary',
+  6: 'Model Selection',
 }
+
+// Active domain scenario id (from domainData.ts)
+export type ActiveDomainId = string | null

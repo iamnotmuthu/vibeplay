@@ -1,4 +1,4 @@
-import type { EvaluationResults, ModelMetrics } from '@/store/types'
+import type { EvaluationResults } from '@/store/types'
 
 function generateROCCurve(auc: number): { fpr: number; tpr: number }[] {
   const points: { fpr: number; tpr: number }[] = [{ fpr: 0, tpr: 0 }]
