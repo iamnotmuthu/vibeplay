@@ -66,8 +66,8 @@ export function DatasetSelection() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-start">
-        <div className="w-full max-w-3xl space-y-5">
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+        <div className="w-full space-y-5">
 
           {/* Dataset card */}
           <motion.div

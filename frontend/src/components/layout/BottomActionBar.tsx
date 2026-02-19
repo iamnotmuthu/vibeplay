@@ -22,6 +22,7 @@ export function BottomActionBar({
 }: BottomActionBarProps) {
   const currentStep = usePlaygroundStore((s) => s.currentStep)
   const theme = usePlaygroundStore((s) => s.theme)
+  const setStep = usePlaygroundStore((s) => s.setStep)
 
   const canGoBack = currentStep > 1
   const canGoForward = currentStep < 6 || alwaysShowNext
@@ -41,7 +42,7 @@ export function BottomActionBar({
       <div>
         {canGoBack && (
           <motion.button
-            onClick={onBack}
+            onClick={onBack ?? (() => setStep((currentStep - 1) as StageId))}
             whileHover={{ x: -2 }}
             whileTap={{ scale: 0.96 }}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors"

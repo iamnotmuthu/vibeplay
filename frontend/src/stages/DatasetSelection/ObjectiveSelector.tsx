@@ -21,7 +21,7 @@ export function ObjectiveSelector({ dataset, onSelect, onBack, loading }: Object
       transition={{ duration: 0.3 }}
       className="flex-1 flex flex-col items-center justify-center px-6 py-12"
     >
-      <div className="text-center max-w-2xl mb-8">
+      <div className="text-center max-w-3xl mb-8">
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
@@ -39,7 +39,7 @@ export function ObjectiveSelector({ dataset, onSelect, onBack, loading }: Object
         </p>
       </div>
 
-      <div className="w-full max-w-2xl space-y-3 mb-8">
+      <div className="w-full max-w-3xl space-y-3 mb-8">
         <AnimatePresence>
           {dataset.objectives.map((obj, i) => (
             <motion.button

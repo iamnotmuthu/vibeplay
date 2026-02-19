@@ -35,7 +35,7 @@ export function BrandHeader({ onChangeDomain, onGoHome }: BrandHeaderProps) {
           <img
             src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}
             alt="VibeModel"
-            style={{ height: 64, width: 'auto', objectFit: 'contain' }}
+            style={{ height: 48, width: 'auto', objectFit: 'contain' }}
           />
         </motion.button>
 

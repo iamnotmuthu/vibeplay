@@ -110,9 +110,9 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                         aria-label="VibeModel home"
                     >
                         <img
-                            src="/VM_Logo_Full Color.png"
+                            src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}
                             alt="VibeModel"
-                            style={{ height: 64, width: 'auto' }}
+                            style={{ height: 48, width: 'auto' }}
                         />
                     </a>
                 </div>
@@ -214,15 +214,15 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                             Watch AI build your model.
                         </span>
                     </h1>
-                    <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
-                        Select a domain below and experience the full VibeModel lifecycle — from raw data to a production-ready model — in under 3 minutes.
+                    <p className="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed">
+                        Pick an industry, define your goal, and watch VibeModel build a production-ready model — end-to-end in under 3 minutes.
                     </p>
                 </motion.div>
             </div>
 
             {/* Domain Grid */}
             <div className="flex-1 px-6 pb-20 relative z-10">
-                <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                     {DOMAIN_SCENARIOS.map((scenario, i) => {
                         const IconComp = iconMap[scenario.icon] || Sparkles
                         const isHovered = hoveredId === scenario.id
@@ -269,7 +269,7 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                                             <IconComp className="w-6 h-6" style={{ color: scenario.color }} />
                                         </div>
                                         <span
-                                            className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+                                            className="text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
                                             style={{
                                                 background: 'rgba(255,255,255,0.05)',
                                                 color: 'rgba(255,255,255,0.6)',
@@ -282,11 +282,11 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
 
                                     {/* Content */}
                                     <div className="flex-1">
-                                        <h3 className="text-base font-bold text-white mb-2">{scenario.label}</h3>
-                                        <p className="text-xs font-medium mb-3" style={{ color: scenario.color }}>
+                                        <h3 className="text-lg font-bold text-white mb-2">{scenario.label}</h3>
+                                        <p className="text-sm font-medium mb-3" style={{ color: scenario.color }}>
                                             {scenario.tagline}
                                         </p>
-                                        <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-3">
+                                        <p className="text-sm text-gray-400 leading-relaxed line-clamp-3">
                                             {scenario.heroSubtitle}
                                         </p>
                                     </div>
@@ -300,9 +300,9 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                                             const ds = PREBUILT_DATASETS.find((d) => d.id === scenario.datasetId)
                                             return ds ? (
                                                 <>
-                                                    <span className="text-[10px] text-gray-500 font-mono">{ds.rows.toLocaleString()} rows</span>
+                                                    <span className="text-xs text-gray-500 font-mono">{ds.rows.toLocaleString()} rows</span>
                                                     <span className="text-gray-700">·</span>
-                                                    <span className="text-[10px] text-gray-500 font-mono">{ds.features} features</span>
+                                                    <span className="text-xs text-gray-500 font-mono">{ds.features} features</span>
                                                 </>
                                             ) : null
                                         })()}
@@ -347,7 +347,7 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                     borderColor: 'rgba(255,255,255,0.08)',
                 }}
             >
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-xs text-gray-500">
                         Built by ML veterans from Amazon & Google · © 2026 VibeModel.ai
                     </p>

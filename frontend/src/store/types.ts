@@ -96,6 +96,12 @@ export interface SufficiencyPatternItem {
   description: string
   count: number
   keySignals: string[]
+  // Product-matching display fields (optional — derived from keySignals when absent)
+  condition?: string
+  confidence?: 'high' | 'low'
+  pct?: number
+  targetInd?: 0 | 1
+  attributes?: { name: string; value: string }[]
 }
 
 export interface PatternResults {

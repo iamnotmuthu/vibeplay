@@ -97,7 +97,7 @@ export function BusinessSetup() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-2xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-8">
 
           {/* Section 1: Business Goal */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>

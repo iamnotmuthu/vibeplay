@@ -9,53 +9,52 @@ export function StepperNav() {
   const currentStep = usePlaygroundStore((s) => s.currentStep)
   const completedSteps = usePlaygroundStore((s) => s.completedSteps)
   const setStep = usePlaygroundStore((s) => s.setStep)
-  const theme = usePlaygroundStore((s) => s.theme)
 
   return (
     <nav
-      className="px-4 sm:px-6 py-3 shrink-0 overflow-x-auto transition-colors duration-300"
+      className="px-6 py-3 shrink-0 overflow-x-auto"
       style={{
-        background: theme === 'dark' ? '#0a0a0a' : '#ffffff',
-        borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e5e7eb',
+        background: '#0a0a0a',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
       }}
     >
-      <div className="flex items-center justify-between max-w-5xl mx-auto min-w-[700px]">
+      <div className="flex items-center justify-between w-full min-w-[720px]">
         {steps.map((step, index) => {
           const isCompleted = completedSteps.has(step)
           const isCurrent = currentStep === step
           const isClickable = isCompleted || isCurrent
 
           return (
-            <div key={step} className="flex items-center">
+            <div key={step} className="flex items-center flex-1">
               <button
                 onClick={() => isClickable && setStep(step)}
-                className="flex items-center gap-2 group"
-                style={{ cursor: isClickable ? 'pointer' : 'default', opacity: isClickable ? 1 : 0.45 }}
+                className="flex items-center gap-2.5 group"
+                style={{ cursor: isClickable ? 'pointer' : 'default', opacity: isClickable ? 1 : 0.4 }}
               >
                 {/* Step circle */}
                 <motion.div
-                  className="relative w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors duration-300"
-                  animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
+                  className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                  animate={isCurrent ? { scale: [1, 1.08, 1] } : {}}
                   transition={isCurrent ? { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } : {}}
                   style={
                     isCompleted
                       ? {
-                        background: theme === 'dark' ? 'rgba(20,184,166,0.15)' : '#d1fae5',
-                        border: theme === 'dark' ? '1.5px solid rgba(20,184,166,0.6)' : '1.5px solid #10b981',
-                        color: theme === 'dark' ? '#14b8a6' : '#047857',
-                        boxShadow: theme === 'dark' ? '0 0 10px rgba(20,184,166,0.2)' : 'none',
+                        background: 'rgba(20,184,166,0.12)',
+                        border: '1.5px solid rgba(20,184,166,0.55)',
+                        color: '#14b8a6',
+                        boxShadow: '0 0 10px rgba(20,184,166,0.18)',
                       }
                       : isCurrent
                         ? {
                           background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
                           border: '1.5px solid transparent',
                           color: '#fff',
-                          boxShadow: theme === 'dark' ? '0 0 16px rgba(59,130,246,0.45)' : '0 1px 3px rgba(59,130,246,0.3)',
+                          boxShadow: '0 0 18px rgba(59,130,246,0.5)',
                         }
                         : {
-                          background: theme === 'dark' ? 'rgba(255,255,255,0.04)' : '#f3f4f6',
-                          border: theme === 'dark' ? '1.5px solid rgba(255,255,255,0.1)' : '1.5px solid #e5e7eb',
-                          color: theme === 'dark' ? 'rgba(255,255,255,0.3)' : '#9ca3af',
+                          background: 'rgba(255,255,255,0.04)',
+                          border: '1.5px solid rgba(255,255,255,0.1)',
+                          color: 'rgba(255,255,255,0.25)',
                         }
                   }
                 >
@@ -64,43 +63,53 @@ export function StepperNav() {
                   {isCurrent && (
                     <motion.div
                       className="absolute inset-0 rounded-full"
-                      style={{ border: '1.5px solid rgba(59,130,246,0.4)' }}
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0, 0.6] }}
+                      style={{ border: '1.5px solid rgba(99,102,241,0.5)' }}
+                      animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
                       transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
                     />
                   )}
                 </motion.div>
+
                 {/* Label */}
-                <span
-                  className="text-[11px] font-medium hidden md:block whitespace-nowrap transition-colors duration-300"
-                  style={
-                    isCurrent
-                      ? { color: theme === 'dark' ? '#fff' : '#111827' }
-                      : isCompleted
-                        ? { color: theme === 'dark' ? '#14b8a6' : '#059669' }
-                        : { color: theme === 'dark' ? 'rgba(255,255,255,0.3)' : '#9ca3af' }
-                  }
-                >
-                  {STAGE_LABELS[step]}
-                </span>
-              </button>
-              {/* Connector */}
-              {index < steps.length - 1 && (
-                <div className="w-6 lg:w-10 mx-1.5 relative">
-                  <div
-                    className="h-px transition-colors duration-300"
-                    style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#e5e7eb' }}
+                <div className="hidden sm:flex flex-col items-start">
+                  <span
+                    className="text-xs font-semibold whitespace-nowrap leading-tight"
+                    style={
+                      isCurrent
+                        ? { color: '#ffffff' }
+                        : isCompleted
+                          ? { color: '#14b8a6' }
+                          : { color: 'rgba(255,255,255,0.28)' }
+                    }
                   >
-                    {isCompleted && (
-                      <motion.div
-                        className="absolute inset-y-0 left-0 h-full"
-                        style={{ background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)' }}
-                        initial={{ width: 0 }}
-                        animate={{ width: '100%' }}
-                        transition={{ duration: 0.5, ease: 'easeOut' }}
-                      />
-                    )}
-                  </div>
+                    {STAGE_LABELS[step]}
+                  </span>
+                  {isCurrent && (
+                    <span className="text-[9px] font-medium mt-0.5" style={{ color: 'rgba(99,102,241,0.8)' }}>
+                      In progress
+                    </span>
+                  )}
+                  {isCompleted && (
+                    <span className="text-[9px] font-medium mt-0.5" style={{ color: 'rgba(20,184,166,0.6)' }}>
+                      Complete
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {/* Connector — stretches between steps */}
+              {index < steps.length - 1 && (
+                <div className="flex-1 mx-3 relative h-0.5 rounded-full overflow-hidden"
+                  style={{ background: 'rgba(255,255,255,0.07)' }}>
+                  {isCompleted && (
+                    <motion.div
+                      className="absolute inset-0 rounded-full"
+                      style={{ background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)' }}
+                      initial={{ scaleX: 0, originX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ duration: 0.6, ease: 'easeOut' }}
+                    />
+                  )}
                 </div>
               )}
             </div>

@@ -136,7 +136,7 @@ export const usePlaygroundStore = create<PlaygroundState>((set) => ({
   setShouldGoHome: (value) => set({ shouldGoHome: value }),
 
   // Theme
-  theme: (localStorage.getItem('theme') as 'light' | 'dark') || 'light',
+  theme: 'dark' as 'light' | 'dark',
   toggleTheme: () =>
     set((state) => {
       const newTheme = state.theme === 'dark' ? 'light' : 'dark'
