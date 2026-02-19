@@ -33,7 +33,7 @@ export function BrandHeader({ onChangeDomain, onGoHome }: BrandHeaderProps) {
           title="Back to home"
         >
           <img
-            src="/VM_Logo_Full Color.png"
+            src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}
             alt="VibeModel"
             style={{ height: 64, width: 'auto', objectFit: 'contain' }}
           />
