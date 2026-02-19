@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Cpu, Info, ExternalLink, CalendarCheck } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
+import { CompletionModal } from '@/components/shared/CompletionModal'
 import { getPrecomputedModelSelection } from './modelSelectionData'
 import type { ModelSelectionResults, CohortPerformance } from '@/store/types'
 
@@ -73,11 +74,11 @@ export function ModelSelection() {
   const selectedDataset    = usePlaygroundStore((s) => s.selectedDataset)
   const setModelSelectionResults = usePlaygroundStore((s) => s.setModelSelectionResults)
   const completeStep       = usePlaygroundStore((s) => s.completeStep)
-  const setStep            = usePlaygroundStore((s) => s.setStep)
   const addLog             = usePlaygroundStore((s) => s.addLog)
   const setShouldGoHome    = usePlaygroundStore((s) => s.setShouldGoHome)
 
   const [data, setData] = useState<ModelSelectionResults | null>(null)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     if (!selectedDataset) return
@@ -91,7 +92,7 @@ export function ModelSelection() {
   const handleNext = () => {
     completeStep(6)
     addLog('Model Selection complete. Ready to deploy to production.', 'success')
-    setShouldGoHome(true)
+    setShowModal(true)
   }
 
   if (!data) return null
@@ -292,6 +293,14 @@ export function ModelSelection() {
         onNext={handleNext}
         nextLabel="Complete &amp; Finish"
         alwaysShowNext
+      />
+
+      <CompletionModal
+        isOpen={showModal}
+        onStartOver={() => {
+          setShowModal(false)
+          setShouldGoHome(true)
+        }}
       />
     </div>
   )
