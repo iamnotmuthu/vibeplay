@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShieldCheck, Info } from 'lucide-react'
+import { ShieldCheck, Eye } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
@@ -51,6 +51,54 @@ const CATEGORIES: {
   },
 ]
 
+// ─── Metric explanation helper ────────────────────────────────────────────────
+
+function getMetricExplanation(businessGoal: string | null, primaryMetric: string): string {
+  const g = (businessGoal ?? '').toLowerCase()
+  if (primaryMetric === 'Recall') {
+    if (g.includes('churn'))
+      return 'Recall is prioritised because missing a customer about to churn is more costly than a false alarm. Every true churner not caught is a lost revenue opportunity.'
+    if (g.includes('fraud'))
+      return 'Recall is prioritised because a missed fraud transaction causes direct financial loss, whereas a false positive is a minor inconvenience.'
+    if (g.includes('readmission') || g.includes('patient'))
+      return 'Recall is prioritised because failing to flag a patient at risk of readmission leads to preventable health complications.'
+    if (g.includes('attrition') || g.includes('employee'))
+      return 'Recall is prioritised because missing an employee likely to leave means losing talent and incurring replacement costs.'
+    if (g.includes('insurance') || g.includes('claim'))
+      return 'Recall is prioritised because failing to identify a valid claim results in underpayment and regulatory risk.'
+    if (g.includes('maintenance') || g.includes('failure'))
+      return 'Recall is prioritised because missing an impending equipment failure leads to costly unplanned downtime.'
+    return 'Recall is prioritised because missing true positives has a higher business cost than false alarms in this scenario.'
+  }
+  if (primaryMetric === 'MAPE') {
+    if (g.includes('demand') || g.includes('store'))
+      return 'MAPE is prioritised because relative forecast accuracy directly determines inventory levels and stockout risk. A 5% error on a high-volume SKU matters as much as on a low-volume one.'
+    if (g.includes('energy') || g.includes('consumption'))
+      return 'MAPE is prioritised because relative energy forecast error drives procurement decisions and grid balancing costs proportionally across all consumption levels.'
+    return 'MAPE is prioritised because relative error is the most meaningful measure for this forecasting objective.'
+  }
+  return `${primaryMetric} is the primary optimisation target for this model based on the stated business objective.`
+}
+
+function MetricEyeTooltip({ explanation }: { explanation: string }) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <div
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
+      <Eye className="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-200 transition-colors" />
+      {visible && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-gray-900 border border-gray-700 p-3 shadow-xl z-50">
+          <p className="text-[11px] text-gray-300 leading-relaxed">{explanation}</p>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Overall Performance Banner ───────────────────────────────────────────────
 
 function OverallPerformanceBanner({
@@ -62,6 +110,7 @@ function OverallPerformanceBanner({
   suffRecall,
   insuffRecall,
   helpMeRecall,
+  businessGoal,
 }: {
   metrics: ValidationOverallMetrics
   sufficient: ValidationCategory
@@ -71,6 +120,7 @@ function OverallPerformanceBanner({
   suffRecall: number
   insuffRecall: number
   helpMeRecall: number
+  businessGoal: string | null
 }) {
   const suffPct = total > 0 ? (sufficient.count / total) * 100 : 0
   const insuffPct = total > 0 ? (insufficient.count / total) * 100 : 0
@@ -107,7 +157,7 @@ function OverallPerformanceBanner({
           </div>
         </div>
         <div className="flex items-start gap-2 max-w-sm">
-          <Info className="w-3.5 h-3.5 text-gray-500 shrink-0 mt-0.5" />
+          <MetricEyeTooltip explanation={getMetricExplanation(businessGoal, metrics.primaryMetric)} />
           <p className="text-xs text-gray-400 leading-relaxed italic">{metrics.statement}</p>
         </div>
       </div>
@@ -305,6 +355,7 @@ const PERF_BY_DATASET: Record<string, { suffRecall: number; insuffRecall: number
 
 export function ValidationSummary() {
   const selectedDataset = usePlaygroundStore((s) => s.selectedDataset)
+  const businessGoal = usePlaygroundStore((s) => s.businessGoal)
   const setValidationSummaryResults = usePlaygroundStore((s) => s.setValidationSummaryResults)
   const completeStep = usePlaygroundStore((s) => s.completeStep)
   const setStep = usePlaygroundStore((s) => s.setStep)
@@ -376,6 +427,7 @@ export function ValidationSummary() {
           suffRecall={perf.suffRecall}
           insuffRecall={perf.insuffRecall}
           helpMeRecall={perf.helpMeRecall}
+          businessGoal={businessGoal}
         />
 
         {/* 4 Category cards */}

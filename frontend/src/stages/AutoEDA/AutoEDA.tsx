@@ -353,6 +353,10 @@ function AutoADSPanel({
             </div>
           ))}
         </div>
+        <div className="flex items-center justify-between px-1 mt-2 border-t pt-2" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+          <span className="text-[10px] text-gray-500">Total derived features</span>
+          <span className="text-[10px] font-bold" style={{ color: accentColor }}>{categoricalDims + numericDims}</span>
+        </div>
       </div>
 
       {/* Per-feature rows */}

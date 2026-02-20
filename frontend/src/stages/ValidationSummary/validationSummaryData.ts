@@ -42,7 +42,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
       count: 42,
       percentage: 0.6,
       cohorts: [
-        { name: 'SeniorCitizen=1 AND no Dependents [augmented]', totalCount: 24, validationSamples: 0, samplingPct: 0 },
+        { name: 'SeniorCitizen=1 AND no Dependents [augmented]', totalCount: 24, validationSamples: 2, samplingPct: 8.3 },
         { name: 'MultipleLines=No phone service [augmented]', totalCount: 18, validationSamples: 2, samplingPct: 11.1 },
       ],
     },
@@ -88,7 +88,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
       count: 88,
       percentage: 0.2,
       cohorts: [
-        { name: 'Amount > 5000 [augmented]', totalCount: 48, validationSamples: 0, samplingPct: 0 },
+        { name: 'Amount > 5000 [augmented]', totalCount: 48, validationSamples: 4, samplingPct: 8.3 },
         { name: 'V12 < -15 AND V14 < -15 [augmented]', totalCount: 40, validationSamples: 5, samplingPct: 12.5 },
       ],
     },
@@ -134,7 +134,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
       count: 56,
       percentage: 0.1,
       cohorts: [
-        { name: 'transferred=True (holiday) [augmented]', totalCount: 32, validationSamples: 0, samplingPct: 0 },
+        { name: 'transferred=True (holiday) [augmented]', totalCount: 32, validationSamples: 3, samplingPct: 9.4 },
         { name: 'dcoilwtico > 90 [augmented]', totalCount: 24, validationSamples: 3, samplingPct: 12.5 },
       ],
     },
@@ -179,7 +179,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
       count: 64,
       percentage: 0.3,
       cohorts: [
-        { name: 'age=[90-100] [augmented]', totalCount: 36, validationSamples: 0, samplingPct: 0 },
+        { name: 'age=[90-100] [augmented]', totalCount: 36, validationSamples: 3, samplingPct: 8.3 },
         { name: 'num_medications > 25 [augmented]', totalCount: 28, validationSamples: 4, samplingPct: 14.3 },
       ],
     },
@@ -223,7 +223,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
       count: 52,
       percentage: 0.3,
       cohorts: [
-        { name: 'JobRole=Human Resources [augmented]', totalCount: 30, validationSamples: 0, samplingPct: 0 },
+        { name: 'JobRole=Human Resources [augmented]', totalCount: 30, validationSamples: 3, samplingPct: 10.0 },
         { name: 'StockOptionLevel=3 AND low pay [augmented]', totalCount: 22, validationSamples: 3, samplingPct: 13.6 },
       ],
     },
@@ -269,7 +269,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
       count: 72,
       percentage: 0.2,
       cohorts: [
-        { name: 'solar_irradiance > 900 [augmented]', totalCount: 40, validationSamples: 0, samplingPct: 0 },
+        { name: 'solar_irradiance > 900 [augmented]', totalCount: 40, validationSamples: 3, samplingPct: 7.5 },
         { name: 'temperature < -5 [augmented]', totalCount: 32, validationSamples: 4, samplingPct: 12.5 },
       ],
     },
@@ -314,7 +314,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
       count: 68,
       percentage: 0.2,
       cohorts: [
-        { name: 'incident_type=Parked Car [augmented]', totalCount: 40, validationSamples: 0, samplingPct: 0 },
+        { name: 'incident_type=Parked Car [augmented]', totalCount: 40, validationSamples: 4, samplingPct: 10.0 },
         { name: 'bodily_injuries=2 AND witnesses=0 [augmented]', totalCount: 28, validationSamples: 4, samplingPct: 14.3 },
       ],
     },
@@ -359,7 +359,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
       count: 78,
       percentage: 0.2,
       cohorts: [
-        { name: 'Catastrophic sudden failures [augmented]', totalCount: 44, validationSamples: 0, samplingPct: 0 },
+        { name: 'Catastrophic sudden failures [augmented]', totalCount: 44, validationSamples: 4, samplingPct: 9.1 },
         { name: 'Extreme environmental events [augmented]', totalCount: 34, validationSamples: 5, samplingPct: 14.7 },
       ],
     },

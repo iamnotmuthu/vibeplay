@@ -263,7 +263,6 @@ function PatternCard({
                         </div>
                         <div className="flex items-center gap-3 text-[10px] text-gray-500">
                           <span>{cohort.count.toLocaleString()} records</span>
-                          <span className="text-violet-400 font-semibold">{cohort.pct}% target IND</span>
                         </div>
                       </div>
                     ))}
@@ -407,12 +406,12 @@ function AddPatternForm({
             {rows.map((row, i) => {
               const values = getValues(row.feature)
               return (
-                <div key={i} className="flex items-center gap-2">
+                <div key={i} className="flex items-center flex-wrap gap-2">
                   {/* Feature dropdown */}
                   <select
                     value={row.feature}
                     onChange={(e) => updateRow(i, 'feature', e.target.value)}
-                    className="flex-1 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500"
+                    className="w-44 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500"
                   >
                     <option value="">Select feature…</option>
                     {featureNames.map((f) => (
@@ -425,7 +424,7 @@ function AddPatternForm({
                     value={row.value}
                     onChange={(e) => updateRow(i, 'value', e.target.value)}
                     disabled={!row.feature}
-                    className="flex-1 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500 disabled:opacity-40"
+                    className="w-36 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500 disabled:opacity-40"
                   >
                     <option value="">Select value…</option>
                     {values.map((v) => (
@@ -605,7 +604,15 @@ export function PatternDiscovery() {
     addLog('Pattern recognition complete — sufficiency analysis ready', 'success')
   }, [selectedDataset, addLog, setPatternResults])
 
-  useEffect(() => { runDiscovery() }, [runDiscovery])
+  useEffect(() => {
+    const { patternResults: stored } = usePlaygroundStore.getState()
+    if (stored) {
+      setData(stored)
+      setPhase('complete')
+      return
+    }
+    runDiscovery()
+  }, [runDiscovery])
 
   const handleNext = () => { completeStep(4); setStep(5 as StageId) }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Cpu, Info, Download, X, Activity, AlertTriangle, Sparkles,
+  Cpu, Eye, Info, Download, X, Activity, AlertTriangle, Sparkles,
   TrendingUp, BarChart3, Monitor,
 } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
@@ -52,13 +52,15 @@ interface MonitoringConfig {
   latencyData: number[]
 }
 
+const WEEK_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun','Mon','Tue','Wed','Thu','Fri','Sat','Sun','Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+
 const monitoringConfigs: Record<string, MonitoringConfig> = {
   'telco-churn': {
     stats: [
       { label: 'Total Predictions', value: '8,423', sub: '+12% from last week', color: '#38bdf8' },
       { label: 'Avg Response Time', value: '42ms', sub: '−5ms from target', color: '#a78bfa' },
       { label: 'Error Rate', value: '0.09%', sub: 'Within threshold', color: '#34d399' },
-      { label: 'Model Cost (7d)', value: '$94', sub: '$0.011 per prediction', color: '#fbbf24' },
+      { label: 'Model Version', value: 'v2.1.3', sub: 'Updated Feb 18, 2026', color: '#60a5fa' },
     ],
     driftAlert: {
       cohortName: 'data_cohort_2 (Month-to-Month · High Charges)',
@@ -74,17 +76,17 @@ const monitoringConfigs: Record<string, MonitoringConfig> = {
       detail: 'Captures the number of customer support calls in the last 30 days. Customers with 3+ support calls show a churn rate 2.4× higher than those with 0 calls.',
       impact: 'Adding this dimension could improve precision by 3–5% and recall by 2–4%, while reducing false positives by ~12%.',
     },
-    precisionData: [89, 88, 87, 85, 84, 82],
-    recallData: [87, 86, 85, 83, 82, 80],
-    volumeData: [180, 210, 450, 620, 590, 380],
-    latencyData: [38, 37, 41, 48, 46, 44],
+    precisionData: [91,90,90,89,89,88,88, 89,88,88,87,86,86,85, 87,86,86,85,85,84,82],
+    recallData:    [90,89,88,88,87,87,86, 88,87,86,86,85,84,83, 86,85,84,83,83,82,80],
+    volumeData:    [340,380,460,510,480,200,170, 360,410,490,540,510,215,180, 380,430,510,560,530,230,190],
+    latencyData:   [36,35,37,40,39,34,32, 37,36,38,41,40,35,33, 38,37,40,43,42,36,35],
   },
   'credit-fraud': {
     stats: [
       { label: 'Total Predictions', value: '45,102', sub: '+18% from last week', color: '#38bdf8' },
       { label: 'Avg Response Time', value: '28ms', sub: '−3ms from target', color: '#a78bfa' },
       { label: 'Error Rate', value: '0.04%', sub: 'Excellent', color: '#34d399' },
-      { label: 'Model Cost (7d)', value: '$421', sub: '$0.009 per prediction', color: '#fbbf24' },
+      { label: 'Model Version', value: 'v3.0.1', sub: 'Updated Feb 14, 2026', color: '#60a5fa' },
     ],
     driftAlert: {
       cohortName: 'data_cohort_1 (High-Amount Transactions · Night Hours)',
@@ -100,17 +102,17 @@ const monitoringConfigs: Record<string, MonitoringConfig> = {
       detail: 'A new risk dimension based on merchant category codes (MCCs). High-risk MCCs (online gambling, wire transfers, digital goods) show 4.7× higher fraud rates than standard retail merchants.',
       impact: 'Adding this dimension could improve precision by 4–6% and recall by 5–7%, while reducing false positives by ~18%.',
     },
-    precisionData: [94, 93, 92, 91, 90, 89],
-    recallData: [88, 87, 85, 83, 81, 80],
-    volumeData: [420, 380, 890, 1240, 1180, 820],
-    latencyData: [25, 24, 27, 32, 30, 28],
+    precisionData: [96,95,95,94,94,93,93, 94,93,93,92,91,91,90, 92,91,91,90,90,89,89],
+    recallData:    [91,90,90,89,88,88,87, 89,88,87,86,85,84,83, 87,86,85,84,83,82,80],
+    volumeData:    [800,890,1050,1200,1150,500,420, 840,940,1100,1280,1220,530,450, 880,990,1150,1340,1280,560,480],
+    latencyData:   [23,22,24,28,26,21,20, 24,23,25,29,27,22,21, 25,24,26,30,28,23,22],
   },
   'store-demand': {
     stats: [
       { label: 'Total Predictions', value: '12,840', sub: '+9% from last week', color: '#38bdf8' },
       { label: 'Avg Response Time', value: '65ms', sub: 'On target', color: '#a78bfa' },
       { label: 'Error Rate', value: '0.18%', sub: 'Within threshold', color: '#34d399' },
-      { label: 'Model Cost (7d)', value: '$58', sub: '$0.0045 per prediction', color: '#fbbf24' },
+      { label: 'Model Version', value: 'v1.4.2', sub: 'Updated Feb 10, 2026', color: '#60a5fa' },
     ],
     driftAlert: {
       cohortName: 'data_cohort_4 (Holiday Promotion · High-Volume Stores)',
@@ -126,17 +128,17 @@ const monitoringConfigs: Record<string, MonitoringConfig> = {
       detail: 'A new composite dimension capturing local weather severity during sales periods. Stores in regions with severe weather show 1.8× higher demand variability, particularly for essential goods categories.',
       impact: 'Adding this dimension could improve precision by 3–5% and reduce demand forecast error (MAPE) by ~8%.',
     },
-    precisionData: [88, 87, 86, 84, 82, 79],
-    recallData: [85, 84, 83, 81, 79, 77],
-    volumeData: [120, 98, 310, 420, 380, 240],
-    latencyData: [58, 57, 63, 72, 69, 66],
+    precisionData: [91,90,89,89,88,87,87, 89,88,87,86,85,85,84, 87,86,85,84,83,82,79],
+    recallData:    [88,87,87,86,85,84,83, 86,85,84,83,82,81,80, 84,83,82,81,80,79,77],
+    volumeData:    [180,200,310,380,350,120,100, 190,220,340,410,380,130,110, 200,240,370,440,410,140,120],
+    latencyData:   [55,54,57,63,61,52,50, 57,56,59,65,63,54,52, 59,58,62,68,66,56,54],
   },
   'patient-readmission': {
     stats: [
       { label: 'Total Predictions', value: '5,218', sub: '+6% from last week', color: '#38bdf8' },
       { label: 'Avg Response Time', value: '72ms', sub: 'On target', color: '#a78bfa' },
       { label: 'Error Rate', value: '0.21%', sub: 'Within threshold', color: '#34d399' },
-      { label: 'Model Cost (7d)', value: '$48', sub: '$0.0092 per prediction', color: '#fbbf24' },
+      { label: 'Model Version', value: 'v2.0.5', sub: 'Updated Feb 16, 2026', color: '#60a5fa' },
     ],
     driftAlert: {
       cohortName: 'data_cohort_3 (Age 70-80 · Emergency Admission)',
@@ -152,17 +154,17 @@ const monitoringConfigs: Record<string, MonitoringConfig> = {
       detail: 'A new dimension derived from discharge notes capturing patient social support status. Patients with low social support (living alone, no caregiver) show a 2.1× higher 30-day readmission rate.',
       impact: 'Adding this dimension could improve recall by 4–6% and precision by 2–4%, substantially reducing missed high-risk patients.',
     },
-    precisionData: [82, 81, 80, 78, 76, 74],
-    recallData: [79, 78, 77, 75, 73, 72],
-    volumeData: [95, 88, 210, 320, 290, 180],
-    latencyData: [65, 63, 70, 79, 76, 72],
+    precisionData: [85,84,84,83,82,81,81, 83,82,81,80,79,79,78, 81,80,79,78,77,76,74],
+    recallData:    [82,81,80,80,79,78,77, 80,79,78,77,76,75,74, 78,77,76,75,74,73,72],
+    volumeData:    [160,180,240,310,280,100,85, 170,190,255,330,300,110,90, 180,205,270,355,320,115,95],
+    latencyData:   [62,61,64,70,68,59,57, 64,63,66,72,70,61,59, 66,65,68,74,72,63,61],
   },
   'employee-attrition': {
     stats: [
       { label: 'Total Predictions', value: '3,891', sub: '+5% from last week', color: '#38bdf8' },
       { label: 'Avg Response Time', value: '54ms', sub: '−4ms from target', color: '#a78bfa' },
       { label: 'Error Rate', value: '0.11%', sub: 'Within threshold', color: '#34d399' },
-      { label: 'Model Cost (7d)', value: '$36', sub: '$0.0093 per prediction', color: '#fbbf24' },
+      { label: 'Model Version', value: 'v1.3.1', sub: 'Updated Feb 12, 2026', color: '#60a5fa' },
     ],
     driftAlert: {
       cohortName: 'data_cohort_2 (Mid-Level · Sales Department)',
@@ -178,17 +180,17 @@ const monitoringConfigs: Record<string, MonitoringConfig> = {
       detail: 'A new dimension capturing weekly remote work days since post-pandemic policy changes. Employees with < 2 remote days/week in roles that can be done remotely show a 1.9× higher attrition rate.',
       impact: 'Adding this dimension could improve precision by 3–5% and recall by 2–3%, enabling earlier intervention for at-risk employees.',
     },
-    precisionData: [87, 86, 85, 84, 82, 80],
-    recallData: [83, 82, 81, 79, 77, 76],
-    volumeData: [75, 68, 180, 260, 230, 150],
-    latencyData: [48, 47, 53, 61, 58, 55],
+    precisionData: [90,89,88,88,87,86,86, 88,87,86,85,84,84,83, 86,85,84,83,82,81,80],
+    recallData:    [86,85,84,83,83,82,81, 84,83,82,81,80,79,78, 82,81,80,79,78,77,76],
+    volumeData:    [120,140,200,250,230,80,65, 130,150,215,268,248,85,70, 140,160,230,285,265,90,75],
+    latencyData:   [46,45,47,52,51,43,42, 47,46,49,54,52,44,43, 49,48,51,56,54,46,44],
   },
   'energy-consumption': {
     stats: [
       { label: 'Total Predictions', value: '18,640', sub: '+14% from last week', color: '#38bdf8' },
       { label: 'Avg Response Time', value: '38ms', sub: '−6ms from target', color: '#a78bfa' },
       { label: 'Error Rate', value: '0.08%', sub: 'Excellent', color: '#34d399' },
-      { label: 'Model Cost (7d)', value: '$145', sub: '$0.0078 per prediction', color: '#fbbf24' },
+      { label: 'Model Version', value: 'v2.2.0', sub: 'Updated Feb 19, 2026', color: '#60a5fa' },
     ],
     driftAlert: {
       cohortName: 'data_cohort_1 (Peak Hour · Industrial Zone)',
@@ -204,17 +206,17 @@ const monitoringConfigs: Record<string, MonitoringConfig> = {
       detail: 'A new dimension derived from smart meter data capturing HVAC system efficiency ratios. Buildings with efficiency score < 0.6 show 2.3× higher peak consumption variability, making demand harder to predict.',
       impact: 'Adding this dimension could reduce MAPE by 6–9% and improve precision for peak-hour predictions by 4–6%.',
     },
-    precisionData: [91, 90, 89, 88, 86, 84],
-    recallData: [89, 88, 87, 85, 83, 82],
-    volumeData: [320, 290, 680, 920, 880, 640],
-    latencyData: [34, 33, 37, 43, 41, 39],
+    precisionData: [93,92,92,91,91,90,90, 91,90,90,89,88,88,87, 90,89,89,88,87,86,84],
+    recallData:    [92,91,90,90,89,89,88, 90,89,89,88,87,86,85, 88,87,87,86,85,84,82],
+    volumeData:    [580,640,780,900,860,420,380, 610,680,820,960,920,450,410, 640,720,860,1020,980,480,440],
+    latencyData:   [32,31,33,36,35,29,28, 33,32,34,37,36,30,29, 34,33,36,39,37,31,30],
   },
   'insurance-claims': {
     stats: [
       { label: 'Total Predictions', value: '6,724', sub: '+8% from last week', color: '#38bdf8' },
       { label: 'Avg Response Time', value: '58ms', sub: 'On target', color: '#a78bfa' },
       { label: 'Error Rate', value: '0.14%', sub: 'Within threshold', color: '#34d399' },
-      { label: 'Model Cost (7d)', value: '$62', sub: '$0.0092 per prediction', color: '#fbbf24' },
+      { label: 'Model Version', value: 'v1.8.4', sub: 'Updated Feb 8, 2026', color: '#60a5fa' },
     ],
     driftAlert: {
       cohortName: 'data_cohort_2 (Multi-Vehicle Collision · High Severity)',
@@ -230,17 +232,17 @@ const monitoringConfigs: Record<string, MonitoringConfig> = {
       detail: 'A new dimension capturing the tier classification of repair shops (in-network, out-of-network, flagged). Claims processed through flagged shops show a 3.2× higher fraud rate and average 40% higher repair costs.',
       impact: 'Adding this dimension could improve recall by 5–7% and precision by 3–5%, significantly reducing fraudulent payout risk.',
     },
-    precisionData: [85, 84, 83, 81, 79, 77],
-    recallData: [82, 81, 79, 77, 75, 73],
-    volumeData: [110, 98, 240, 340, 310, 200],
-    latencyData: [52, 50, 57, 65, 62, 59],
+    precisionData: [88,87,87,86,85,84,83, 86,85,84,83,82,81,80, 84,83,82,81,80,79,77],
+    recallData:    [85,84,83,82,82,81,80, 83,82,81,80,79,78,77, 81,80,79,78,77,76,73],
+    volumeData:    [175,200,265,330,305,105,90, 185,215,280,350,325,110,95, 195,230,300,375,350,120,100],
+    latencyData:   [50,48,51,57,55,46,44, 51,50,53,59,57,48,46, 53,51,55,61,59,50,48],
   },
   'predictive-maintenance': {
     stats: [
       { label: 'Total Predictions', value: '9,312', sub: '+11% from last week', color: '#38bdf8' },
       { label: 'Avg Response Time', value: '32ms', sub: '−4ms from target', color: '#a78bfa' },
       { label: 'Error Rate', value: '0.06%', sub: 'Excellent', color: '#34d399' },
-      { label: 'Model Cost (7d)', value: '$82', sub: '$0.0088 per prediction', color: '#fbbf24' },
+      { label: 'Model Version', value: 'v3.1.2', sub: 'Updated Feb 17, 2026', color: '#60a5fa' },
     ],
     driftAlert: {
       cohortName: 'data_cohort_1 (High Vibration · Critical Equipment)',
@@ -256,10 +258,10 @@ const monitoringConfigs: Record<string, MonitoringConfig> = {
       detail: 'A new dimension capturing daily temperature variance in the operating environment. Machines in environments with >15°C daily variance show a 2.6× higher bearing failure rate, independent of vibration levels.',
       impact: 'Adding this dimension could improve precision by 4–6% and recall by 3–5%, enabling earlier preventive maintenance scheduling.',
     },
-    precisionData: [93, 92, 91, 90, 88, 86],
-    recallData: [91, 90, 89, 87, 85, 84],
-    volumeData: [195, 178, 420, 560, 530, 380],
-    latencyData: [28, 27, 31, 38, 36, 34],
+    precisionData: [95,94,94,93,93,92,92, 93,92,92,91,90,90,89, 92,91,91,90,89,88,86],
+    recallData:    [93,92,92,91,91,90,90, 92,91,91,90,89,88,87, 91,90,89,88,87,86,84],
+    volumeData:    [320,360,450,540,510,190,160, 340,385,480,580,550,205,175, 360,410,510,620,590,220,190],
+    latencyData:   [27,26,27,30,29,24,23, 28,27,28,31,30,25,24, 29,28,30,33,31,26,25],
   },
 }
 
@@ -302,11 +304,60 @@ function PerformanceRow({ row }: { row: CohortPerformance }) {
   )
 }
 
+// ── Metric explanation helper + tooltip ───────────────────────────────────────
+
+function getMetricExplanation(businessGoal: string | null, primaryMetric: string): string {
+  const g = (businessGoal ?? '').toLowerCase()
+  if (primaryMetric === 'Recall') {
+    if (g.includes('churn'))
+      return 'Recall is prioritised because missing a customer about to churn is more costly than a false alarm. Every true churner not caught is a lost revenue opportunity.'
+    if (g.includes('fraud'))
+      return 'Recall is prioritised because a missed fraud transaction causes direct financial loss, whereas a false positive is a minor inconvenience.'
+    if (g.includes('readmission') || g.includes('patient'))
+      return 'Recall is prioritised because failing to flag a patient at risk of readmission leads to preventable health complications.'
+    if (g.includes('attrition') || g.includes('employee'))
+      return 'Recall is prioritised because missing an employee likely to leave means losing talent and incurring replacement costs.'
+    if (g.includes('insurance') || g.includes('claim'))
+      return 'Recall is prioritised because failing to identify a valid claim results in underpayment and regulatory risk.'
+    if (g.includes('maintenance') || g.includes('failure'))
+      return 'Recall is prioritised because missing an impending equipment failure leads to costly unplanned downtime.'
+    return 'Recall is prioritised because missing true positives has a higher business cost than false alarms in this scenario.'
+  }
+  if (primaryMetric === 'MAPE') {
+    if (g.includes('demand') || g.includes('store'))
+      return 'MAPE is prioritised because relative forecast accuracy directly determines inventory levels and stockout risk. A 5% error on a high-volume SKU matters as much as on a low-volume one.'
+    if (g.includes('energy') || g.includes('consumption'))
+      return 'MAPE is prioritised because relative energy forecast error drives procurement decisions and grid balancing costs proportionally across all consumption levels.'
+    return 'MAPE is prioritised because relative error is the most meaningful measure for this forecasting objective.'
+  }
+  return `${primaryMetric} is the primary optimisation target for this model based on the stated business objective.`
+}
+
+function MetricEyeTooltip({ explanation }: { explanation: string }) {
+  const [tooltipVisible, setTooltipVisible] = useState(false)
+  return (
+    <div
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setTooltipVisible(true)}
+      onMouseLeave={() => setTooltipVisible(false)}
+    >
+      <Eye className="w-3 h-3 text-gray-500 cursor-help hover:text-gray-300 transition-colors" />
+      {tooltipVisible && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-gray-900 border border-gray-700 p-3 shadow-xl z-50">
+          <p className="text-[11px] text-gray-300 leading-relaxed">{explanation}</p>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Overall performance + contribution bar ────────────────────────────────────
 
 function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
   const isRegression = data.primaryMetric === 'MAPE' || data.primaryMetric === 'RMSE'
   const perf = data.performance
+  const businessGoal = usePlaygroundStore((s) => s.businessGoal)
 
   // Compute approximate cohort sizes for contribution bar (from performance order: suff > insuff > helpMe)
   // Rough weights: 70% sufficient, 8% insufficient, 10% helpMe (rest augmented/misc)
@@ -336,7 +387,7 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
           <div className="text-[10px] text-gray-500 font-semibold mt-0.5">Secondary</div>
         </div>
         <div className="ml-auto flex items-start gap-2 max-w-xs">
-          <Info className="w-3 h-3 text-gray-500 shrink-0 mt-0.5" />
+          <MetricEyeTooltip explanation={getMetricExplanation(businessGoal, data.primaryMetric)} />
           <p className="text-[10px] text-gray-500 leading-relaxed italic">{data.metricStatement}</p>
         </div>
       </div>
@@ -506,7 +557,13 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
   datasetId: string; datasetName: string; champion: string; onClose: () => void
 }) {
   const config = getMonitoringConfig(datasetId)
-  const hours = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00']
+  const [weeksRange, setWeeksRange] = useState<1 | 2 | 3>(2)
+  const sliceCount = weeksRange * 7
+  const slicedLabels = WEEK_LABELS.slice(21 - sliceCount)
+  const slicedPrecision = config.precisionData.slice(21 - sliceCount)
+  const slicedRecall = config.recallData.slice(21 - sliceCount)
+  const slicedVolume = config.volumeData.slice(21 - sliceCount)
+  const slicedLatency = config.latencyData.slice(21 - sliceCount)
 
   return (
     <motion.div
@@ -541,9 +598,20 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             </div>
             <p className="text-xs text-gray-500 mt-0.5">{champion} · Deployed 7 days ago</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 transition-colors">
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
+          <div className="flex items-center gap-3">
+            <select
+              value={weeksRange}
+              onChange={(e) => setWeeksRange(Number(e.target.value) as 1 | 2 | 3)}
+              className="text-xs bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-gray-300 focus:outline-none focus:border-teal-500"
+            >
+              <option value={1}>Last week</option>
+              <option value={2}>Last 2 weeks</option>
+              <option value={3}>Last 3 weeks</option>
+            </select>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 transition-colors">
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
         </div>
 
         <div className="p-6 space-y-5">
@@ -639,8 +707,8 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
               <TrendingUp className="w-4 h-4 text-teal-400" />
               <h4 className="text-sm font-semibold text-white">Performance Metrics</h4>
             </div>
-            <p className="text-[10px] text-gray-500 mb-3">Precision and Recall trends over the last 24 hours</p>
-            <LineChart data={config.precisionData} data2={config.recallData} labels={hours} color="#06b6d4" color2="#818cf8" height={90} />
+            <p className="text-[10px] text-gray-500 mb-3">Precision and Recall trends — last {weeksRange === 1 ? 'week' : `${weeksRange} weeks`}</p>
+            <LineChart data={slicedPrecision} data2={slicedRecall} labels={slicedLabels} color="#06b6d4" color2="#818cf8" height={90} />
             <div className="flex gap-4 mt-2 justify-center">
               {[{ label: 'Precision (%)', color: '#06b6d4' }, { label: 'Recall (%)', color: '#818cf8' }].map((l) => (
                 <div key={l.label} className="flex items-center gap-1.5">
@@ -656,8 +724,8 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
               <BarChart3 className="w-4 h-4 text-violet-400" />
               <h4 className="text-sm font-semibold text-white">Request Volume</h4>
             </div>
-            <p className="text-[10px] text-gray-500 mb-3">Prediction requests over the last 24 hours</p>
-            <BarChart data={config.volumeData} labels={hours} color="rgba(20,184,166,0.7)" />
+            <p className="text-[10px] text-gray-500 mb-3">Prediction requests — last {weeksRange === 1 ? 'week' : `${weeksRange} weeks`}</p>
+            <BarChart data={slicedVolume} labels={slicedLabels} color="rgba(20,184,166,0.7)" />
           </div>
 
           <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -665,8 +733,8 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
               <Activity className="w-4 h-4 text-blue-400" />
               <h4 className="text-sm font-semibold text-white">Response Latency</h4>
             </div>
-            <p className="text-[10px] text-gray-500 mb-3">Average response time over the last 24 hours</p>
-            <LineChart data={config.latencyData} labels={hours} color="#a78bfa" height={80} />
+            <p className="text-[10px] text-gray-500 mb-3">Average response time — last {weeksRange === 1 ? 'week' : `${weeksRange} weeks`}</p>
+            <LineChart data={slicedLatency} labels={slicedLabels} color="#a78bfa" height={80} />
           </div>
         </div>
       </motion.div>
