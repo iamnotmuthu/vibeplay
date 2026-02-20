@@ -204,19 +204,38 @@ export interface ValidationCategory {
   cohorts: ValidationCohort[]
 }
 
+export interface ValidationOverallMetrics {
+  primaryMetric: string    // e.g. "Recall" | "MAPE"
+  primaryValue: number
+  secondaryMetric: string  // e.g. "Precision" | "RMSE"
+  secondaryValue: number
+  statement: string
+}
+
 export interface ValidationSummaryResults {
   totalCount: number
   totalCohorts: number
+  overallMetrics: ValidationOverallMetrics
   sufficient: ValidationCategory
   insufficient: ValidationCategory
   helpMe: ValidationCategory
   augmented: ValidationCategory
 }
 
+export interface ModelComponentFactor {
+  name: string    // data characteristic, e.g. "Non-linear relationship complexity"
+  level: string   // "Low" | "Median" | "High" | "Yes" | "No"
+}
+export interface ModelComponentParam {
+  name: string    // technical param name
+  value: string   // e.g. "L2 (Ridge), C=0.8"
+}
 export interface ModelComponent {
-  name: string
-  role: string
-  factors: { name: string; value: string }[]
+  subtype: string        // 'preprocessor' | 'model_function' | 'loss_function' | 'explicit_regularization' | 'optimization_algo' | 'capacity_controls' | 'complexity_controls' | 'inference_tuning'
+  subtypeLabel: string   // 'Preprocessor' | 'Model Component' | 'Loss Function' | ...
+  name: string           // ML technical term, e.g. 'one_hot_encoding'
+  factors: ModelComponentFactor[]
+  params: ModelComponentParam[]
 }
 
 export interface CohortPerformance {
@@ -230,6 +249,11 @@ export interface ModelSelectionResults {
   champion: string
   modelFunction: string
   modelType: string
+  overallRecall: number
+  overallPrecision: number
+  primaryMetric: string
+  secondaryMetric: string
+  metricStatement: string
   components: ModelComponent[]
   whyThisModel: string
   performance: CohortPerformance[]

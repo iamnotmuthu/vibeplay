@@ -7,13 +7,25 @@ import {
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CompletionModal } from '@/components/shared/CompletionModal'
+import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import { getPrecomputedModelSelection } from './modelSelectionData'
-import type { ModelSelectionResults, CohortPerformance } from '@/store/types'
+import type { ModelSelectionResults, CohortPerformance, ModelComponent } from '@/store/types'
 
 const CATEGORY_COLORS: Record<string, { pill: string; track: string }> = {
   sufficient:   { pill: 'bg-emerald-500', track: 'bg-emerald-500/20' },
   insufficient: { pill: 'bg-red-500',     track: 'bg-red-500/20'     },
   helpMe:       { pill: 'bg-amber-500',   track: 'bg-amber-500/20'   },
+}
+
+function levelColor(level: string): string {
+  switch (level.toLowerCase()) {
+    case 'high':     return 'text-amber-400'
+    case 'low':      return 'text-teal-400'
+    case 'median':   return 'text-gray-300'
+    case 'yes':      return 'text-emerald-400'
+    case 'no':       return 'text-red-400'
+    default:         return 'text-gray-400'
+  }
 }
 
 // ── Per-scenario monitoring data ─────────────────────────────────────────────
@@ -290,9 +302,94 @@ function PerformanceRow({ row }: { row: CohortPerformance }) {
   )
 }
 
-function ComponentCard({ name, role, factors, delay }: {
-  name: string; role: string; factors: { name: string; value: string }[]; delay: number
-}) {
+// ── Overall performance + contribution bar ────────────────────────────────────
+
+function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
+  const isRegression = data.primaryMetric === 'MAPE' || data.primaryMetric === 'RMSE'
+  const perf = data.performance
+
+  // Compute approximate cohort sizes for contribution bar (from performance order: suff > insuff > helpMe)
+  // Rough weights: 70% sufficient, 8% insufficient, 10% helpMe (rest augmented/misc)
+  const weights = { sufficient: 70, insufficient: 8, helpMe: 10 }
+  const totalW = weights.sufficient + weights.insufficient + weights.helpMe
+
+  return (
+    <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+        Overall Model Performance
+      </div>
+
+      {/* Primary + secondary metric */}
+      <div className="flex items-center gap-8 mb-4">
+        <div>
+          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{data.primaryMetric}</div>
+          <div className="text-3xl font-bold text-white">
+            {isRegression ? data.overallRecall : <><CountUpNumber end={data.overallRecall} />%</>}
+          </div>
+          <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">Primary</div>
+        </div>
+        <div>
+          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{data.secondaryMetric}</div>
+          <div className="text-3xl font-bold text-gray-300">
+            {isRegression ? data.overallPrecision : <><CountUpNumber end={data.overallPrecision} />%</>}
+          </div>
+          <div className="text-[10px] text-gray-500 font-semibold mt-0.5">Secondary</div>
+        </div>
+        <div className="ml-auto flex items-start gap-2 max-w-xs">
+          <Info className="w-3 h-3 text-gray-500 shrink-0 mt-0.5" />
+          <p className="text-[10px] text-gray-500 leading-relaxed italic">{data.metricStatement}</p>
+        </div>
+      </div>
+
+      {/* 3-colour cohort contribution bar */}
+      <div>
+        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          Cohort Contribution to Overall Performance
+        </div>
+        <div className="flex h-5 rounded-full overflow-hidden gap-px">
+          {perf.map((row) => {
+            const w = weights[row.category as keyof typeof weights] ?? 0
+            const pct = (w / totalW) * 100
+            const color =
+              row.category === 'sufficient' ? 'bg-emerald-500' :
+              row.category === 'insufficient' ? 'bg-red-500' : 'bg-amber-500'
+            return (
+              <div
+                key={row.category}
+                className={`flex items-center justify-center text-[9px] font-bold text-white ${color} overflow-hidden`}
+                style={{ width: `${pct}%` }}
+              >
+                {row.recall}%
+              </div>
+            )
+          })}
+        </div>
+        <div className="flex gap-4 mt-2">
+          {perf.map((row) => {
+            const color =
+              row.category === 'sufficient' ? 'bg-emerald-500' :
+              row.category === 'insufficient' ? 'bg-red-500' : 'bg-amber-500'
+            const textColor =
+              row.category === 'sufficient' ? 'text-emerald-400' :
+              row.category === 'insufficient' ? 'text-red-400' : 'text-amber-400'
+            const w = weights[row.category as keyof typeof weights] ?? 0
+            const pct = (w / totalW) * 100
+            return (
+              <div key={row.category} className="flex items-center gap-1.5">
+                <div className={`w-2.5 h-2.5 rounded-sm shrink-0 ${color}`} />
+                <span className={`text-[10px] ${textColor}`}>{row.label} ({pct.toFixed(0)}%)</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Component Card ────────────────────────────────────────────────────────────
+
+function ComponentCard({ comp, delay }: { comp: ModelComponent; delay: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -300,16 +397,33 @@ function ComponentCard({ name, role, factors, delay }: {
       transition={{ delay }}
       className="rounded-xl bg-gray-900 border border-gray-700/60 p-4"
     >
-      <div className="text-sm font-semibold text-primary mb-1">{name}</div>
-      <p className="text-xs text-gray-400 mb-3 leading-relaxed">{role}</p>
-      <div className="space-y-1.5">
-        {factors.map((f) => (
-          <div key={f.name} className="flex items-start gap-2 text-xs">
-            <span className="text-gray-500 shrink-0 min-w-[110px]">{f.name}</span>
-            <span className="text-gray-200 font-mono">{f.value}</span>
+      {/* Name */}
+      <div className="text-sm font-bold text-primary mb-0.5 font-mono">{comp.name}</div>
+      {/* Subtype label */}
+      <div className="text-xs text-gray-500 mb-3">{comp.subtypeLabel}</div>
+
+      {/* Data characteristic factors */}
+      <div className="space-y-1">
+        {comp.factors.map((f) => (
+          <div key={f.name} className="flex items-baseline gap-1.5 text-xs">
+            <span className="text-gray-500 shrink-0">·</span>
+            <span className="text-gray-400">{f.name}</span>
+            <span className={`font-semibold ${levelColor(f.level)}`}>({f.level})</span>
           </div>
         ))}
       </div>
+
+      {/* Technical params */}
+      {comp.params.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-700/50 space-y-1.5">
+          {comp.params.map((p) => (
+            <div key={p.name} className="flex items-start gap-2 text-xs">
+              <span className="text-gray-500 shrink-0 min-w-[110px]">{p.name}</span>
+              <span className="text-gray-300 font-mono">{p.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </motion.div>
   )
 }
@@ -410,7 +524,6 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
         className="w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 rounded-2xl"
         style={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.1)' }}
       >
-        {/* Modal header */}
         <div
           className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b"
           style={{ background: '#0d1117', borderColor: 'rgba(255,255,255,0.07)' }}
@@ -428,23 +541,16 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             </div>
             <p className="text-xs text-gray-500 mt-0.5">{champion} · Deployed 7 days ago</p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-          >
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 transition-colors">
             <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
         <div className="p-6 space-y-5">
-          {/* Stats row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {config.stats.map((s) => (
-              <div
-                key={s.label}
-                className="rounded-xl p-4"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-              >
+              <div key={s.label} className="rounded-xl p-4"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="text-[10px] text-gray-500 mb-1">{s.label}</div>
                 <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
                 <div className="text-[10px] text-gray-600 mt-1">{s.sub}</div>
@@ -452,11 +558,8 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             ))}
           </div>
 
-          {/* Alert: Pattern Drift */}
-          <div
-            className="rounded-xl p-4"
-            style={{ background: 'rgba(239,68,68,0.06)', border: '1.5px solid rgba(239,68,68,0.25)' }}
-          >
+          <div className="rounded-xl p-4"
+            style={{ background: 'rgba(239,68,68,0.06)', border: '1.5px solid rgba(239,68,68,0.25)' }}>
             <div className="flex items-start gap-3 mb-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.15)' }}>
                 <AlertTriangle className="w-4 h-4 text-red-400" />
@@ -475,9 +578,7 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
               <div className="text-xs font-semibold text-white mb-1">
                 Affected Cohort: <span className="text-gray-300">{config.driftAlert.cohortName}</span>
               </div>
-              <div className="text-[10px] text-red-300/70">
-                {config.driftAlert.detail}
-              </div>
+              <div className="text-[10px] text-red-300/70">{config.driftAlert.detail}</div>
             </div>
             <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="text-xs font-semibold text-white mb-1">Impact:</div>
@@ -496,11 +597,8 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             </div>
           </div>
 
-          {/* Alert: New Dimension */}
-          <div
-            className="rounded-xl p-4"
-            style={{ background: 'rgba(234,179,8,0.05)', border: '1.5px solid rgba(234,179,8,0.2)' }}
-          >
+          <div className="rounded-xl p-4"
+            style={{ background: 'rgba(234,179,8,0.05)', border: '1.5px solid rgba(234,179,8,0.2)' }}>
             <div className="flex items-start gap-3 mb-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(234,179,8,0.15)' }}>
                 <Sparkles className="w-4 h-4 text-amber-400" />
@@ -536,7 +634,6 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             </div>
           </div>
 
-          {/* Performance Metrics — line chart */}
           <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="w-4 h-4 text-teal-400" />
@@ -554,7 +651,6 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             </div>
           </div>
 
-          {/* Request Volume — bar chart */}
           <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2 mb-1">
               <BarChart3 className="w-4 h-4 text-violet-400" />
@@ -564,7 +660,6 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             <BarChart data={config.volumeData} labels={hours} color="rgba(20,184,166,0.7)" />
           </div>
 
-          {/* Response Latency — line chart */}
           <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2 mb-1">
               <Activity className="w-4 h-4 text-blue-400" />
@@ -599,7 +694,7 @@ export function ModelSelection() {
     setData(results)
     setModelSelectionResults(results)
     addLog(`Model selected: ${results.champion} (${results.modelType})`, 'success')
-    addLog(`Performance — Sufficient recall: ${results.performance[0]?.recall}% · Precision: ${results.performance[0]?.precision}%`, 'info')
+    addLog(`Overall ${results.primaryMetric}: ${results.overallRecall}% · ${results.secondaryMetric}: ${results.overallPrecision}%`, 'info')
   }, [selectedDataset, setModelSelectionResults, addLog])
 
   const handleDownload = () => {
@@ -680,29 +775,12 @@ export function ModelSelection() {
             <span className="text-xs text-gray-500 ml-auto">{data.modelType}</span>
           </div>
 
-          {/* Details */}
-          <div className="px-5 py-5 space-y-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Model Function</div>
-              <p className="text-sm text-gray-300 leading-relaxed">{data.modelFunction}</p>
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Model Components</div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {data.components.map((comp, i) => (
-                  <ComponentCard key={comp.name} name={comp.name} role={comp.role} factors={comp.factors} delay={i * 0.07} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Why this model?</div>
-              <p className="text-sm text-gray-400 leading-relaxed">{data.whyThisModel}</p>
-            </div>
-          </div>
+          {/* 1. Overall Performance + contribution bar */}
+          <OverallPerformanceSection data={data} />
 
-          {/* Performance metrics */}
-          <div className="px-5 py-5">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Performance Metrics</div>
+          {/* 2. Per-category performance bars */}
+          <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Performance by Cohort Type</div>
             <div className="space-y-3">
               {data.performance.map((row, i) => (
                 <motion.div
@@ -716,6 +794,28 @@ export function ModelSelection() {
               ))}
             </div>
           </div>
+
+          {/* 3. Model Function description */}
+          <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Model Function</div>
+            <p className="text-sm text-gray-300 leading-relaxed">{data.modelFunction}</p>
+          </div>
+
+          {/* 4. Model Components */}
+          <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Model Components</div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {data.components.map((comp, i) => (
+                <ComponentCard key={comp.name} comp={comp} delay={i * 0.07} />
+              ))}
+            </div>
+          </div>
+
+          {/* 5. Why this model? */}
+          <div className="px-5 py-5">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Why this model?</div>
+            <p className="text-sm text-gray-400 leading-relaxed">{data.whyThisModel}</p>
+          </div>
         </motion.div>
 
         {/* Deployment actions */}
@@ -725,7 +825,6 @@ export function ModelSelection() {
           transition={{ delay: 0.25 }}
           className="grid sm:grid-cols-2 gap-4"
         >
-          {/* Preview Deployment Guide */}
           <div
             className="rounded-xl p-5 flex flex-col"
             style={{ background: 'rgba(20,184,166,0.05)', border: '1px solid rgba(20,184,166,0.2)' }}
@@ -747,7 +846,6 @@ export function ModelSelection() {
             </button>
           </div>
 
-          {/* Monitor Your Model */}
           <div
             className="rounded-xl p-5 flex flex-col"
             style={{ background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.2)' }}

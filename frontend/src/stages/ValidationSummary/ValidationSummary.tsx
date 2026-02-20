@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShieldCheck, ChevronDown, ChevronRight } from 'lucide-react'
+import { ShieldCheck, Info } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import { getPrecomputedValidation } from './validationSummaryData'
-import type { StageId, ValidationSummaryResults, ValidationCategory } from '@/store/types'
+import type { StageId, ValidationSummaryResults, ValidationCategory, ValidationOverallMetrics } from '@/store/types'
 
 type CategoryKey = 'sufficient' | 'insufficient' | 'helpMe' | 'augmented'
 
@@ -19,7 +19,7 @@ const CATEGORIES: {
 }[] = [
   {
     key: 'sufficient',
-    label: 'Sufficient Data',
+    label: 'Dominant Patterns',
     color: '#10b981',
     borderColor: 'border-emerald-500',
     textColor: 'text-emerald-400',
@@ -27,7 +27,7 @@ const CATEGORIES: {
   },
   {
     key: 'insufficient',
-    label: 'Insufficient Data',
+    label: 'Non-Dominant Patterns',
     color: '#ef4444',
     borderColor: 'border-red-500',
     textColor: 'text-red-400',
@@ -35,7 +35,7 @@ const CATEGORIES: {
   },
   {
     key: 'helpMe',
-    label: 'Help Me',
+    label: 'Fuzzy Patterns',
     color: '#f59e0b',
     borderColor: 'border-amber-500',
     textColor: 'text-amber-400',
@@ -51,10 +51,120 @@ const CATEGORIES: {
   },
 ]
 
+// ─── Overall Performance Banner ───────────────────────────────────────────────
+
+function OverallPerformanceBanner({
+  metrics,
+  sufficient,
+  insufficient,
+  helpMe,
+  total,
+  suffRecall,
+  insuffRecall,
+  helpMeRecall,
+}: {
+  metrics: ValidationOverallMetrics
+  sufficient: ValidationCategory
+  insufficient: ValidationCategory
+  helpMe: ValidationCategory
+  total: number
+  suffRecall: number
+  insuffRecall: number
+  helpMeRecall: number
+}) {
+  const suffPct = total > 0 ? (sufficient.count / total) * 100 : 0
+  const insuffPct = total > 0 ? (insufficient.count / total) * 100 : 0
+  const helpMePct = total > 0 ? (helpMe.count / total) * 100 : 0
+  const isRegressionMetric = metrics.primaryMetric === 'MAPE' || metrics.primaryMetric === 'RMSE'
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.06 }}
+      className="rounded-xl border border-gray-700/60 bg-gray-800/60 p-5"
+    >
+      {/* Metrics row */}
+      <div className="flex items-start justify-between gap-6 mb-5">
+        <div className="flex items-center gap-8">
+          <div>
+            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{metrics.primaryMetric}</div>
+            <div className="text-3xl font-bold text-white">
+              {isRegressionMetric
+                ? metrics.primaryValue
+                : <><CountUpNumber end={metrics.primaryValue} />%</>}
+            </div>
+            <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">Primary</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{metrics.secondaryMetric}</div>
+            <div className="text-3xl font-bold text-gray-300">
+              {isRegressionMetric
+                ? metrics.secondaryValue
+                : <><CountUpNumber end={metrics.secondaryValue} />%</>}
+            </div>
+            <div className="text-[10px] text-gray-500 font-semibold mt-0.5">Secondary</div>
+          </div>
+        </div>
+        <div className="flex items-start gap-2 max-w-sm">
+          <Info className="w-3.5 h-3.5 text-gray-500 shrink-0 mt-0.5" />
+          <p className="text-xs text-gray-400 leading-relaxed italic">{metrics.statement}</p>
+        </div>
+      </div>
+
+      {/* 3-colour contribution bar */}
+      <div>
+        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          Cohort Contribution to Overall Performance
+        </div>
+        <div className="flex h-5 rounded-full overflow-hidden gap-px">
+          {suffPct > 0 && (
+            <div
+              className="flex items-center justify-center text-[9px] font-bold text-white bg-emerald-500 overflow-hidden"
+              style={{ width: `${suffPct}%` }}
+            >
+              {suffRecall}%
+            </div>
+          )}
+          {insuffPct > 0 && (
+            <div
+              className="flex items-center justify-center text-[9px] font-bold text-white bg-red-500 overflow-hidden"
+              style={{ width: `${insuffPct}%` }}
+            >
+              {insuffRecall}%
+            </div>
+          )}
+          {helpMePct > 0 && (
+            <div
+              className="flex items-center justify-center text-[9px] font-bold text-white bg-amber-500 overflow-hidden"
+              style={{ width: `${helpMePct}%` }}
+            >
+              {helpMeRecall}%
+            </div>
+          )}
+        </div>
+        <div className="flex gap-4 mt-2">
+          {[
+            { label: 'Dominant Patterns', color: 'bg-emerald-500', pct: suffPct },
+            { label: 'Non-Dominant Patterns', color: 'bg-red-500', pct: insuffPct },
+            { label: 'Fuzzy Patterns', color: 'bg-amber-500', pct: helpMePct },
+          ].map((l) => (
+            <div key={l.label} className="flex items-center gap-1.5">
+              <div className={`w-2.5 h-2.5 rounded-sm shrink-0 ${l.color}`} />
+              <span className="text-[10px] text-gray-500">{l.label} ({l.pct.toFixed(1)}%)</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Category Card ─────────────────────────────────────────────────────────────
+
 function CategoryCard({
   label,
   data,
-  color,
   borderColor,
   textColor,
   bgColor,
@@ -83,7 +193,6 @@ function CategoryCard({
         <CountUpNumber end={data.count} />
       </div>
       <div className={`text-sm font-medium mb-3 ${textColor}`}>{data.percentage.toFixed(1)}%</div>
-      {/* Progress bar */}
       <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
@@ -95,6 +204,8 @@ function CategoryCard({
     </motion.button>
   )
 }
+
+// ─── Breakdown Table ───────────────────────────────────────────────────────────
 
 function BreakdownTable({
   categoryLabel,
@@ -131,11 +242,12 @@ function BreakdownTable({
       </div>
 
       <div className={`rounded-xl border-2 ${borderColor} overflow-hidden`}>
-        {/* Table header */}
-        <div className="grid grid-cols-4 bg-gray-800/50 px-4 py-2.5 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-700">
-          <div className="col-span-2">Cohort Name</div>
+        {/* Table header — 4 proper columns */}
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] bg-gray-800/50 px-4 py-2.5 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-700">
+          <div>Cohort Name</div>
           <div className="text-right">Total Count</div>
           <div className="text-right">Validation Samples</div>
+          <div className="text-right">Sampling %</div>
         </div>
 
         {/* Rows */}
@@ -145,18 +257,18 @@ function BreakdownTable({
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="grid grid-cols-4 px-4 py-3 border-b border-gray-700/50 last:border-0 bg-gray-800/30 hover:bg-gray-700/30 transition-colors"
+            className="grid grid-cols-[2fr_1fr_1fr_1fr] px-4 py-3 border-b border-gray-700/50 last:border-0 bg-gray-800/30 hover:bg-gray-700/30 transition-colors"
           >
-            <div className="col-span-2 text-sm text-gray-200 font-mono truncate pr-4">{cohort.name}</div>
+            <div className="text-sm text-gray-200 font-mono truncate pr-4">{cohort.name}</div>
             <div className="text-right text-sm text-gray-300 font-mono">{cohort.totalCount.toLocaleString()}</div>
-            <div className="text-right">
-              <span className="text-sm font-mono text-gray-300">{cohort.validationSamples}</span>
-              <span className={`ml-2 text-xs font-semibold ${textColor}`}>{cohort.samplingPct}%</span>
+            <div className="text-right text-sm font-mono text-gray-300">{cohort.validationSamples}</div>
+            <div className={`text-right text-xs font-semibold font-mono ${textColor}`}>
+              {cohort.samplingPct === 0 ? '—' : `${cohort.samplingPct}%`}
             </div>
           </motion.div>
         ))}
 
-        {/* Load more */}
+        {/* Load more / show less */}
         {!showAll && remaining > 0 && (
           <button
             onClick={() => setShowAll(true)}
@@ -165,9 +277,30 @@ function BreakdownTable({
             Load More ({remaining} remaining)
           </button>
         )}
+        {showAll && data.cohorts.length > 3 && (
+          <button
+            onClick={() => setShowAll(false)}
+            className={`w-full py-3 text-sm font-semibold transition-colors ${textColor} hover:bg-gray-700/30`}
+          >
+            Show Less
+          </button>
+        )}
       </div>
     </div>
   )
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
+
+const PERF_BY_DATASET: Record<string, { suffRecall: number; insuffRecall: number; helpMeRecall: number }> = {
+  'telco-churn':            { suffRecall: 91, insuffRecall: 74, helpMeRecall: 62 },
+  'credit-fraud':           { suffRecall: 94, insuffRecall: 81, helpMeRecall: 68 },
+  'store-demand':           { suffRecall: 89, insuffRecall: 72, helpMeRecall: 58 },
+  'patient-readmission':    { suffRecall: 88, insuffRecall: 71, helpMeRecall: 60 },
+  'employee-attrition':     { suffRecall: 85, insuffRecall: 69, helpMeRecall: 57 },
+  'energy-consumption':     { suffRecall: 92, insuffRecall: 77, helpMeRecall: 63 },
+  'insurance-claims':       { suffRecall: 90, insuffRecall: 75, helpMeRecall: 61 },
+  'predictive-maintenance': { suffRecall: 91, insuffRecall: 70, helpMeRecall: 58 },
 }
 
 export function ValidationSummary() {
@@ -186,7 +319,7 @@ export function ValidationSummary() {
     setData(results)
     setValidationSummaryResults(results)
     addLog(`Validation summary loaded — ${results.totalCount} samples across ${results.totalCohorts} cohorts`, 'success')
-    addLog(`Sufficient: ${results.sufficient.count} (${results.sufficient.percentage}%) · Insufficient: ${results.insufficient.count}`, 'info')
+    addLog(`Dominant: ${results.sufficient.count} (${results.sufficient.percentage}%) · Non-Dominant: ${results.insufficient.count}`, 'info')
   }, [selectedDataset, setValidationSummaryResults, addLog])
 
   const handleNext = () => {
@@ -194,10 +327,11 @@ export function ValidationSummary() {
     setStep(6 as StageId)
   }
 
-  if (!data) return null
+  if (!data || !selectedDataset) return null
 
   const activeConfig = CATEGORIES.find((c) => c.key === activeCategory)!
   const activeCategoryData = data[activeCategory]
+  const perf = PERF_BY_DATASET[selectedDataset.id] ?? { suffRecall: 88, insuffRecall: 72, helpMeRecall: 60 }
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -231,6 +365,18 @@ export function ValidationSummary() {
             <div className="text-sm font-semibold text-gray-300">{data.totalCohorts} cohorts total</div>
           </div>
         </motion.div>
+
+        {/* Overall Performance Banner */}
+        <OverallPerformanceBanner
+          metrics={data.overallMetrics}
+          sufficient={data.sufficient}
+          insufficient={data.insufficient}
+          helpMe={data.helpMe}
+          total={data.totalCount}
+          suffRecall={perf.suffRecall}
+          insuffRecall={perf.insuffRecall}
+          helpMeRecall={perf.helpMeRecall}
+        />
 
         {/* 4 Category cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
