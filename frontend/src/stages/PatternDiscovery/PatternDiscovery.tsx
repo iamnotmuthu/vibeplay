@@ -2,13 +2,13 @@ import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Loader2, CheckCircle2, AlertCircle, HelpCircle,
-  Pencil, X, Plus, Database, TriangleAlert, ChevronDown, ChevronRight,
+  X, Plus, Database, TriangleAlert, ChevronDown, ChevronRight, Users,
 } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import { getPrecomputedPatterns } from './patternData'
-import type { StageId, PatternResults, SufficiencyPatternItem } from '@/store/types'
+import type { StageId, PatternResults, SufficiencyPatternItem, DistributionData } from '@/store/types'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -42,6 +42,72 @@ function deriveAttributes(p: SufficiencyPatternItem): { name: string; value: str
   })
 }
 
+// Generate related sub-cohorts dynamically from a primary pattern
+function generateIncludedCohorts(
+  attrs: { name: string; value: string }[],
+  count: number,
+  pct: number,
+): { features: { name: string; value: string }[]; count: number; pct: number }[] {
+  const extraPairs: { name: string; value: string }[] = [
+    { name: 'SeniorCitizen', value: 'Yes' },
+    { name: 'TechSupport', value: 'No' },
+    { name: 'OnlineSecurity', value: 'No' },
+    { name: 'StreamingTV', value: 'Yes' },
+    { name: 'PaperlessBilling', value: 'Yes' },
+    { name: 'Dependents', value: 'No' },
+  ]
+
+  const cohorts: { features: { name: string; value: string }[]; count: number; pct: number }[] = []
+
+  // Cohort 1: all primary attrs + extra feature
+  if (attrs.length >= 1) {
+    const extra = extraPairs.find((e) => !attrs.find((a) => a.name === e.name)) ?? extraPairs[0]
+    cohorts.push({
+      features: [...attrs, extra],
+      count: Math.round(count * (0.38 + (pct % 7) * 0.03)),
+      pct: Math.min(99, pct + 4 + (pct % 5)),
+    })
+  }
+
+  // Cohort 2: first 2 attrs only (subset)
+  if (attrs.length >= 2) {
+    cohorts.push({
+      features: attrs.slice(0, 2),
+      count: Math.round(count * (0.55 + (pct % 9) * 0.02)),
+      pct: Math.max(50, pct - 6 + (pct % 4)),
+    })
+  }
+
+  // Cohort 3: last attr + another extra
+  if (attrs.length >= 2) {
+    const extra2 = extraPairs.find((e) => !attrs.find((a) => a.name === e.name) && e.name !== (cohorts[0]?.features.at(-1)?.name)) ?? extraPairs[1]
+    cohorts.push({
+      features: [attrs[attrs.length - 1], attrs[0], extra2],
+      count: Math.round(count * (0.28 + (pct % 6) * 0.02)),
+      pct: Math.min(99, pct + 7 + (pct % 3)),
+    })
+  }
+
+  return cohorts
+}
+
+// Derive numeric value ranges for AddPatternForm dropdowns
+function getFeatureValues(dist: DistributionData): string[] {
+  if (dist.type === 'categorical' && dist.bins) {
+    return dist.bins.map((b) => b.label)
+  }
+  if (dist.type === 'numeric' && dist.stats) {
+    const { min, mean, max } = dist.stats
+    return [
+      `< ${min + (mean - min) * 0.25}`.replace(/(\.\d{2})\d+/, '$1'),
+      `${min}–${mean.toFixed(1)}`,
+      `${mean.toFixed(1)}–${max}`,
+      `> ${max - (max - mean) * 0.25}`.replace(/(\.\d{2})\d+/, '$1'),
+    ]
+  }
+  return ['Low', 'Medium', 'High']
+}
+
 // ── PatternCard ───────────────────────────────────────────────────────────────
 
 function PatternCard({
@@ -51,16 +117,16 @@ function PatternCard({
   status: 'sufficient' | 'insufficient' | 'helpMe'
   delay: number
 }) {
-  const [disputed, setDisputed] = useState(false)
   const [ignored, setIgnored] = useState(false)
   const [action, setAction] = useState<'none' | 'augment' | 'low-confidence'>('none')
-  const [editAttrs, setEditAttrs] = useState<{ name: string; value: string }[]>([])
+  const [showIncluded, setShowIncluded] = useState(false)
 
   const condition = deriveCondition(pattern)
   const confidence = deriveConfidence(pattern, status)
   const pct = derivePct(pattern, status)
   const targetInd = deriveTargetInd(pattern)
   const attrs = deriveAttributes(pattern)
+  const includedCohorts = generateIncludedCohorts(attrs, pattern.count, pct)
 
   const isSufficient = status === 'sufficient'
   const isInsufficient = status === 'insufficient'
@@ -113,204 +179,166 @@ function PatternCard({
       {/* Main body */}
       <div className="p-4">
         {/* Title + confidence */}
-        {!disputed && (
-          <div className="flex items-center gap-2 flex-wrap mb-2">
-            <span className="text-sm font-semibold text-white">{condition}</span>
-            <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
-              style={
-                confidence === 'high'
-                  ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80' }
-                  : { background: 'rgba(239,68,68,0.12)', color: '#f87171' }
-              }
+        <div className="flex items-center gap-2 flex-wrap mb-2">
+          <span className="text-sm font-semibold text-white">{condition}</span>
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+            style={
+              confidence === 'high'
+                ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80' }
+                : { background: 'rgba(239,68,68,0.12)', color: '#f87171' }
+            }
+          >
+            {confidence === 'high' ? 'High Confidence' : 'Low Confidence'}
+          </span>
+        </div>
+
+        {/* Stats */}
+        <p className="text-sm mb-0.5">
+          <span className="font-bold text-white">{pct}%</span>
+          <span className="text-gray-400"> of this pattern has </span>
+          <span className="font-bold text-white">Recommended IND</span>
+          <span className="text-gray-400"> = </span>
+          <span className="font-bold text-white">{targetInd}</span>
+        </p>
+        <p className="text-xs text-gray-500 mb-3">
+          Records in cohort: <span className="text-gray-300 font-semibold">{pattern.count.toLocaleString()}</span>
+        </p>
+
+        {/* Defining Attributes table */}
+        <div className="text-xs font-medium text-gray-400 mb-1.5">Defining Attributes:</div>
+        <div className="rounded-lg overflow-hidden mb-3" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+          {attrs.map((attr, i) => (
+            <div
+              key={i}
+              className="flex items-center px-3 py-2.5"
+              style={{
+                borderBottom: i < attrs.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                background: 'rgba(255,255,255,0.02)',
+              }}
             >
-              {confidence === 'high' ? 'High Confidence' : 'Low Confidence'}
-            </span>
+              <span className="text-xs text-gray-400 flex-1">{attr.name}</span>
+              <span className="text-xs text-gray-300 font-mono">{attr.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Included Cohorts toggle */}
+        {includedCohorts.length > 0 && (
+          <div className="mb-3">
+            <button
+              onClick={() => setShowIncluded((v) => !v)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5"
+              style={{ color: '#a78bfa', border: '1px solid rgba(167,139,250,0.25)' }}
+            >
+              <Users className="w-3.5 h-3.5" />
+              Included Cohorts
+              {showIncluded
+                ? <ChevronDown className="w-3 h-3 ml-0.5" />
+                : <ChevronRight className="w-3 h-3 ml-0.5" />}
+            </button>
+
+            <AnimatePresence>
+              {showIncluded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className="mt-2 space-y-2">
+                    {includedCohorts.map((cohort, ci) => (
+                      <div
+                        key={ci}
+                        className="rounded-lg px-3 py-2.5"
+                        style={{ background: 'rgba(167,139,250,0.04)', border: '1px solid rgba(167,139,250,0.15)' }}
+                      >
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          {cohort.features.map((f, fi) => (
+                            <span key={fi} className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(167,139,250,0.1)', color: '#c4b5fd' }}>
+                              {f.name}={f.value}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] text-gray-500">
+                          <span>{cohort.count.toLocaleString()} records</span>
+                          <span className="text-violet-400 font-semibold">{cohort.pct}% target IND</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
-        {!disputed ? (
-          <>
-            {/* Stats */}
-            <p className="text-sm mb-0.5">
-              <span className="font-bold text-white">{pct}%</span>
-              <span className="text-gray-400"> of this pattern has </span>
-              <span className="font-bold text-white">Recommended IND</span>
-              <span className="text-gray-400"> = </span>
-              <span className="font-bold text-white">{targetInd}</span>
-            </p>
-            <p className="text-xs text-gray-500 mb-3">
-              Records in cohort: <span className="text-gray-300 font-semibold">{pattern.count.toLocaleString()}</span>
-            </p>
-
-            {/* Dispute button (sufficient + insufficient) */}
-            {(isSufficient || isInsufficient) && (
-              <button
-                onClick={() => { setEditAttrs(attrs.map((a) => ({ ...a }))); setDisputed(true) }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold mb-3 hover:opacity-80 transition-opacity"
-                style={{ background: '#d97706', color: '#fff' }}
-              >
-                <Pencil className="w-3 h-3" /> Dispute
-              </button>
-            )}
-
-            {/* Defining Attributes table */}
-            <div className="text-xs font-medium text-gray-400 mb-1.5">Defining Attributes:</div>
-            <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-              {attrs.map((attr, i) => (
-                <div
-                  key={i}
-                  className="flex items-center px-3 py-2.5"
-                  style={{
-                    borderBottom: i < attrs.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                    background: 'rgba(255,255,255,0.02)',
-                  }}
-                >
-                  <span className="text-xs text-gray-400 flex-1">{attr.name}</span>
-                  <span className="text-xs text-gray-300 font-mono">{attr.value}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Action buttons — insufficient */}
-            {isInsufficient && action === 'none' && (
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => setAction('augment')}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
-                  style={{ background: '#0d9488', color: '#fff' }}
-                >
-                  <Database className="w-3.5 h-3.5" /> Augment Data
-                </button>
-                <button
-                  onClick={() => setIgnored(true)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                  <X className="w-3 h-3" /> Ignore
-                </button>
-              </div>
-            )}
-            {isInsufficient && action === 'augment' && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-3 px-3 py-2.5 rounded-lg text-xs text-teal-300"
-                style={{ background: 'rgba(20,184,166,0.08)', border: '1px solid rgba(20,184,166,0.2)' }}
-              >
-                ✓ Augmentation queued — synthetic samples will be generated during validation.
-              </motion.div>
-            )}
-
-            {/* Action buttons — helpMe */}
-            {isHelpMe && action === 'none' && (
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => setAction('low-confidence')}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
-                  style={{ background: '#d97706', color: '#fff' }}
-                >
-                  <TriangleAlert className="w-3.5 h-3.5" /> Give Low Confidence Prediction
-                </button>
-                <button
-                  onClick={() => setIgnored(true)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                  <X className="w-3 h-3" /> Ignore
-                </button>
-              </div>
-            )}
-            {isHelpMe && action === 'low-confidence' && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-3 px-3 py-2.5 rounded-lg text-xs text-amber-300"
-                style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}
-              >
-                ⚠ Low confidence prediction scheduled — model will flag these cohorts for human review.
-              </motion.div>
-            )}
-          </>
-        ) : (
-          /* ── Dispute / edit mode ── */
-          <div>
-            <div className="text-sm font-semibold text-white mb-3">Edit Pattern Conditions</div>
-            <div className="space-y-2 mb-3">
-              {editAttrs.map((attr, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    value={attr.name}
-                    onChange={(e) => setEditAttrs((prev) => prev.map((a, idx) => idx === i ? { ...a, name: e.target.value } : a))}
-                    className="flex-1 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500"
-                    placeholder="Attribute"
-                  />
-                  <input
-                    value={attr.value}
-                    onChange={(e) => setEditAttrs((prev) => prev.map((a, idx) => idx === i ? { ...a, value: e.target.value } : a))}
-                    className="flex-1 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500"
-                    placeholder="Value / range"
-                  />
-                  <button
-                    onClick={() => setEditAttrs((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="text-red-400 hover:text-red-300 p-1"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
+        {/* Action buttons — insufficient */}
+        {isInsufficient && action === 'none' && (
+          <div className="flex items-center gap-2 mt-1">
             <button
-              onClick={() => setEditAttrs((prev) => [...prev, { name: '', value: '' }])}
-              className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 mb-4"
+              onClick={() => setAction('augment')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
+              style={{ background: '#0d9488', color: '#fff' }}
             >
-              <Plus className="w-3 h-3" /> Add Condition
+              <Database className="w-3 h-3" /> Augment Data
             </button>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setDisputed(false)}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => setDisputed(false)}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                Cancel
-              </button>
-            </div>
+            <button
+              onClick={() => setIgnored(true)}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-gray-300 transition-colors"
+              style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              Ignore
+            </button>
           </div>
+        )}
+        {isInsufficient && action === 'augment' && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 px-3 py-2.5 rounded-lg text-xs text-teal-300"
+            style={{ background: 'rgba(20,184,166,0.08)', border: '1px solid rgba(20,184,166,0.2)' }}
+          >
+            ✓ Augmentation queued — synthetic samples will be generated during validation.
+          </motion.div>
+        )}
+
+        {/* Action buttons — helpMe */}
+        {isHelpMe && action === 'none' && (
+          <div className="flex items-center gap-2 mt-1">
+            <button
+              onClick={() => setAction('low-confidence')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
+              style={{ background: '#d97706', color: '#fff' }}
+            >
+              <TriangleAlert className="w-3 h-3" /> Low Confidence Prediction
+            </button>
+            <button
+              onClick={() => setIgnored(true)}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-gray-300 transition-colors"
+              style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              Ignore
+            </button>
+          </div>
+        )}
+        {isHelpMe && action === 'low-confidence' && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 px-3 py-2.5 rounded-lg text-xs text-amber-300"
+            style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}
+          >
+            ⚠ Low confidence prediction scheduled — model will flag these cohorts for human review.
+          </motion.div>
         )}
       </div>
     </motion.div>
   )
 }
 
-// ── Add Pattern form ──────────────────────────────────────────────────────────
-
-function extractAttrsFromDescription(text: string): { name: string; value: string }[] {
-  const attrs: { name: string; value: string }[] = []
-  const patterns: [RegExp, (m: RegExpMatchArray) => { name: string; value: string }][] = [
-    [/(\w[\w\s]*?)\s+(?:is|are|=|equals?)\s+["']?([^,."']+?)["']?(?:[,.]|$)/gi, (m) => ({ name: m[1].trim(), value: m[2].trim() })],
-    [/(\w[\w\s]*?)\s+(?:greater than|above|over|>)\s+([\d.]+)/gi, (m) => ({ name: m[1].trim(), value: `> ${m[2]}` })],
-    [/(\w[\w\s]*?)\s+(?:less than|below|under|<)\s+([\d.]+)/gi, (m) => ({ name: m[1].trim(), value: `< ${m[2]}` })],
-    [/(?:high|low|frequent|rare)\s+(\w[\w\s]*)/gi, (m) => ({ name: m[1].trim(), value: m[0].split(' ')[0] })],
-  ]
-  for (const [pat, extract] of patterns) {
-    let match: RegExpMatchArray | null
-    while ((match = pat.exec(text)) !== null && attrs.length < 3) {
-      attrs.push(extract(match))
-    }
-  }
-  if (attrs.length === 0) {
-    const words = text.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter((w) => w.length > 3)
-    if (words.length >= 2) attrs.push({ name: words[0], value: words[1] })
-    else if (words.length === 1) attrs.push({ name: words[0], value: 'high' })
-  }
-  return attrs.slice(0, 3)
-}
+// ── Add Pattern form (dropdown-based) ────────────────────────────────────────
 
 function AddPatternForm({
   onAdd, onCancel,
@@ -318,27 +346,44 @@ function AddPatternForm({
   onAdd: (p: SufficiencyPatternItem) => void
   onCancel: () => void
 }) {
-  const [description, setDescription] = useState('')
+  const distributions = usePlaygroundStore((s) => s.edaResults?.distributions ?? [])
+  const featureNames = distributions.map((d) => d.feature)
+
+  const [rows, setRows] = useState<{ feature: string; value: string }[]>([{ feature: featureNames[0] ?? '', value: '' }])
   const [phase, setPhase] = useState<'input' | 'searching' | 'found'>('input')
   const [discovered, setDiscovered] = useState<SufficiencyPatternItem | null>(null)
 
+  const getValues = (featureName: string): string[] => {
+    const dist = distributions.find((d) => d.feature === featureName)
+    if (!dist) return []
+    return getFeatureValues(dist)
+  }
+
+  const updateRow = (i: number, field: 'feature' | 'value', val: string) => {
+    setRows((prev) => prev.map((r, idx) => {
+      if (idx !== i) return r
+      if (field === 'feature') return { feature: val, value: '' } // reset value when feature changes
+      return { ...r, value: val }
+    }))
+  }
+
   const handleFind = async () => {
-    if (!description.trim()) return
+    const filled = rows.filter((r) => r.feature && r.value)
+    if (!filled.length) return
     setPhase('searching')
     await new Promise((r) => setTimeout(r, 2200))
-    const attrs = extractAttrsFromDescription(description)
-    const condition = description.length > 80 ? description.slice(0, 80) + '…' : description
+    const condition = filled.map((r) => `${r.feature}=${r.value}`).join(' AND ')
     const found: SufficiencyPatternItem = {
       id: Date.now(),
       label: condition,
       description: 'User-defined pattern',
       count: Math.floor(Math.random() * 2800) + 600,
-      keySignals: attrs.map((a) => `${a.name}=${a.value}`),
+      keySignals: filled.map((r) => `${r.feature}=${r.value}`),
       condition,
       confidence: 'high',
       pct: Math.round(68 + Math.random() * 22),
       targetInd: 1,
-      attributes: attrs,
+      attributes: filled,
     }
     setDiscovered(found)
     setPhase('found')
@@ -353,22 +398,65 @@ function AddPatternForm({
     >
       <div className="text-sm font-semibold text-white mb-1">Add New Pattern</div>
       <p className="text-xs text-gray-500 mb-3">
-        Describe the pattern in plain English — the system will automatically identify matching cohorts in your data.
+        Select features and values to define a cohort — the system will find matching records.
       </p>
 
       {phase === 'input' && (
         <>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className="w-full px-3 py-2.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500 resize-none mb-3"
-            placeholder="e.g. Customers who joined recently and have high monthly charges but are on a month-to-month contract"
-          />
+          <div className="space-y-2 mb-3">
+            {rows.map((row, i) => {
+              const values = getValues(row.feature)
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  {/* Feature dropdown */}
+                  <select
+                    value={row.feature}
+                    onChange={(e) => updateRow(i, 'feature', e.target.value)}
+                    className="flex-1 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="">Select feature…</option>
+                    {featureNames.map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+
+                  {/* Value dropdown */}
+                  <select
+                    value={row.value}
+                    onChange={(e) => updateRow(i, 'value', e.target.value)}
+                    disabled={!row.feature}
+                    className="flex-1 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500 disabled:opacity-40"
+                  >
+                    <option value="">Select value…</option>
+                    {values.map((v) => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+
+                  {rows.length > 1 && (
+                    <button
+                      onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="text-gray-600 hover:text-red-400 transition-colors p-1 shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <button
+            onClick={() => setRows((prev) => [...prev, { feature: featureNames[0] ?? '', value: '' }])}
+            className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 mb-4"
+          >
+            <Plus className="w-3 h-3" /> Add Feature
+          </button>
+
           <div className="flex gap-2">
             <button
               onClick={handleFind}
-              disabled={!description.trim()}
+              disabled={!rows.some((r) => r.feature && r.value)}
               className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Search className="w-3.5 h-3.5" /> Find Matching Cohorts
@@ -392,7 +480,7 @@ function AddPatternForm({
         >
           <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
           <div className="text-xs text-gray-400 text-center">
-            Scanning dataset for cohorts matching your description…
+            Scanning dataset for cohorts matching your pattern…
           </div>
         </motion.div>
       )}
@@ -412,16 +500,6 @@ function AddPatternForm({
               <span>Records: <span className="text-gray-300 font-semibold">{discovered.count.toLocaleString()}</span></span>
               <span>Target IND: <span className="text-gray-300 font-semibold">{discovered.pct}%</span></span>
             </div>
-            {discovered.attributes.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {discovered.attributes.map((a, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[10px]">
-                    <span className="text-gray-500 w-24 truncate">{a.name}</span>
-                    <span className="text-gray-300 font-mono">{a.value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
           <div className="flex gap-2">
             <button
@@ -431,16 +509,13 @@ function AddPatternForm({
               Add to Sufficient Patterns
             </button>
             <button
-              onClick={() => { setPhase('input'); setDescription(''); setDiscovered(null) }}
+              onClick={() => { setPhase('input'); setDiscovered(null); setRows([{ feature: featureNames[0] ?? '', value: '' }]) }}
               className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors"
               style={{ border: '1px solid rgba(255,255,255,0.1)' }}
             >
               Search Again
             </button>
-            <button
-              onClick={onCancel}
-              className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-            >
+            <button onClick={onCancel} className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors">
               Cancel
             </button>
           </div>
@@ -521,7 +596,7 @@ export function PatternDiscovery() {
 
     if (results.helpMe.length > 0) {
       setPhase('helpMe')
-      addLog(`Detected ${results.helpMe.length} ambiguous pattern${results.helpMe.length !== 1 ? 's' : ''} — help me cohorts`, 'info')
+      addLog(`Detected ${results.helpMe.length} ambiguous pattern${results.helpMe.length !== 1 ? 's' : ''} — fuzzy cohorts`, 'info')
       await new Promise((r) => setTimeout(r, 1300))
     }
 
@@ -579,7 +654,7 @@ export function PatternDiscovery() {
                 { label: 'Total Records', value: data.totalRecords, color: '#fff', accent: 'rgba(255,255,255,0.06)' },
                 { label: 'Sufficient Patterns', value: data.sufficient.length, sub: `${totalSufficient.toLocaleString()} records`, color: '#4ade80', accent: 'rgba(74,222,128,0.08)' },
                 { label: 'Need Augmentation', value: data.insufficient.length, sub: `${totalInsufficient.toLocaleString()} records`, color: '#f87171', accent: 'rgba(248,113,113,0.08)' },
-                ...(hasHelpMe ? [{ label: 'Help Me Cohorts', value: data.helpMe.length, sub: `${totalHelpMe.toLocaleString()} records`, color: '#fbbf24', accent: 'rgba(251,191,36,0.08)' }] : []),
+                ...(hasHelpMe ? [{ label: 'Fuzzy Patterns', value: data.helpMe.length, sub: `${totalHelpMe.toLocaleString()} records`, color: '#fbbf24', accent: 'rgba(251,191,36,0.08)' }] : []),
               ].map((s) => (
                 <div
                   key={s.label}
@@ -610,13 +685,13 @@ export function PatternDiscovery() {
           </motion.div>
         )}
 
-        {/* Sufficient section */}
+        {/* Dominant Patterns: Sufficient */}
         <AnimatePresence>
           {data && phase !== 'loading' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <SectionHeader
                 icon={<CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-                label="Identified Pattern with Sufficient Data"
+                label="Dominant Patterns: Pattern with Sufficient Data"
                 count={data.sufficient.length + userPatterns.length}
                 color="#4ade80"
                 collapsed={!!collapsed['sufficient']}
@@ -646,13 +721,13 @@ export function PatternDiscovery() {
           )}
         </AnimatePresence>
 
-        {/* Insufficient section */}
+        {/* Non-Dominant Patterns: Insufficient */}
         <AnimatePresence>
           {data && showInsufficient && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <SectionHeader
                 icon={<AlertCircle className="w-4 h-4 text-red-400" />}
-                label="Identified Patterns — Insufficient Data"
+                label="Non-Dominant Patterns: Impactful Patterns with Insufficient Data"
                 count={data.insufficient.length}
                 color="#f87171"
                 collapsed={!!collapsed['insufficient']}
@@ -679,13 +754,13 @@ export function PatternDiscovery() {
           )}
         </AnimatePresence>
 
-        {/* Help Me section */}
+        {/* Fuzzy Patterns */}
         <AnimatePresence>
           {data && hasHelpMe && showHelpMe && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <SectionHeader
                 icon={<HelpCircle className="w-4 h-4 text-amber-400" />}
-                label="Help Me — Mixed Patterns"
+                label="Fuzzy Patterns"
                 count={data.helpMe.length}
                 color="#fbbf24"
                 collapsed={!!collapsed['helpMe']}

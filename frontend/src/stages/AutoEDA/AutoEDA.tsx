@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Check, Loader2, Circle, Layers, Sparkles,
+  Check, Loader2, Circle, Sparkles,
   ChevronDown, ChevronRight, Trash2, Plus, ToggleLeft, ToggleRight,
 } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
@@ -19,12 +19,10 @@ interface EDAModuleState {
   status: 'pending' | 'running' | 'complete'
 }
 
+// Only 3 modules now: summary, missing values, quality
 const moduleList: EDAModuleState[] = [
   { id: 'summary', label: 'Data Shape & Types', status: 'pending' },
   { id: 'missing', label: 'Missing Values Analysis', status: 'pending' },
-  { id: 'distributions', label: 'Feature Distributions', status: 'pending' },
-  { id: 'correlations', label: 'Correlation Matrix', status: 'pending' },
-  { id: 'outliers', label: 'Outlier Detection', status: 'pending' },
   { id: 'quality', label: 'Data Quality Score', status: 'pending' },
 ]
 
@@ -53,6 +51,14 @@ function computeTotalDimensions(
   return distributions.reduce((sum, d) => {
     if (d.type === 'categorical') return sum + (d.bins?.length ?? 1)
     if (bucketized.has(d.feature)) return sum + (buckets[d.feature]?.length ?? 2)
+    return sum + 1
+  }, 0)
+}
+
+// Compute initial (un-bucketized) total derived features for the stats row
+function computeInitialDerivedFeatures(distributions: DistributionData[]): number {
+  return distributions.reduce((sum, d) => {
+    if (d.type === 'categorical') return sum + (d.bins?.length ?? 1)
     return sum + 1
   }, 0)
 }
@@ -109,10 +115,9 @@ function AttributeRow({
           {isNumeric ? 'numerical' : 'categorical'}
         </span>
         <span className="text-xs text-gray-500 ml-2">
-          {dimCount} dimension{dimCount !== 1 ? 's' : ''}
+          {dimCount} derived feature{dimCount !== 1 ? 's' : ''}
           {bucketized ? ` • ${buckets.length} categories` : ''}
         </span>
-        {/* Bucketize toggle for numeric */}
         {isNumeric && (
           <div
             className="flex items-center gap-1.5 ml-3"
@@ -140,9 +145,8 @@ function AttributeRow({
               {isNumeric && !bucketized && dist.stats && (
                 <>
                   <div className="text-xs font-semibold text-gray-400 mb-3">
-                    Identified Dimensions <span className="text-white ml-1">1</span>
+                    Identified Derived Features <span className="text-white ml-1">1</span>
                   </div>
-                  {/* Statistical summary matching product */}
                   <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="px-4 py-2 text-xs font-semibold text-white" style={{ background: 'linear-gradient(90deg,#3b82f6,#8b5cf6)' }}>
                       Statistical Summary
@@ -166,10 +170,7 @@ function AttributeRow({
                           <div className="text-xs font-medium text-white">{row.label}</div>
                           <div className="text-[10px] text-gray-500">{row.sub}</div>
                         </div>
-                        <span
-                          className="text-xs font-bold px-3 py-1 rounded-lg"
-                          style={{ background: 'rgba(59,130,246,0.12)', color: '#93c5fd' }}
-                        >
+                        <span className="text-xs font-bold px-3 py-1 rounded-lg" style={{ background: 'rgba(59,130,246,0.12)', color: '#93c5fd' }}>
                           {row.format === 'int'
                             ? (row.value as number).toLocaleString()
                             : (row.value as number).toFixed(2)}
@@ -216,7 +217,7 @@ function AttributeRow({
               {!isNumeric && dist.bins && (
                 <>
                   <div className="text-xs font-semibold text-gray-400 mb-3">
-                    Identified Dimensions <span className="text-white ml-1">{dist.bins.length}</span>
+                    Identified Derived Features <span className="text-white ml-1">{dist.bins.length}</span>
                   </div>
                   <div className="space-y-1.5">
                     {dist.bins.map((bin) => (
@@ -256,8 +257,6 @@ function AutoADSPanel({
   const [bucketizedCols, setBucketizedCols] = useState<Set<string>>(new Set())
   const [bucketsMap, setBucketsMap] = useState<Record<string, { label: string }[]>>({})
 
-  const totalAttributes = edaData.summary.columns
-  const totalDimensions = computeTotalDimensions(distributions, bucketizedCols, bucketsMap)
   const numericCount = edaData.summary.numericFeatures
   const categoricalCount = edaData.summary.categoricalFeatures
   const numericDims = distributions
@@ -320,35 +319,9 @@ function AutoADSPanel({
         <div>
           <span className="text-sm font-bold text-violet-300">Automated Dimension Discovery: </span>
           <span className="text-sm text-gray-400">
-            We are able to find dimensions in the existing attributes, which means we are extracting meaningful patterns
+            We are able to find dimensions in the existing features, which means we are extracting meaningful patterns
             from your raw data that matter for predictions but might be hard to spot manually.
           </span>
-        </div>
-      </div>
-
-      {/* Summary */}
-      <div>
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Summary</div>
-        <div className="text-xs text-gray-500 mb-3">Overview of attributes and dimensions in your dataset</div>
-        <div className="grid grid-cols-2 gap-3">
-          <div
-            className="rounded-xl p-4"
-            style={{ background: hexToRgba(accentColor, 0.1), border: `1.5px solid ${hexToRgba(accentColor, 0.35)}` }}
-          >
-            <div className="text-xs mb-1" style={{ color: accentColor }}>Total Attributes</div>
-            <div className="text-3xl font-bold" style={{ color: accentColor }}>
-              <CountUpNumber end={totalAttributes} />
-            </div>
-          </div>
-          <div
-            className="rounded-xl p-4"
-            style={{ background: 'transparent', border: `1.5px solid ${hexToRgba(accentColor, 0.35)}` }}
-          >
-            <div className="text-xs mb-1" style={{ color: accentColor }}>Total Dimensions</div>
-            <div className="text-3xl font-bold" style={{ color: accentColor }}>
-              {totalDimensions}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -367,16 +340,14 @@ function AutoADSPanel({
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}
             >
               <div className="text-xs font-semibold mb-3" style={{ color: t.color }}>{t.label}</div>
-              <div className="flex gap-4">
-                <div>
-                  <div className="text-[10px] font-semibold mb-1" style={{ color: t.color }}>
-                    Attributes &nbsp;•&nbsp; <span style={{ color: t.color }}>Dimensions</span>
-                  </div>
-                  <div className="text-2xl font-bold text-white">
-                    {t.attrs === 0 ? '—' : t.attrs}
-                    <span className="text-gray-600 mx-2 text-lg">  </span>
-                    {t.dims === 0 ? '—' : t.dims}
-                  </div>
+              <div>
+                <div className="text-[10px] font-semibold mb-1" style={{ color: t.color }}>
+                  Features &nbsp;•&nbsp; Derived Features
+                </div>
+                <div className="text-2xl font-bold text-white">
+                  {t.attrs === 0 ? '—' : t.attrs}
+                  <span className="text-gray-600 mx-2 text-lg"> </span>
+                  {t.dims === 0 ? '—' : t.dims}
                 </div>
               </div>
             </div>
@@ -384,10 +355,10 @@ function AutoADSPanel({
         </div>
       </div>
 
-      {/* Per-attribute rows */}
+      {/* Per-feature rows */}
       <div>
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Dataset Attributes and Dimensions</div>
-        <div className="text-xs text-gray-600 mb-3">View and manage dimensions for each attribute in your dataset</div>
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Dataset Features and Derived Features</div>
+        <div className="text-xs text-gray-600 mb-3">View and manage derived features for each feature in your dataset</div>
         <div className="space-y-2">
           {distributions.map((dist) => (
             <AttributeRow
@@ -431,7 +402,6 @@ export function AutoEDA() {
   const [analysisComplete, setAnalysisComplete] = useState(false)
 
   const [dimData, setDimData] = useState<DimensionResults | null>(null)
-  const [revealedDimCount, setRevealedDimCount] = useState(0)
   const [dimComplete, setDimComplete] = useState(false)
 
   const runAnalysis = useCallback(async () => {
@@ -458,12 +428,11 @@ export function AutoEDA() {
     await new Promise((r) => setTimeout(r, 500))
     const dimResults = getPrecomputedDimensions(selectedDataset.id)
     setDimData(dimResults)
-    addLog('Mapping attributes into meaningful dimensions...', 'info')
+    addLog('Mapping features into meaningful dimensions...', 'info')
     await new Promise((r) => setTimeout(r, 600))
 
     for (let i = 0; i < dimResults.dimensions.length; i++) {
-      setRevealedDimCount(i + 1)
-      addLog(`Dimension mapped: "${dimResults.dimensions[i].name}" (${dimResults.dimensions[i].attributes.length} attributes)`, 'success')
+      addLog(`Dimension mapped: "${dimResults.dimensions[i].name}" (${dimResults.dimensions[i].attributes.length} features)`, 'success')
       await new Promise((r) => setTimeout(r, 500))
     }
 
@@ -473,7 +442,6 @@ export function AutoEDA() {
   }, [selectedDataset, addLog, setEdaResults, setDimensionResults])
 
   useEffect(() => {
-    // If EDA was already completed for this scenario, restore from store (no re-run)
     const { edaResults: stored, dimensionResults: storedDim } = usePlaygroundStore.getState()
     if (stored && storedDim) {
       setEdaData(stored)
@@ -481,7 +449,6 @@ export function AutoEDA() {
       setVisibleInsights(stored.insights)
       setAnalysisComplete(true)
       setDimData(storedDim)
-      setRevealedDimCount(storedDim.dimensions.length)
       setDimComplete(true)
       return
     }
@@ -490,13 +457,16 @@ export function AutoEDA() {
 
   const handleNext = () => { completeStep(3); setStep(4 as StageId) }
 
+  // Compute initial total derived features for the stats row
+  const initialDerivedFeatures = edaData ? computeInitialDerivedFeatures(edaData.distributions) : 0
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
       <div className="px-6 py-4 border-b shrink-0" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-bold text-white">Autonomous EDA</h2>
-          {dimComplete && (
+          {analysisComplete && (
             <motion.span
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -511,7 +481,7 @@ export function AutoEDA() {
       </div>
 
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Left: analysis checklist */}
+        {/* Left: analysis checklist (3 modules only) */}
         <div
           className="w-64 border-r p-4 overflow-y-auto shrink-0"
           style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}
@@ -554,49 +524,22 @@ export function AutoEDA() {
               </div>
             ))}
           </div>
-
-          {/* Dimension mapping progress */}
-          {analysisComplete && (
-            <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Dimension Mapping</h3>
-              <div className="space-y-1.5">
-                {dimData?.dimensions.slice(0, revealedDimCount).map((dim) => (
-                  <motion.div
-                    key={dim.name}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg"
-                    style={{ background: hexToRgba(accentColor, 0.05) }}
-                  >
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dim.color }} />
-                    <span className="text-xs text-gray-400 truncate">{dim.name}</span>
-                    <Check className="w-3 h-3 ml-auto shrink-0" style={{ color: accentColor }} />
-                  </motion.div>
-                ))}
-                {dimData && revealedDimCount < dimData.dimensions.length && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)' }}>
-                    <Loader2 className="w-3 h-3 animate-spin text-blue-400" />
-                    <span className="text-xs text-blue-400">Mapping dimensions...</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Right: visualizations + Auto-ADS */}
+        {/* Right: analysis results + AutoADS */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#060809' }}>
 
-          {/* Data Summary */}
+          {/* 1. Data Summary stats (6 cards: + Total Derived Features) */}
           <AnimatePresence>
             {edaData && modules.find((m) => m.id === 'summary')?.status === 'complete' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {[
                   { label: 'Rows', value: edaData.summary.rows },
                   { label: 'Columns', value: edaData.summary.columns },
                   { label: 'Numeric', value: edaData.summary.numericFeatures },
                   { label: 'Categorical', value: edaData.summary.categoricalFeatures },
                   { label: 'Duplicates', value: edaData.summary.duplicateRows },
+                  { label: 'Total Derived Features', value: initialDerivedFeatures },
                 ].map((stat, i) => (
                   <motion.div
                     key={stat.label}
@@ -604,9 +547,16 @@ export function AutoEDA() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.07 }}
                     className="rounded-xl p-4 text-center"
-                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+                    style={
+                      stat.label === 'Total Derived Features'
+                        ? { background: hexToRgba(accentColor, 0.08), border: `1px solid ${hexToRgba(accentColor, 0.25)}` }
+                        : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }
+                    }
                   >
-                    <div className="text-2xl font-bold text-white">
+                    <div
+                      className="text-2xl font-bold"
+                      style={{ color: stat.label === 'Total Derived Features' ? accentColor : '#fff' }}
+                    >
                       <CountUpNumber end={stat.value as number} />
                     </div>
                     <div className="text-xs text-gray-500 mt-1">{stat.label}</div>
@@ -616,7 +566,7 @@ export function AutoEDA() {
             )}
           </AnimatePresence>
 
-          {/* Missing Values */}
+          {/* 2. Missing Values (collapsible per feature) */}
           {edaData && modules.find((m) => m.id === 'missing')?.status === 'complete' && (() => {
             const nonZero = edaData.missingValues.columns
               .map((col, i) => ({ col, val: edaData.missingValues.values[i] }))
@@ -655,115 +605,7 @@ export function AutoEDA() {
             )
           })()}
 
-          {/* Feature Distributions */}
-          {edaData && modules.find((m) => m.id === 'distributions')?.status === 'complete' && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <h4 className="text-sm font-semibold text-white mb-4">Feature Distributions (Top 6)</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {edaData.distributions.slice(0, 6).map((dist, di) => (
-                  <div key={dist.feature} className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <span className="text-xs font-mono text-gray-400">{dist.feature}</span>
-                    {dist.bins && (
-                      <div className="flex items-end gap-0.5 h-20 mt-2">
-                        {dist.bins.map((bin, bi) => {
-                          const maxCount = Math.max(...dist.bins!.map((b) => b.count))
-                          const height = (bin.count / maxCount) * 100
-                          return (
-                            <motion.div
-                              key={bi}
-                              initial={{ height: 0 }}
-                              animate={{ height: `${height}%` }}
-                              transition={{ duration: 0.5, delay: di * 0.1 + bi * 0.03 }}
-                              className="flex-1 rounded-t"
-                              style={{ background: 'linear-gradient(180deg,#8b5cf6,#3b82f6)' }}
-                              title={`${bin.label}: ${bin.count}`}
-                            />
-                          )
-                        })}
-                      </div>
-                    )}
-                    {dist.stats && (
-                      <div className="flex justify-between mt-2 text-[10px] text-gray-500">
-                        <span>min: {dist.stats.min}</span>
-                        <span>mean: {dist.stats.mean.toFixed(1)}</span>
-                        <span>max: {dist.stats.max}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Correlation Matrix */}
-          {edaData && modules.find((m) => m.id === 'correlations')?.status === 'complete' && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <h4 className="text-sm font-semibold text-white mb-4">Correlation Matrix</h4>
-              <div className="overflow-x-auto">
-                <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: `80px repeat(${edaData.correlations.features.length}, 40px)` }}>
-                  <div />
-                  {edaData.correlations.features.map((f) => (
-                    <div key={f} className="text-[9px] text-gray-500 text-center truncate font-mono -rotate-45 origin-bottom-left h-10 flex items-end justify-center">{f}</div>
-                  ))}
-                  {edaData.correlations.matrix.map((row, ri) => (
-                    <div key={`row-${ri}`} style={{ display: 'contents' }}>
-                      <div className="text-[9px] text-gray-500 font-mono truncate flex items-center pr-1">{edaData.correlations.features[ri]}</div>
-                      {row.map((val, ci) => {
-                        const absVal = Math.abs(val)
-                        const color = val >= 0 ? `rgba(6,182,212,${absVal})` : `rgba(239,68,68,${absVal})`
-                        return (
-                          <motion.div
-                            key={`${ri}-${ci}`}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: (ri + ci) * 0.01 }}
-                            className="w-10 h-10 rounded flex items-center justify-center text-[8px] font-mono text-white"
-                            style={{ backgroundColor: color }}
-                            title={`${edaData.correlations.features[ri]} × ${edaData.correlations.features[ci]}: ${val.toFixed(2)}`}
-                          >
-                            {val.toFixed(1)}
-                          </motion.div>
-                        )
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Outliers */}
-          {edaData && modules.find((m) => m.id === 'outliers')?.status === 'complete' && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-semibold text-white">Outlier Detection</h4>
-                <span className="text-xs font-medium px-2 py-1 rounded-full" style={{ background: 'rgba(245,158,11,0.1)', color: '#fbbf24' }}>
-                  {edaData.outliers.outlierCount} outliers ({((edaData.outliers.outlierCount / edaData.outliers.totalCount) * 100).toFixed(1)}%)
-                </span>
-              </div>
-              <div className="relative h-40 rounded-lg overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <svg width="100%" height="100%" viewBox="0 0 400 160">
-                  {edaData.outliers.points.slice(0, 200).map((pt, i) => (
-                    <motion.circle
-                      key={i}
-                      cx={pt.x * 380 + 10}
-                      cy={160 - (pt.y * 140 + 10)}
-                      r={pt.isOutlier ? 4 : 2.5}
-                      fill={pt.isOutlier ? '#ef4444' : '#8b5cf6'}
-                      opacity={pt.isOutlier ? 0.9 : 0.35}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: i * 0.004 }}
-                    >
-                      {pt.isOutlier && <animate attributeName="opacity" values="0.9;0.4;0.9" dur="2s" repeatCount="indefinite" />}
-                    </motion.circle>
-                  ))}
-                </svg>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Quality Score */}
+          {/* 3. Quality Score */}
           {edaData && modules.find((m) => m.id === 'quality')?.status === 'complete' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-6 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
               <h4 className="text-sm font-semibold text-white mb-4">Data Quality Score</h4>
@@ -791,7 +633,7 @@ export function AutoEDA() {
             </motion.div>
           )}
 
-          {/* EDA Insights */}
+          {/* 4. EDA Insights */}
           {visibleInsights.length > 0 && (
             <div className="space-y-3">
               {visibleInsights.map((insight, i) => (
@@ -800,20 +642,14 @@ export function AutoEDA() {
             </div>
           )}
 
-          {/* Auto-ADS section */}
+          {/* 5 & 6. AutoADS content (no heading) */}
           <AnimatePresence>
             {dimComplete && edaData && dimData && (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Layers className="w-4 h-4 text-violet-400" />
-                  <h4 className="text-sm font-bold text-white">Auto-ADS — Attribute Dimension Space</h4>
-                </div>
-                <AutoADSPanel
-                  edaData={edaData}
-                  _dimData={dimData}
-                  accentColor={accentColor}
-                />
-              </div>
+              <AutoADSPanel
+                edaData={edaData}
+                _dimData={dimData}
+                accentColor={accentColor}
+              />
             )}
           </AnimatePresence>
         </div>

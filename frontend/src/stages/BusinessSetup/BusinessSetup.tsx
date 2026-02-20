@@ -233,9 +233,6 @@ export function BusinessSetup() {
                 <Zap className="w-7 h-7 text-cyan-400 mb-3" />
                 <div className="text-sm font-bold text-gray-100 mb-1">Real-Time</div>
                 <div className="text-xs text-gray-500">Latency-optimised. Sub-100ms inference. Best for fraud detection, live scoring.</div>
-                <div className="mt-3 text-[10px] font-semibold text-cyan-500 uppercase tracking-wider">
-                  Prefers: Logistic Regression · LightGBM
-                </div>
               </motion.button>
 
               {/* Batch */}
@@ -283,9 +280,6 @@ export function BusinessSetup() {
                 <Layers className="w-7 h-7 text-violet-400 mb-3" />
                 <div className="text-sm font-bold text-gray-100 mb-1">Batch Processing</div>
                 <div className="text-xs text-gray-500">High-accuracy, scheduled runs. Best for churn scoring, demand forecasting.</div>
-                <div className="mt-3 text-[10px] font-semibold text-violet-500 uppercase tracking-wider">
-                  Prefers: XGBoost · Random Forest
-                </div>
               </motion.button>
             </div>
           </motion.div>
