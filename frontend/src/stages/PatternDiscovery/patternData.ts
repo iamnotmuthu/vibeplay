@@ -456,6 +456,234 @@ const patternsMap: Record<string, PatternResults> = {
       { id: 'pat-3', text: 'Catastrophic failures and environmental events flagged for augmentation. Intermittent fault oscillators need additional time-series labelling to determine true failure risk.', type: 'info' },
     ],
   },
+
+  'logistics-delivery-delay': {
+    totalRecords: 25000,
+    sufficient: [
+      {
+        id: 0,
+        label: 'Weather-Impacted Long Routes',
+        description: 'Deliveries over 300km in stormy or foggy conditions via truck — highest delay rate at 78%. Clear route-weather interaction.',
+        count: 4820,
+        keySignals: ['distance_km > 300', 'weather_condition in [stormy, foggy]', 'vehicle_type=truck', 'delivery_mode=standard'],
+      },
+      {
+        id: 1,
+        label: 'Express Urban Deliveries',
+        description: 'Same-day and express deliveries under 50km with bikes or scooters — consistently on time with 92% reliability.',
+        count: 6240,
+        keySignals: ['distance_km < 50', 'delivery_mode in [same day, express]', 'vehicle_type in [bike, scooter]', 'weather_condition=clear'],
+      },
+      {
+        id: 2,
+        label: 'Partner Reliability Clusters',
+        description: 'Shipments via top-rated partners (rating > 4.0) on known routes — predictable delay patterns with strong historical signal.',
+        count: 8420,
+        keySignals: ['delivery_rating > 4.0', 'delivery_partner in [FedEx, DHL]', 'package_type=documents', 'distance_km < 200'],
+      },
+    ],
+    insufficient: [
+      {
+        id: 3,
+        label: 'EV Fleet Cold-Weather Segment',
+        description: 'EV van and EV bike deliveries during cold weather — too few samples to assess battery-range impact on delays.',
+        count: 340,
+        keySignals: ['vehicle_type in [EV van, EV bike]', 'weather_condition=cold', 'distance_km > 100', 'Limited data'],
+      },
+      {
+        id: 4,
+        label: 'Heavy Fragile Cargo Long-Haul',
+        description: 'Fragile packages over 20kg shipped 500+ km — rare combination with ambiguous delay signals.',
+        count: 180,
+        keySignals: ['package_type=fragile items', 'package_weight_kg > 20', 'distance_km > 500', 'High variance'],
+      },
+    ],
+    helpMe: [
+      {
+        id: 5,
+        label: 'Mid-Distance Rainy Deliveries',
+        description: 'Deliveries of 100–300km in rainy conditions — delay rate varies unpredictably between 35-65% depending on region and partner combination.',
+        count: 2840,
+        keySignals: ['distance_km in [100, 300]', 'weather_condition=rainy', 'Mixed partner performance', 'Region-dependent'],
+      },
+    ],
+    insights: [
+      { id: 'pat-1', text: '"Weather-Impacted Long Routes" (4,820 records) has 78% delay rate — primary operational alert target. Proactive rerouting could reduce delays by 35%.', type: 'warning' },
+      { id: 'pat-2', text: '"Express Urban Deliveries" (6,240 records) achieve 92% on-time rate — this segment can be prioritised for SLA guarantees.', type: 'success' },
+      { id: 'pat-3', text: 'EV fleet and fragile cargo patterns need augmentation. Mid-distance rainy deliveries are ambiguous — regional partner data would resolve the signal.', type: 'info' },
+    ],
+  },
+
+  'logistics-freight-cost': {
+    totalRecords: 5964,
+    sufficient: [
+      {
+        id: 0,
+        label: 'Standard Air Shipments',
+        description: 'Regular air freight under 1,000kg to African countries via standard vendor terms — predictable cost structure.',
+        count: 2840,
+        keySignals: ['shipment_mode=Air', 'weight_kg < 1000', 'vendor_inco_term=EXW', 'fulfill_via=Direct Drop'],
+      },
+      {
+        id: 1,
+        label: 'Heavy Truck Freight',
+        description: 'Truck shipments over 5,000kg with well-established cost-per-km rates across familiar routes.',
+        count: 1420,
+        keySignals: ['shipment_mode=Truck', 'weight_kg > 5000', 'fulfill_via=From RDC', 'Established routes'],
+      },
+      {
+        id: 2,
+        label: 'High-Value ARV Shipments',
+        description: 'ARV product group with known pricing tiers — line item value strongly predicts freight cost.',
+        count: 1280,
+        keySignals: ['product_group=ARV', 'line_item_value > $50k', 'Known pricing tier', 'Standard terms'],
+      },
+    ],
+    insufficient: [
+      {
+        id: 3,
+        label: 'Air Charter Bulk Shipments',
+        description: 'Charter flights with custom pricing — negotiated per-shipment rates make cost prediction unreliable.',
+        count: 224,
+        keySignals: ['shipment_mode=Air Charter', 'weight_kg > 10000', 'Custom terms', 'Negotiated pricing'],
+      },
+      {
+        id: 4,
+        label: 'Ocean Multi-Country Routes',
+        description: 'Ocean freight to small island nations — sparse route data with volatile shipping rates.',
+        count: 142,
+        keySignals: ['shipment_mode=Ocean', 'country=small island', 'Sparse route data', 'Rate volatility'],
+      },
+    ],
+    helpMe: [
+      {
+        id: 5,
+        label: 'Mixed-Mode Regional Shipments',
+        description: 'Shipments using combined truck-air transport with variable handoff costs — pricing models show inconsistent accuracy.',
+        count: 380,
+        keySignals: ['Mixed transport modes', 'Handoff cost variance', 'Regional price differences', 'Ambiguous terms'],
+      },
+    ],
+    insights: [
+      { id: 'pat-1', text: '"Standard Air Shipments" (2,840 records) have predictable cost-per-kg rates. Weight is the strongest predictor (r=0.68) — enabling accurate instant quoting.', type: 'success' },
+      { id: 'pat-2', text: 'Air Charter shipments (224 records) have negotiated custom pricing — cost prediction is unreliable without contract-level data augmentation.', type: 'warning' },
+      { id: 'pat-3', text: 'Mixed-mode shipments are ambiguous — handoff cost variance between truck and air legs makes accurate prediction difficult without segment-specific models.', type: 'info' },
+    ],
+  },
+
+  'logistics-delivery-outcome': {
+    totalRecords: 180519,
+    sufficient: [
+      {
+        id: 0,
+        label: 'Standard Class Late Deliveries',
+        description: 'Standard Class shipments where actual shipping days exceed scheduled — dominant pattern driving 55% late-delivery rate.',
+        count: 82400,
+        keySignals: ['shipping_mode=Standard Class', 'days_for_shipping_real > days_for_shipment_scheduled', 'late_delivery_risk=1', 'High volume'],
+      },
+      {
+        id: 1,
+        label: 'Same Day Advance Shipping',
+        description: 'Same Day and First Class orders that consistently arrive ahead of schedule — strong positive signal.',
+        count: 38420,
+        keySignals: ['shipping_mode in [Same Day, First Class]', 'days_for_shipping_real < days_for_shipment_scheduled', 'market=USCA', 'Low discount'],
+      },
+      {
+        id: 2,
+        label: 'On-Time Corporate Orders',
+        description: 'Corporate segment orders with moderate discounts — reliable on-time delivery pattern across stable markets.',
+        count: 28640,
+        keySignals: ['customer_segment=Corporate', 'order_item_discount_rate < 15%', 'market in [Europe, USCA]', 'Consistent performance'],
+      },
+    ],
+    insufficient: [
+      {
+        id: 3,
+        label: 'African Market Cancellations',
+        description: 'Order cancellations in African market — only 4% of total data with highly variable cancellation reasons.',
+        count: 3200,
+        keySignals: ['delivery_status=Shipping canceled', 'market=Africa', 'High cancellation variance', 'Sparse data per region'],
+      },
+      {
+        id: 4,
+        label: 'High-Discount Home Office Orders',
+        description: 'Home Office segment with >30% discount — niche pattern with ambiguous outcome signals across markets.',
+        count: 2840,
+        keySignals: ['customer_segment=Home Office', 'order_item_discount_rate > 30%', 'Negative profit', 'Mixed outcomes'],
+      },
+    ],
+    helpMe: [
+      {
+        id: 5,
+        label: 'LATAM Second Class Borderline',
+        description: 'Second Class shipments in LATAM where actual equals scheduled days — outcome oscillates between on-time and late across regions unpredictably.',
+        count: 8420,
+        keySignals: ['shipping_mode=Second Class', 'market=LATAM', 'days_real ≈ days_scheduled', 'Borderline outcome'],
+      },
+    ],
+    insights: [
+      { id: 'pat-1', text: '"Standard Class Late Deliveries" (82,400 records) dominate the dataset. The shipping gap (actual - scheduled) is the single strongest predictor.', type: 'warning' },
+      { id: 'pat-2', text: '"Same Day Advance Shipping" (38,420 records) shows consistent early delivery — segment can be targeted for premium SLA guarantees.', type: 'success' },
+      { id: 'pat-3', text: 'African cancellations and high-discount patterns need augmentation. LATAM borderline cases are ambiguous — per-country analysis would improve accuracy.', type: 'info' },
+    ],
+  },
+
+  'logistics-demand-forecast': {
+    totalRecords: 1337,
+    sufficient: [
+      {
+        id: 0,
+        label: 'Weekday Baseline Demand',
+        description: 'Monday–Friday demand with stable patterns driven by regular shipping activity — strong autocorrelation signal.',
+        count: 720,
+        keySignals: ['dayofweek in [0,4]', 'avg_weather_severity < 2', 'avg_traffic_congestion < 0.5', 'Normal operations'],
+      },
+      {
+        id: 1,
+        label: 'Seasonal Peak Demand',
+        description: 'Q4 demand surge (Oct–Dec) driven by holiday shipping volumes — consistent year-over-year pattern.',
+        count: 280,
+        keySignals: ['month in [10,11,12]', 'avg_daily_demand > 600', 'High shipping cost', 'Seasonal pattern'],
+      },
+      {
+        id: 2,
+        label: 'Weather-Suppressed Low Demand',
+        description: 'Days with high weather severity (>3.0) showing consistent demand reduction — clear inverse signal.',
+        count: 168,
+        keySignals: ['avg_weather_severity > 3.0', 'avg_daily_demand < 300', 'High delay probability', 'Low supplier reliability'],
+      },
+    ],
+    insufficient: [
+      {
+        id: 3,
+        label: 'Port Congestion Crisis Days',
+        description: 'Days with port congestion > 0.9 — extreme supply chain disruption events with too few samples.',
+        count: 42,
+        keySignals: ['avg_port_congestion > 0.9', 'avg_lead_time_days > 15', 'Supply chain disruption', 'Rare event'],
+      },
+      {
+        id: 4,
+        label: 'Dual-Shock Events',
+        description: 'Simultaneous high weather severity and high traffic congestion — compound disruptions with unpredictable demand impact.',
+        count: 28,
+        keySignals: ['avg_weather_severity > 4', 'avg_traffic_congestion > 0.8', 'Compound disruption', 'Insufficient data'],
+      },
+    ],
+    helpMe: [
+      {
+        id: 5,
+        label: 'Weekend Demand Transitions',
+        description: 'Saturday and Sunday demand patterns vary inconsistently — some weekends show near-zero activity while others show mid-week levels.',
+        count: 180,
+        keySignals: ['dayofweek in [5,6]', 'High variance', 'Mixed activity levels', 'No consistent pattern'],
+      },
+    ],
+    insights: [
+      { id: 'pat-1', text: '"Weekday Baseline Demand" (720 days) provides robust foundation — strong day-of-week autocorrelation enables accurate short-term forecasting.', type: 'success' },
+      { id: 'pat-2', text: '"Seasonal Peak Demand" shows consistent Q4 surge. Lag-4-week and year-over-year features will capture this pattern effectively.', type: 'info' },
+      { id: 'pat-3', text: 'Port crisis and dual-shock events are too rare for reliable modelling. Weekend transitions are ambiguous — additional operational context needed.', type: 'warning' },
+    ],
+  },
 }
 
 export function getPrecomputedPatterns(datasetId: string): PatternResults {

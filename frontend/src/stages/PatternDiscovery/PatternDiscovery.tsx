@@ -128,7 +128,6 @@ function PatternCard({
   const attrs = deriveAttributes(pattern)
   const includedCohorts = generateIncludedCohorts(attrs, pattern.count, pct)
 
-  const isSufficient = status === 'sufficient'
   const isInsufficient = status === 'insufficient'
   const isHelpMe = status === 'helpMe'
 
@@ -146,7 +145,7 @@ function PatternCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ delay }}
-      className="rounded-xl overflow-hidden"
+      className="rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.01]"
       style={{ background: '#0d1117', border: `1px solid ${borderColor}` }}
     >
       {/* Insufficient banner */}
@@ -181,6 +180,7 @@ function PatternCard({
         {/* Title + confidence */}
         <div className="flex items-center gap-2 flex-wrap mb-2">
           <span className="text-sm font-semibold text-white">{condition}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-gray-500 ml-auto shrink-0" />
           <span
             className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
             style={
@@ -342,7 +342,7 @@ function PatternCard({
 function AddPatternForm({
   onAdd, onCancel,
 }: {
-  onAdd: (p: SufficiencyPatternItem) => void
+  onAdd: (p: SufficiencyPatternItem, status: 'sufficient' | 'insufficient' | 'helpMe') => void
   onCancel: () => void
 }) {
   const distributions = usePlaygroundStore((s) => s.edaResults?.distributions ?? [])
@@ -351,6 +351,7 @@ function AddPatternForm({
   const [rows, setRows] = useState<{ feature: string; value: string }[]>([{ feature: featureNames[0] ?? '', value: '' }])
   const [phase, setPhase] = useState<'input' | 'searching' | 'found'>('input')
   const [discovered, setDiscovered] = useState<SufficiencyPatternItem | null>(null)
+  const [assignedStatus, setAssignedStatus] = useState<'sufficient' | 'insufficient' | 'helpMe'>('sufficient')
 
   const getValues = (featureName: string): string[] => {
     const dist = distributions.find((d) => d.feature === featureName)
@@ -372,6 +373,9 @@ function AddPatternForm({
     setPhase('searching')
     await new Promise((r) => setTimeout(r, 2200))
     const condition = filled.map((r) => `${r.feature}=${r.value}`).join(' AND ')
+    const rand = Math.random()
+    const status: 'sufficient' | 'insufficient' | 'helpMe' = rand < 0.55 ? 'sufficient' : rand < 0.85 ? 'insufficient' : 'helpMe'
+    setAssignedStatus(status)
     const found: SufficiencyPatternItem = {
       id: Date.now(),
       label: condition,
@@ -382,7 +386,7 @@ function AddPatternForm({
       confidence: 'high',
       pct: Math.round(68 + Math.random() * 22),
       targetInd: 1,
-      attributes: filled,
+      attributes: filled.map((r) => ({ name: r.feature, value: r.value })),
     }
     setDiscovered(found)
     setPhase('found')
@@ -502,10 +506,10 @@ function AddPatternForm({
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => onAdd(discovered)}
+              onClick={() => onAdd(discovered, assignedStatus)}
               className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500"
             >
-              Add to Sufficient Patterns
+              {assignedStatus === 'sufficient' ? 'Add to Dominant Patterns' : assignedStatus === 'insufficient' ? 'Add to Non-Dominant Patterns' : 'Add to Fuzzy Patterns'}
             </button>
             <button
               onClick={() => { setPhase('input'); setDiscovered(null); setRows([{ feature: featureNames[0] ?? '', value: '' }]) }}
@@ -572,7 +576,7 @@ export function PatternDiscovery() {
 
   const [data, setData] = useState<PatternResults | null>(null)
   const [phase, setPhase] = useState<'loading' | 'sufficient' | 'insufficient' | 'helpMe' | 'complete'>('loading')
-  const [userPatterns, setUserPatterns] = useState<SufficiencyPatternItem[]>([])
+  const [userPatterns, setUserPatterns] = useState<{ pattern: SufficiencyPatternItem; status: 'sufficient' | 'insufficient' | 'helpMe' }[]>([])
   const [addingNew, setAddingNew] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const toggleCollapse = (key: string) => setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -699,7 +703,7 @@ export function PatternDiscovery() {
               <SectionHeader
                 icon={<CheckCircle2 className="w-4 h-4 text-emerald-400" />}
                 label="Dominant Patterns: Pattern with Sufficient Data"
-                count={data.sufficient.length + userPatterns.length}
+                count={data.sufficient.length + userPatterns.filter(u => u.status === 'sufficient').length}
                 color="#4ade80"
                 collapsed={!!collapsed['sufficient']}
                 onToggle={() => toggleCollapse('sufficient')}
@@ -713,12 +717,16 @@ export function PatternDiscovery() {
                     transition={{ duration: 0.25 }}
                     style={{ overflow: 'hidden' }}
                   >
+                    <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}>
+                      <ChevronRight className="w-4 h-4 text-indigo-400 shrink-0" />
+                      <p className="text-xs text-indigo-300 font-medium">Click any pattern card to explore details</p>
+                    </div>
                     <div className="space-y-3">
                       {data.sufficient.map((p, i) => (
                         <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} />
                       ))}
-                      {userPatterns.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} />
+                      {userPatterns.filter(u => u.status === 'sufficient').map((u, i) => (
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="sufficient" delay={i * 0.08} />
                       ))}
                     </div>
                   </motion.div>
@@ -735,7 +743,7 @@ export function PatternDiscovery() {
               <SectionHeader
                 icon={<AlertCircle className="w-4 h-4 text-red-400" />}
                 label="Non-Dominant Patterns: Impactful Patterns with Insufficient Data"
-                count={data.insufficient.length}
+                count={data.insufficient.length + userPatterns.filter(u => u.status === 'insufficient').length}
                 color="#f87171"
                 collapsed={!!collapsed['insufficient']}
                 onToggle={() => toggleCollapse('insufficient')}
@@ -753,6 +761,9 @@ export function PatternDiscovery() {
                       {data.insufficient.map((p, i) => (
                         <PatternCard key={p.id} pattern={p} status="insufficient" delay={i * 0.08} />
                       ))}
+                      {userPatterns.filter(u => u.status === 'insufficient').map((u, i) => (
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="insufficient" delay={i * 0.08} />
+                      ))}
                     </div>
                   </motion.div>
                 )}
@@ -768,7 +779,7 @@ export function PatternDiscovery() {
               <SectionHeader
                 icon={<HelpCircle className="w-4 h-4 text-amber-400" />}
                 label="Fuzzy Patterns"
-                count={data.helpMe.length}
+                count={data.helpMe.length + userPatterns.filter(u => u.status === 'helpMe').length}
                 color="#fbbf24"
                 collapsed={!!collapsed['helpMe']}
                 onToggle={() => toggleCollapse('helpMe')}
@@ -786,6 +797,9 @@ export function PatternDiscovery() {
                       {data.helpMe.map((p, i) => (
                         <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} />
                       ))}
+                      {userPatterns.filter(u => u.status === 'helpMe').map((u, i) => (
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="helpMe" delay={i * 0.08} />
+                      ))}
                     </div>
                   </motion.div>
                 )}
@@ -799,7 +813,7 @@ export function PatternDiscovery() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
             {addingNew ? (
               <AddPatternForm
-                onAdd={(p) => { setUserPatterns((prev) => [...prev, p]); setAddingNew(false) }}
+                onAdd={(p, s) => { setUserPatterns((prev) => [...prev, { pattern: p, status: s }]); setAddingNew(false) }}
                 onCancel={() => setAddingNew(false)}
               />
             ) : (
@@ -815,6 +829,13 @@ export function PatternDiscovery() {
         )}
       </div>
 
+      {phase === 'complete' && (
+        <div className="px-6 py-2.5 text-center" style={{ background: 'rgba(99,102,241,0.04)', borderTop: '1px solid rgba(99,102,241,0.1)' }}>
+          <p className="text-xs text-indigo-300/80 font-medium">
+            Review and adjust patterns above, then continue to validation.
+          </p>
+        </div>
+      )}
       <BottomActionBar
         onNext={phase === 'complete' ? handleNext : undefined}
         nextDisabled={phase !== 'complete'}

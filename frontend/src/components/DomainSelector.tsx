@@ -9,6 +9,10 @@ import {
     Zap,
     FileSearch,
     Settings,
+    Truck,
+    Ship,
+    PackageCheck,
+    BarChart3,
     ArrowRight,
     Sparkles,
     ExternalLink,
@@ -30,6 +34,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; style?: 
     zap: Zap,
     'file-search': FileSearch,
     settings: Settings,
+    truck: Truck,
+    ship: Ship,
+    'package-check': PackageCheck,
+    'bar-chart-3': BarChart3,
 }
 
 interface DomainSelectorProps {
@@ -202,7 +210,7 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                     >
                         <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                         <span style={{ background: 'linear-gradient(to right, #60a5fa, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                            Autonomous ML Lifecycle
+                            Autonomous AI Lifecycle
                         </span>
                         <span className="text-gray-500">·</span>
                         <span>End-to-End in Minutes</span>
@@ -349,7 +357,7 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
             >
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-xs text-gray-500">
-                        Built by ML veterans from Amazon & Google · © 2026 VibeModel.ai
+                        Built by AI veterans from Amazon & Google · © 2026 VibeModel.ai
                     </p>
                     <div className="flex items-center gap-6">
                         <a

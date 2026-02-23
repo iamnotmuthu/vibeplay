@@ -868,6 +868,411 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
       { category: 'helpMe', label: 'Fuzzy Patterns', recall: 58, precision: 51 },
     ],
   },
+
+  // ── XGBoost (logistics-delivery-delay) ──────────────────────────────────
+  'logistics-delivery-delay': {
+    champion: 'XGBoost',
+    modelFunction: 'Predicts the probability that a shipment will be delayed, producing a risk score between 0 and 1 for real-time delay alerting.',
+    modelType: 'Binary Classification — Supervised Learning',
+    overallRecall: 86,
+    overallPrecision: 83,
+    primaryMetric: 'Recall',
+    secondaryMetric: 'Precision',
+    metricStatement: 'Recall is the primary metric and precision is the secondary metric for this model.',
+    components: [
+      {
+        subtype: 'preprocessor',
+        subtypeLabel: 'Preprocessor',
+        name: 'logistics_feature_encoder',
+        factors: [
+          { name: 'High-cardinality categorical features', level: 'Median' },
+          { name: 'Mixed numeric and categorical types', level: 'High' },
+          { name: 'Weather condition encoding need', level: 'Median' },
+        ],
+        params: [
+          { name: 'Categorical', value: 'Label encoding for partner, vehicle, region' },
+          { name: 'Numerical', value: 'StandardScaler for distance, weight, hours' },
+          { name: 'Derived', value: 'delivery_speed = distance_km / actual_delivery_hours' },
+        ],
+      },
+      {
+        subtype: 'model_function',
+        subtypeLabel: 'Model Component',
+        name: 'gradient_boosted_trees',
+        factors: [
+          { name: 'Non-linear relationship complexity', level: 'High' },
+          { name: 'Feature interaction strength', level: 'High' },
+          { name: 'Weather-route interaction signals', level: 'High' },
+          { name: 'Data diversity measure', level: 'Median' },
+          { name: 'Explainability requirement', level: 'Median' },
+          { name: 'Outlier percentage', level: 'Low' },
+        ],
+        params: [
+          { name: 'Estimators', value: '300' },
+          { name: 'Max depth', value: '6' },
+          { name: 'Learning rate (η)', value: '0.08' },
+        ],
+      },
+      {
+        subtype: 'capacity_controls',
+        subtypeLabel: 'Capacity Controls',
+        name: 'depth_and_estimators',
+        factors: [
+          { name: 'Dataset volume', level: 'Median' },
+          { name: 'Signal-to-noise ratio', level: 'Median' },
+          { name: 'Training time budget', level: 'Low' },
+        ],
+        params: [
+          { name: 'Max depth', value: '6' },
+          { name: 'N estimators', value: '300' },
+          { name: 'Subsample', value: '0.85' },
+        ],
+      },
+      {
+        subtype: 'explicit_regularization',
+        subtypeLabel: 'Explicit Regularization',
+        name: 'l1_l2_regularization',
+        factors: [
+          { name: 'Overfitting risk', level: 'Median' },
+          { name: 'Feature collinearity (distance-time)', level: 'High' },
+          { name: 'Irrelevant feature count', level: 'Low' },
+        ],
+        params: [
+          { name: 'L1 (alpha)', value: '0.05' },
+          { name: 'L2 (lambda)', value: '1.0' },
+          { name: 'Colsample_bytree', value: '0.80' },
+        ],
+      },
+      {
+        subtype: 'loss_function',
+        subtypeLabel: 'Loss Function',
+        name: 'binary_crossentropy',
+        factors: [
+          { name: 'Target type', level: 'Binary' },
+          { name: 'Class imbalance', level: 'Low' },
+          { name: 'Cost of missed delays', level: 'High' },
+        ],
+        params: [
+          { name: 'Objective', value: 'binary:logistic' },
+          { name: 'Class weight', value: 'Balanced (auto)' },
+          { name: 'Decision threshold', value: '0.40 (recall-optimised)' },
+        ],
+      },
+      {
+        subtype: 'optimization_algo',
+        subtypeLabel: 'Optimization Algorithm',
+        name: 'second_order_gradient_descent',
+        factors: [
+          { name: 'Dataset size', level: 'Median' },
+          { name: 'Convergence speed requirement', level: 'Median' },
+          { name: 'Sparse gradient structure', level: 'Low' },
+        ],
+        params: [
+          { name: 'Algorithm', value: 'Newton boosting (2nd-order gradient)' },
+          { name: 'Tree method', value: 'hist (histogram-based)' },
+          { name: 'Early stopping rounds', value: '25' },
+        ],
+      },
+    ],
+    whyThisModel: 'XGBoost captures the complex non-linear interactions between route distance, weather conditions, and vehicle type that drive delivery delays. Its gradient boosting framework handles the mixed feature types (categorical partners, numeric distances) natively, while built-in regularisation prevents overfitting on weather-route interaction terms.',
+    performance: [
+      { category: 'sufficient', label: 'Dominant Patterns', recall: 89, precision: 86 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 72, precision: 65 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 60, precision: 53 },
+    ],
+  },
+
+  // ── LightGBM (logistics-freight-cost) ───────────────────────────────────
+  'logistics-freight-cost': {
+    champion: 'LightGBM Regressor',
+    modelFunction: 'Predicts the freight shipping cost in USD for each shipment, enabling instant quote generation and cost anomaly detection.',
+    modelType: 'Regression — Supervised Learning',
+    overallRecall: 84,
+    overallPrecision: 80,
+    primaryMetric: 'MAPE',
+    secondaryMetric: 'RMSE',
+    metricStatement: 'MAPE is the primary metric and RMSE is the secondary metric for this model.',
+    components: [
+      {
+        subtype: 'preprocessor',
+        subtypeLabel: 'Preprocessor',
+        name: 'freight_feature_builder',
+        factors: [
+          { name: 'Log-normal target distribution', level: 'High' },
+          { name: 'High-cardinality country feature', level: 'High' },
+          { name: 'Vendor term encoding need', level: 'Median' },
+        ],
+        params: [
+          { name: 'Target transform', value: 'Log1p(freight_cost_usd)' },
+          { name: 'Country encoding', value: 'Target encoding (smoothed)' },
+          { name: 'Weight feature', value: 'Log-scaled weight_kg' },
+        ],
+      },
+      {
+        subtype: 'model_function',
+        subtypeLabel: 'Model Component',
+        name: 'leaf_wise_gradient_boosting',
+        factors: [
+          { name: 'Non-linear relationship complexity', level: 'High' },
+          { name: 'Feature interaction strength', level: 'High' },
+          { name: 'Sparse vendor-term effects', level: 'High' },
+          { name: 'Data diversity measure', level: 'Median' },
+          { name: 'Explainability requirement', level: 'Median' },
+        ],
+        params: [
+          { name: 'Estimators', value: '400' },
+          { name: 'Num leaves', value: '31' },
+          { name: 'Learning rate', value: '0.05' },
+        ],
+      },
+      {
+        subtype: 'capacity_controls',
+        subtypeLabel: 'Capacity Controls',
+        name: 'num_leaves_and_estimators',
+        factors: [
+          { name: 'Dataset volume', level: 'Low' },
+          { name: 'Feature dimensionality', level: 'Median' },
+          { name: 'Training time budget', level: 'Low' },
+        ],
+        params: [
+          { name: 'Num leaves', value: '31' },
+          { name: 'N estimators', value: '400' },
+          { name: 'Min child samples', value: '15' },
+        ],
+      },
+      {
+        subtype: 'loss_function',
+        subtypeLabel: 'Loss Function',
+        name: 'regression_l2',
+        factors: [
+          { name: 'Target type', level: 'Continuous (log-scale)' },
+          { name: 'Outlier sensitivity tolerance', level: 'Median' },
+          { name: 'Prediction interval need', level: 'High' },
+        ],
+        params: [
+          { name: 'Objective', value: 'regression_l2 (MSE on log-target)' },
+          { name: 'Post-processing', value: 'Expm1 inverse transform' },
+          { name: 'Output floor', value: '$0 (non-negative clip)' },
+        ],
+      },
+      {
+        subtype: 'optimization_algo',
+        subtypeLabel: 'Optimization Algorithm',
+        name: 'histogram_gradient_descent',
+        factors: [
+          { name: 'Dataset size', level: 'Low' },
+          { name: 'Convergence speed requirement', level: 'Median' },
+          { name: 'Memory efficiency need', level: 'Low' },
+        ],
+        params: [
+          { name: 'Algorithm', value: 'Histogram-based gradient descent' },
+          { name: 'Max bin', value: '255' },
+          { name: 'Early stopping rounds', value: '30' },
+        ],
+      },
+    ],
+    whyThisModel: 'LightGBM handles the heavily right-skewed freight cost distribution through log-space training, while its leaf-wise growth captures the sparse vendor-term and country-specific pricing interactions that linear models miss. Its fast training time on this smaller dataset (5,964 rows) enables rapid model iteration during pricing rule changes.',
+    performance: [
+      { category: 'sufficient', label: 'Dominant Patterns', recall: 87, precision: 84 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 70, precision: 63 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 56, precision: 49 },
+    ],
+  },
+
+  // ── Random Forest (logistics-delivery-outcome) ──────────────────────────
+  'logistics-delivery-outcome': {
+    champion: 'Random Forest',
+    modelFunction: 'Classifies each order into one of four delivery outcomes — Late, On Time, Advance, or Canceled — enabling outcome-specific automation.',
+    modelType: 'Multi-class Classification — Supervised Learning (4 classes)',
+    overallRecall: 84,
+    overallPrecision: 81,
+    primaryMetric: 'Recall',
+    secondaryMetric: 'Precision',
+    metricStatement: 'Recall is the primary metric and precision is the secondary metric for this model.',
+    components: [
+      {
+        subtype: 'preprocessor',
+        subtypeLabel: 'Preprocessor',
+        name: 'outcome_feature_encoder',
+        factors: [
+          { name: 'High-cardinality geographic features', level: 'High' },
+          { name: 'Multi-class target encoding', level: 'High' },
+          { name: 'Mixed feature types (31 features)', level: 'High' },
+        ],
+        params: [
+          { name: 'Geographic', value: 'Region grouping + lat/lon binning' },
+          { name: 'Derived', value: 'shipping_gap = real_days - scheduled_days' },
+          { name: 'Product encoding', value: 'Frequency encoding for product names' },
+        ],
+      },
+      {
+        subtype: 'model_function',
+        subtypeLabel: 'Model Component',
+        name: 'bootstrap_aggregated_trees',
+        factors: [
+          { name: 'Non-linear relationship complexity', level: 'High' },
+          { name: 'Feature interaction strength', level: 'High' },
+          { name: 'Heterogeneous feature types', level: 'High' },
+          { name: 'Variance reduction need', level: 'High' },
+          { name: 'Multi-class output requirement', level: 'High' },
+          { name: 'Explainability requirement', level: 'Median' },
+        ],
+        params: [
+          { name: 'Estimators', value: '500' },
+          { name: 'Max features', value: 'sqrt(n_features)' },
+          { name: 'Max depth', value: '20' },
+        ],
+      },
+      {
+        subtype: 'capacity_controls',
+        subtypeLabel: 'Capacity Controls',
+        name: 'max_depth_and_features',
+        factors: [
+          { name: 'Dataset volume', level: 'High' },
+          { name: 'Feature dimensionality', level: 'High' },
+          { name: 'Class imbalance severity', level: 'Median' },
+        ],
+        params: [
+          { name: 'Max depth', value: '20' },
+          { name: 'Max features', value: 'sqrt(31) ≈ 6' },
+          { name: 'Bootstrap', value: 'True' },
+        ],
+      },
+      {
+        subtype: 'loss_function',
+        subtypeLabel: 'Loss Function',
+        name: 'gini_impurity',
+        factors: [
+          { name: 'Target type', level: 'Multi-class (4)' },
+          { name: 'Class imbalance', level: 'High' },
+          { name: 'Per-class precision need', level: 'High' },
+        ],
+        params: [
+          { name: 'Split criterion', value: 'Gini impurity' },
+          { name: 'Class weight', value: 'balanced (sklearn)' },
+          { name: 'Minority oversampling', value: 'SMOTE for canceled class (4%)' },
+        ],
+      },
+      {
+        subtype: 'optimization_algo',
+        subtypeLabel: 'Optimization Algorithm',
+        name: 'bagging',
+        factors: [
+          { name: 'Variance reduction need', level: 'High' },
+          { name: 'Noisy feature tolerance', level: 'High' },
+          { name: 'Parallelisation potential', level: 'High' },
+        ],
+        params: [
+          { name: 'Algorithm', value: 'Bootstrap aggregation (bagging)' },
+          { name: 'N jobs', value: '-1 (all cores)' },
+          { name: 'Random state', value: '42' },
+        ],
+      },
+    ],
+    whyThisModel: 'Random Forest handles the 4-class delivery outcome problem effectively by reducing variance through bootstrap aggregation across 31 heterogeneous features. Its natural multi-class support avoids one-vs-rest decomposition, and balanced class weighting with SMOTE for the rare canceled class (4%) ensures all outcomes receive adequate learning signal.',
+    performance: [
+      { category: 'sufficient', label: 'Dominant Patterns', recall: 87, precision: 84 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 69, precision: 62 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 57, precision: 50 },
+    ],
+  },
+
+  // ── LightGBM (logistics-demand-forecast) ────────────────────────────────
+  'logistics-demand-forecast': {
+    champion: 'LightGBM Regressor',
+    modelFunction: 'Forecasts daily logistics demand volumes up to 14 days ahead, incorporating weather, traffic, and supply chain health signals.',
+    modelType: 'Regression — Supervised Learning (Time-Series Features)',
+    overallRecall: 87,
+    overallPrecision: 84,
+    primaryMetric: 'MAPE',
+    secondaryMetric: 'RMSE',
+    metricStatement: 'MAPE is the primary metric and RMSE is the secondary metric for this model.',
+    components: [
+      {
+        subtype: 'preprocessor',
+        subtypeLabel: 'Preprocessor',
+        name: 'demand_lag_builder',
+        factors: [
+          { name: 'Temporal autocorrelation', level: 'High' },
+          { name: 'Seasonal signal strength', level: 'High' },
+          { name: 'Exogenous variable count', level: 'High' },
+        ],
+        params: [
+          { name: 'Lag windows', value: '1, 7, 14, 30 days' },
+          { name: 'Rolling features', value: 'Mean, std (7d, 14d, 30d)' },
+          { name: 'Seasonality', value: 'Day-of-week + month cyclical sin/cos' },
+        ],
+      },
+      {
+        subtype: 'model_function',
+        subtypeLabel: 'Model Component',
+        name: 'leaf_wise_gradient_boosting',
+        factors: [
+          { name: 'Non-linear relationship complexity', level: 'High' },
+          { name: 'Exogenous variable interactions', level: 'High' },
+          { name: 'Weather-demand interaction signals', level: 'High' },
+          { name: 'Data diversity measure', level: 'Median' },
+          { name: 'Explainability requirement', level: 'Median' },
+        ],
+        params: [
+          { name: 'Estimators', value: '350' },
+          { name: 'Num leaves', value: '31' },
+          { name: 'Learning rate', value: '0.05' },
+        ],
+      },
+      {
+        subtype: 'capacity_controls',
+        subtypeLabel: 'Capacity Controls',
+        name: 'num_leaves_and_estimators',
+        factors: [
+          { name: 'Dataset volume', level: 'Low' },
+          { name: 'Temporal feature count', level: 'High' },
+          { name: 'Training time budget', level: 'Low' },
+        ],
+        params: [
+          { name: 'Num leaves', value: '31' },
+          { name: 'N estimators', value: '350' },
+          { name: 'Min child samples', value: '10' },
+        ],
+      },
+      {
+        subtype: 'loss_function',
+        subtypeLabel: 'Loss Function',
+        name: 'regression_l2',
+        factors: [
+          { name: 'Target type', level: 'Continuous' },
+          { name: 'Forecast horizon', level: 'Multi-step (1-14 days)' },
+          { name: 'Quantile estimation need', level: 'High' },
+        ],
+        params: [
+          { name: 'Objective', value: 'regression_l2 (MSE)' },
+          { name: 'Quantile extension', value: 'P10, P50, P90 forecast intervals' },
+          { name: 'Output floor', value: '0 units (non-negative clip)' },
+        ],
+      },
+      {
+        subtype: 'optimization_algo',
+        subtypeLabel: 'Optimization Algorithm',
+        name: 'histogram_gradient_descent',
+        factors: [
+          { name: 'Dataset size', level: 'Low' },
+          { name: 'Daily refresh requirement', level: 'High' },
+          { name: 'Memory efficiency need', level: 'Low' },
+        ],
+        params: [
+          { name: 'Algorithm', value: 'Histogram-based gradient descent' },
+          { name: 'Max bin', value: '127' },
+          { name: 'Early stopping rounds', value: '20' },
+        ],
+      },
+    ],
+    whyThisModel: 'LightGBM with lag and rolling features captures both the autocorrelation in daily demand and the impact of exogenous disruptions (weather, port congestion, traffic). Its fast training enables daily model refreshes as new data arrives, and the quantile regression extension provides forecast intervals that operations teams rely on for capacity planning decisions.',
+    performance: [
+      { category: 'sufficient', label: 'Dominant Patterns', recall: 90, precision: 87 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 74, precision: 67 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 61, precision: 54 },
+    ],
+  },
 }
 
 export function getPrecomputedModelSelection(datasetId: string): ModelSelectionResults {

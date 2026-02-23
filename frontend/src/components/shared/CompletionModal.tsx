@@ -61,7 +61,7 @@ export function CompletionModal({ isOpen, onStartOver }: CompletionModalProps) {
                 className="text-sm leading-relaxed mb-8"
                 style={{ color: '#9ca3af' }}
               >
-                You've completed the full VibeModel ML pipeline — from raw data
+                You've completed the full VibeModel AI pipeline — from raw data
                 to a production-ready model. Ready to build your own?
               </motion.p>
 

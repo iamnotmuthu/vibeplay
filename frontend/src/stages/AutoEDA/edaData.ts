@@ -108,7 +108,7 @@ const telcoChurnEDA: EDAResults = {
     { id: 'ins-3', text: 'High correlation (0.83) between tenure and TotalCharges. Will monitor for multicollinearity during model training and consider feature interaction.', type: 'warning' },
     { id: 'ins-4', text: 'tenure shows a bimodal distribution — many short-tenure and long-tenure customers, fewer in the middle. This is a strong churn signal.', type: 'info' },
     { id: 'ins-5', text: '187 statistical outliers detected (2.7%). Most are high-value, long-tenure customers — retaining rather than removing, as they represent key business segments.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 87/100. High-quality dataset ready for autonomous ML pipeline. Minor issues with missing TotalCharges values will be handled automatically.', type: 'success' },
+    { id: 'ins-6', text: 'Data quality score: 87/100. High-quality dataset ready for autonomous AI pipeline. Minor issues with missing TotalCharges values will be handled automatically.', type: 'success' },
   ],
 }
 
@@ -798,6 +798,418 @@ const predictiveMaintenanceEDA: EDAResults = {
   ],
 }
 
+// ── logistics-delivery-delay ─────────────────────────────────────────────────
+const logisticsDeliveryDelayEDA: EDAResults = {
+  summary: { rows: 25000, columns: 12, numericFeatures: 6, categoricalFeatures: 6, memoryUsage: '3.8 MB', duplicateRows: 0 },
+  missingValues: { columns: ['delivery_rating', 'weather_condition', 'delivery_cost'], values: [0, 0, 0] },
+  distributions: [
+    {
+      feature: 'distance_km',
+      type: 'numeric',
+      bins: [
+        { label: '0-50', count: 4120 },
+        { label: '50-150', count: 6840 },
+        { label: '150-300', count: 7280 },
+        { label: '300-500', count: 4120 },
+        { label: '500-800', count: 1940 },
+        { label: '800+', count: 700 },
+      ],
+      stats: { mean: 198.4, median: 162.0, std: 178.3, min: 2.1, max: 1247.6 },
+    },
+    {
+      feature: 'package_weight_kg',
+      type: 'numeric',
+      bins: [
+        { label: '0-2', count: 5420 },
+        { label: '2-5', count: 8340 },
+        { label: '5-10', count: 6120 },
+        { label: '10-20', count: 3480 },
+        { label: '20-50', count: 1340 },
+        { label: '50+', count: 300 },
+      ],
+      stats: { mean: 7.2, median: 4.8, std: 8.94, min: 0.1, max: 98.5 },
+    },
+    {
+      feature: 'actual_delivery_hours',
+      type: 'numeric',
+      bins: [
+        { label: '0-12', count: 4840 },
+        { label: '12-24', count: 7620 },
+        { label: '24-48', count: 6840 },
+        { label: '48-72', count: 3420 },
+        { label: '72-120', count: 1680 },
+        { label: '120+', count: 600 },
+      ],
+      stats: { mean: 32.8, median: 24.0, std: 28.6, min: 0.5, max: 312.0 },
+    },
+    {
+      feature: 'delivery_partner',
+      type: 'categorical',
+      bins: [
+        { label: 'Delhivery', count: 4120 },
+        { label: 'Blue Dart', count: 3580 },
+        { label: 'FedEx', count: 3240 },
+        { label: 'DHL', count: 2980 },
+        { label: 'Amazon Logistics', count: 2860 },
+        { label: 'Others', count: 8220 },
+      ],
+    },
+    {
+      feature: 'vehicle_type',
+      type: 'categorical',
+      bins: [
+        { label: 'Truck', count: 7420 },
+        { label: 'Van', count: 5840 },
+        { label: 'Bike', count: 4980 },
+        { label: 'EV Van', count: 3120 },
+        { label: 'Scooter', count: 2340 },
+        { label: 'EV Bike', count: 1300 },
+      ],
+    },
+    {
+      feature: 'is_delayed',
+      type: 'categorical',
+      bins: [
+        { label: 'On Time (0)', count: 15240 },
+        { label: 'Delayed (1)', count: 9760 },
+      ],
+    },
+  ],
+  correlations: {
+    features: ['distance', 'weight', 'actual_hrs', 'delayed'],
+    matrix: [
+      [1.0, 0.15, 0.72, 0.41],
+      [0.15, 1.0, 0.28, 0.19],
+      [0.72, 0.28, 1.0, 0.58],
+      [0.41, 0.19, 0.58, 1.0],
+    ],
+  },
+  outliers: {
+    features: ['distance_km', 'actual_delivery_hours'],
+    points: Array.from({ length: 150 }, (_, i) => ({ x: Math.random(), y: Math.random(), isOutlier: i < 11 })),
+    outlierCount: 245,
+    totalCount: 25000,
+  },
+  qualityScore: 89,
+  insights: [
+    { id: 'ins-1', text: 'Moderate class balance: 39% of deliveries are delayed. Will use stratified sampling and optimize for F1 Score.', type: 'info' },
+    { id: 'ins-2', text: 'No missing values detected across all 12 features — clean dataset ready for modelling.', type: 'success' },
+    { id: 'ins-3', text: 'Strong correlation (0.72) between distance and actual delivery hours — will monitor for multicollinearity and engineer speed-based features.', type: 'warning' },
+    { id: 'ins-4', text: 'Weather condition is a key categorical predictor — stormy and foggy conditions show 2.4x higher delay rates.', type: 'info' },
+    { id: 'ins-5', text: '245 outlier deliveries detected with extreme distances (>800km) or delivery times (>120h). Retaining as informative edge cases.', type: 'warning' },
+    { id: 'ins-6', text: 'Data quality score: 89/100. High-quality logistics dataset. The AI will engineer distance-time ratios and weather severity features automatically.', type: 'success' },
+  ],
+}
+
+// ── logistics-freight-cost ──────────────────────────────────────────────────
+const logisticsFreightCostEDA: EDAResults = {
+  summary: { rows: 5964, columns: 12, numericFeatures: 6, categoricalFeatures: 6, memoryUsage: '1.2 MB', duplicateRows: 12 },
+  missingValues: { columns: ['weight_kg', 'line_item_value', 'freight_cost_usd'], values: [48, 0, 0] },
+  distributions: [
+    {
+      feature: 'freight_cost_usd',
+      type: 'numeric',
+      bins: [
+        { label: '$0-500', count: 1840 },
+        { label: '$500-2k', count: 1420 },
+        { label: '$2k-10k', count: 1280 },
+        { label: '$10k-50k', count: 920 },
+        { label: '$50k-150k', count: 380 },
+        { label: '$150k+', count: 124 },
+      ],
+      stats: { mean: 12842, median: 2680, std: 28940, min: 0.75, max: 289653 },
+    },
+    {
+      feature: 'weight_kg',
+      type: 'numeric',
+      bins: [
+        { label: '0-100', count: 1640 },
+        { label: '100-500', count: 1420 },
+        { label: '500-2k', count: 1280 },
+        { label: '2k-10k', count: 1040 },
+        { label: '10k-50k', count: 460 },
+        { label: '50k+', count: 124 },
+      ],
+      stats: { mean: 4218, median: 842, std: 9840, min: 0.2, max: 98420 },
+    },
+    {
+      feature: 'line_item_value',
+      type: 'numeric',
+      bins: [
+        { label: '$0-1k', count: 1240 },
+        { label: '$1k-10k', count: 1680 },
+        { label: '$10k-50k', count: 1420 },
+        { label: '$50k-200k', count: 1040 },
+        { label: '$200k-1M', count: 460 },
+        { label: '$1M+', count: 124 },
+      ],
+      stats: { mean: 84320, median: 18420, std: 182640, min: 12.5, max: 4280000 },
+    },
+    {
+      feature: 'shipment_mode',
+      type: 'categorical',
+      bins: [
+        { label: 'Air', count: 2840 },
+        { label: 'Truck', count: 1420 },
+        { label: 'Ocean', count: 1240 },
+        { label: 'Air Charter', count: 464 },
+      ],
+    },
+    {
+      feature: 'product_group',
+      type: 'categorical',
+      bins: [
+        { label: 'ARV', count: 2140 },
+        { label: 'HRDT', count: 1680 },
+        { label: 'ANTM', count: 1020 },
+        { label: 'ACT', count: 740 },
+        { label: 'MRDT', count: 384 },
+      ],
+    },
+    {
+      feature: 'country',
+      type: 'categorical',
+      bins: [
+        { label: 'South Africa', count: 620 },
+        { label: 'Nigeria', count: 540 },
+        { label: 'Kenya', count: 480 },
+        { label: 'Tanzania', count: 420 },
+        { label: 'Uganda', count: 380 },
+        { label: '38 others', count: 3524 },
+      ],
+    },
+  ],
+  correlations: {
+    features: ['freight', 'weight', 'value', 'quantity'],
+    matrix: [
+      [1.0, 0.68, 0.54, 0.42],
+      [0.68, 1.0, 0.38, 0.31],
+      [0.54, 0.38, 1.0, 0.62],
+      [0.42, 0.31, 0.62, 1.0],
+    ],
+  },
+  outliers: {
+    features: ['freight_cost_usd', 'weight_kg'],
+    points: Array.from({ length: 150 }, (_, i) => ({ x: Math.random(), y: Math.random(), isOutlier: i < 9 })),
+    outlierCount: 178,
+    totalCount: 5964,
+  },
+  qualityScore: 82,
+  insights: [
+    { id: 'ins-1', text: 'Target variable (freight_cost_usd) is heavily right-skewed (skewness: 12.4). Will apply log transformation for regression modelling.', type: 'warning' },
+    { id: 'ins-2', text: '48 missing weight values (0.8%) — likely data entry gaps. Will impute using median weight per product group.', type: 'info' },
+    { id: 'ins-3', text: 'Strong correlation (0.68) between weight and freight cost — weight is the dominant cost driver across all shipment modes.', type: 'success' },
+    { id: 'ins-4', text: 'Air Charter shipments average 8.4x the cost of standard Air — will engineer shipment mode interaction features.', type: 'info' },
+    { id: 'ins-5', text: '178 outlier shipments with costs >$150K. These are bulk Air Charter shipments — retaining as valid high-value data points.', type: 'warning' },
+    { id: 'ins-6', text: 'Data quality score: 82/100. Good quality. The AI will engineer weight-per-unit ratios and vendor term cost multipliers automatically.', type: 'success' },
+  ],
+}
+
+// ── logistics-delivery-outcome ──────────────────────────────────────────────
+const logisticsDeliveryOutcomeEDA: EDAResults = {
+  summary: { rows: 180519, columns: 31, numericFeatures: 15, categoricalFeatures: 16, memoryUsage: '56.5 MB', duplicateRows: 0 },
+  missingValues: { columns: ['order_status', 'product_price', 'customer_state'], values: [0, 0, 0] },
+  distributions: [
+    {
+      feature: 'days_for_shipping_real',
+      type: 'numeric',
+      bins: [
+        { label: '0-1', count: 24680 },
+        { label: '2-3', count: 62840 },
+        { label: '4-5', count: 54120 },
+        { label: '6-7', count: 28460 },
+        { label: '8+', count: 10419 },
+      ],
+      stats: { mean: 3.5, median: 3.0, std: 1.84, min: 0, max: 12 },
+    },
+    {
+      feature: 'benefit_per_order',
+      type: 'numeric',
+      bins: [
+        { label: '-500 to -100', count: 18240 },
+        { label: '-100 to 0', count: 32480 },
+        { label: '0 to 50', count: 54120 },
+        { label: '50 to 150', count: 48640 },
+        { label: '150 to 300', count: 19240 },
+        { label: '300+', count: 7799 },
+      ],
+      stats: { mean: 48.2, median: 32.8, std: 128.4, min: -892, max: 1240 },
+    },
+    {
+      feature: 'order_item_discount_rate',
+      type: 'numeric',
+      bins: [
+        { label: '0-5%', count: 42120 },
+        { label: '5-10%', count: 38640 },
+        { label: '10-20%', count: 52480 },
+        { label: '20-30%', count: 31240 },
+        { label: '30%+', count: 16039 },
+      ],
+      stats: { mean: 14.2, median: 12.0, std: 9.84, min: 0, max: 50 },
+    },
+    {
+      feature: 'delivery_status',
+      type: 'categorical',
+      bins: [
+        { label: 'Late delivery', count: 99302 },
+        { label: 'Advance shipping', count: 41519 },
+        { label: 'Shipping on time', count: 32493 },
+        { label: 'Shipping canceled', count: 7205 },
+      ],
+    },
+    {
+      feature: 'shipping_mode',
+      type: 'categorical',
+      bins: [
+        { label: 'Standard Class', count: 107880 },
+        { label: 'Second Class', count: 34840 },
+        { label: 'First Class', count: 28420 },
+        { label: 'Same Day', count: 9379 },
+      ],
+    },
+    {
+      feature: 'market',
+      type: 'categorical',
+      bins: [
+        { label: 'LATAM', count: 45840 },
+        { label: 'Europe', count: 40120 },
+        { label: 'Pacific Asia', count: 38640 },
+        { label: 'USCA', count: 34280 },
+        { label: 'Africa', count: 21639 },
+      ],
+    },
+  ],
+  correlations: {
+    features: ['real_days', 'sched_days', 'discount', 'benefit'],
+    matrix: [
+      [1.0, 0.12, -0.08, -0.15],
+      [0.12, 1.0, -0.04, -0.06],
+      [-0.08, -0.04, 1.0, -0.42],
+      [-0.15, -0.06, -0.42, 1.0],
+    ],
+  },
+  outliers: {
+    features: ['benefit_per_order', 'order_item_discount_rate'],
+    points: Array.from({ length: 150 }, (_, i) => ({ x: Math.random(), y: Math.random(), isOutlier: i < 6 })),
+    outlierCount: 1842,
+    totalCount: 180519,
+  },
+  qualityScore: 85,
+  insights: [
+    { id: 'ins-1', text: 'Imbalanced multi-class target: Late delivery dominates at 55%, Canceled is only 4%. Will use stratified sampling and class-weighted training.', type: 'warning' },
+    { id: 'ins-2', text: 'No missing values across 31 features — high-quality e-commerce dataset. 180,519 records provide robust statistical power.', type: 'success' },
+    { id: 'ins-3', text: 'Shipping gap (actual - scheduled days) is the strongest delivery outcome predictor. Engineering this derived feature automatically.', type: 'info' },
+    { id: 'ins-4', text: 'Discount rate and profit ratio are inversely correlated (-0.42) — high discounts compress margins and correlate with cancellation risk.', type: 'info' },
+    { id: 'ins-5', text: '1,842 outlier orders detected with extreme benefit values. These are high-value B2B orders — retaining for model training.', type: 'warning' },
+    { id: 'ins-6', text: 'Data quality score: 85/100. Large, clean dataset spanning 5 global markets. The AI will handle multi-class balancing and feature engineering automatically.', type: 'success' },
+  ],
+}
+
+// ── logistics-demand-forecast ───────────────────────────────────────────────
+const logisticsDemandForecastEDA: EDAResults = {
+  summary: { rows: 1337, columns: 11, numericFeatures: 11, categoricalFeatures: 0, memoryUsage: '0.3 MB', duplicateRows: 0 },
+  missingValues: { columns: ['avg_weather_severity', 'avg_port_congestion'], values: [12, 8] },
+  distributions: [
+    {
+      feature: 'avg_daily_demand',
+      type: 'numeric',
+      bins: [
+        { label: '0-200', count: 180 },
+        { label: '200-400', count: 320 },
+        { label: '400-600', count: 380 },
+        { label: '600-800', count: 260 },
+        { label: '800-1000', count: 132 },
+        { label: '1000+', count: 65 },
+      ],
+      stats: { mean: 482.6, median: 448.0, std: 234.8, min: 42.0, max: 1480.0 },
+    },
+    {
+      feature: 'avg_shipping_cost',
+      type: 'numeric',
+      bins: [
+        { label: '$0-50', count: 240 },
+        { label: '$50-100', count: 420 },
+        { label: '$100-150', count: 340 },
+        { label: '$150-200', count: 220 },
+        { label: '$200+', count: 117 },
+      ],
+      stats: { mean: 108.4, median: 98.0, std: 62.8, min: 12.0, max: 342.0 },
+    },
+    {
+      feature: 'avg_traffic_congestion',
+      type: 'numeric',
+      bins: [
+        { label: '0.0-0.2', count: 280 },
+        { label: '0.2-0.4', count: 380 },
+        { label: '0.4-0.6', count: 340 },
+        { label: '0.6-0.8', count: 220 },
+        { label: '0.8-1.0', count: 117 },
+      ],
+      stats: { mean: 0.42, median: 0.38, std: 0.22, min: 0.01, max: 0.98 },
+    },
+    {
+      feature: 'avg_weather_severity',
+      type: 'numeric',
+      bins: [
+        { label: '0-1', count: 420 },
+        { label: '1-2', count: 380 },
+        { label: '2-3', count: 280 },
+        { label: '3-4', count: 168 },
+        { label: '4-5', count: 89 },
+      ],
+      stats: { mean: 1.84, median: 1.60, std: 1.12, min: 0.0, max: 4.92 },
+    },
+    {
+      feature: 'avg_port_congestion',
+      type: 'numeric',
+      bins: [
+        { label: '0.0-0.2', count: 320 },
+        { label: '0.2-0.4', count: 380 },
+        { label: '0.4-0.6', count: 320 },
+        { label: '0.6-0.8', count: 210 },
+        { label: '0.8-1.0', count: 107 },
+      ],
+      stats: { mean: 0.38, median: 0.34, std: 0.24, min: 0.0, max: 0.97 },
+    },
+    {
+      feature: 'avg_supplier_reliability',
+      type: 'numeric',
+      bins: [
+        { label: '0.5-0.6', count: 120 },
+        { label: '0.6-0.7', count: 280 },
+        { label: '0.7-0.8', count: 420 },
+        { label: '0.8-0.9', count: 340 },
+        { label: '0.9-1.0', count: 177 },
+      ],
+      stats: { mean: 0.76, median: 0.78, std: 0.11, min: 0.48, max: 0.99 },
+    },
+  ],
+  correlations: {
+    features: ['demand', 'shipping', 'traffic', 'weather'],
+    matrix: [
+      [1.0, 0.62, 0.38, -0.29],
+      [0.62, 1.0, 0.24, -0.14],
+      [0.38, 0.24, 1.0, 0.31],
+      [-0.29, -0.14, 0.31, 1.0],
+    ],
+  },
+  outliers: {
+    features: ['avg_daily_demand', 'avg_shipping_cost'],
+    points: Array.from({ length: 150 }, (_, i) => ({ x: Math.random(), y: Math.random(), isOutlier: i < 5 })),
+    outlierCount: 34,
+    totalCount: 1337,
+  },
+  qualityScore: 86,
+  insights: [
+    { id: 'ins-1', text: 'Daily time series spanning 3.7 years (Jan 2021 – Aug 2024). Strong weekly seasonality and annual trend detected — will engineer Fourier features.', type: 'info' },
+    { id: 'ins-2', text: '20 missing values across 2 features (1.5%) — weather and port congestion gaps. Will apply linear interpolation for continuity.', type: 'warning' },
+    { id: 'ins-3', text: 'Shipping cost shows strong positive correlation (0.62) with demand — higher demand drives logistics costs. Will engineer cost-per-unit demand feature.', type: 'success' },
+    { id: 'ins-4', text: 'Weather severity inversely correlates with demand (-0.29) — severe weather reduces logistics activity. Engineering weather-demand interaction terms.', type: 'info' },
+    { id: 'ins-5', text: '34 demand spike outliers detected — likely holiday or disruption-driven. Flagging for special event feature engineering.', type: 'warning' },
+    { id: 'ins-6', text: 'Data quality score: 86/100. Good quality time-series data. Lag features, rolling windows, and exogenous variable interactions will be engineered automatically.', type: 'success' },
+  ],
+}
+
 // ── registry ──────────────────────────────────────────────────────────────────
 const edaDataMap: Record<string, EDAResults> = {
   'telco-churn':            telcoChurnEDA,
@@ -808,6 +1220,10 @@ const edaDataMap: Record<string, EDAResults> = {
   'energy-consumption':     energyConsumptionEDA,
   'insurance-claims':       insuranceClaimsEDA,
   'predictive-maintenance': predictiveMaintenanceEDA,
+  'logistics-delivery-delay':   logisticsDeliveryDelayEDA,
+  'logistics-freight-cost':     logisticsFreightCostEDA,
+  'logistics-delivery-outcome': logisticsDeliveryOutcomeEDA,
+  'logistics-demand-forecast':  logisticsDemandForecastEDA,
 }
 
 export function getPrecomputedEDA(datasetId: string): EDAResults {

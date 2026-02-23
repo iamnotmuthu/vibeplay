@@ -12,7 +12,7 @@ export interface DomainScenario {
     icon: string // lucide icon name
     badge: string
     stageSubtitles: {
-        eda: string
+        profiling: string
         patterns: string
         features: string
         arena: string
@@ -37,7 +37,7 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         icon: 'phone',
         badge: 'Telecom',
         stageSubtitles: {
-            eda: 'Injecting your business context — profiling usage patterns, billing behavior, and service tenure across 7,043 customers',
+            profiling: 'Profiling your business context — profiling usage patterns, billing behavior, and service tenure across 7,043 customers',
             patterns: 'Auto-discovering natural churn-risk cohorts and high-value customer segments hidden in your data',
             features: 'Engineering tenure ratios, usage velocity, and contract risk signals — no manual feature work required',
             arena: '6 algorithms competing to identify the most accurate churn predictor for your specific customer base',
@@ -60,7 +60,7 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         icon: 'shield',
         badge: 'Finance',
         stageSubtitles: {
-            eda: 'Injecting business context — analyzing 50,000 transactions across 30 anonymized features for imbalance, anomalies, and data quality',
+            profiling: 'Profiling business context — analyzing 50,000 transactions across 30 anonymized features for imbalance, anomalies, and data quality',
             patterns: 'Auto-discovering novel fraud cohorts and evolving attack vectors — no manual hypothesis required',
             features: 'Constructing velocity features, time-of-day signals, and behavioral fingerprints automatically',
             arena: 'Benchmarking 6 models on Precision-Recall AUC — the right metric for your imbalanced fraud data',
@@ -83,7 +83,7 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         icon: 'trending-up',
         badge: 'Retail',
         stageSubtitles: {
-            eda: 'Injecting business context — profiling 45,000 sales records across stores, SKUs, and promotional calendars',
+            profiling: 'Profiling business context — profiling 45,000 sales records across stores, SKUs, and promotional calendars',
             patterns: 'Auto-discovering seasonal cohorts, holiday demand clusters, and store-level patterns in your data',
             features: 'Engineering lag features, rolling averages, and promotion interaction terms — zero manual effort',
             arena: '6 models competing on RMSE — from linear baselines to gradient boosting ensembles',
@@ -106,7 +106,7 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         icon: 'heart-pulse',
         badge: 'Healthcare',
         stageSubtitles: {
-            eda: 'Injecting clinical business context — auditing 25,000 patient records across 35 clinical and demographic features',
+            profiling: 'Profiling clinical business context — auditing 25,000 patient records across 35 clinical and demographic features',
             patterns: 'Auto-discovering high-risk patient cohorts and comorbidity clusters hidden in your clinical data',
             features: 'Extracting diagnosis interaction terms, length-of-stay signals, and care gap indicators automatically',
             arena: '6 algorithms competing on AUC-ROC — prioritizing recall for high-risk patient identification',
@@ -129,7 +129,7 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         icon: 'users',
         badge: 'HR & People',
         stageSubtitles: {
-            eda: 'Injecting business context — profiling 14,999 employee records across compensation, tenure, satisfaction, and performance features',
+            profiling: 'Profiling business context — profiling 14,999 employee records across compensation, tenure, satisfaction, and performance features',
             patterns: 'Auto-discovering flight-risk cohorts and high-performing retention segments hidden in your workforce data',
             features: 'Engineering satisfaction trajectories, promotion lag signals, and workload stress indicators automatically',
             arena: '6 models competing to identify the most accurate attrition predictor for your organization',
@@ -152,7 +152,7 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         icon: 'zap',
         badge: 'Energy',
         stageSubtitles: {
-            eda: 'Injecting business context — analyzing 35,000 hourly consumption readings across temperature, time, and zone features',
+            profiling: 'Profiling business context — analyzing 35,000 hourly consumption readings across temperature, time, and zone features',
             patterns: 'Auto-discovering peak demand cohorts, off-peak efficiency zones, and anomalous consumption spikes',
             features: 'Engineering weather interaction terms, time-of-use signals, and rolling demand windows automatically',
             arena: '6 models competing on MAPE — from ARIMA baselines to neural ensembles',
@@ -175,7 +175,7 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         icon: 'file-search',
         badge: 'Insurance',
         stageSubtitles: {
-            eda: 'Injecting business context — profiling 40,000 insurance claims across policy, claimant, and incident features',
+            profiling: 'Profiling business context — profiling 40,000 insurance claims across policy, claimant, and incident features',
             patterns: 'Auto-discovering fraud cohorts, staged accident clusters, and inflated repair networks in your claims data',
             features: 'Engineering claim velocity, provider network signals, and policy anomaly scores automatically',
             arena: '6 algorithms competing on Precision-Recall AUC for imbalanced fraud detection',
@@ -198,12 +198,106 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         icon: 'settings',
         badge: 'Manufacturing',
         stageSubtitles: {
-            eda: 'Injecting business context — profiling 50,000 sensor readings across vibration, temperature, pressure, and cycle-count features',
+            profiling: 'Profiling business context — profiling 50,000 sensor readings across vibration, temperature, pressure, and cycle-count features',
             patterns: 'Auto-discovering failure-precursor cohorts, wear-state clusters, and anomalous operating regimes in your sensor data',
             features: 'Engineering rolling degradation signals, inter-sensor ratios, and time-to-failure proxies automatically',
             arena: '6 models competing on Recall@95%Precision — prioritising early failure detection over false-alarm rate',
             evaluation: '360° Quality Gate — validating model fairness across machine types and operating conditions with white-box explainability',
             drift: 'Continuous Monitoring for silent model drift — detecting sensor calibration drift and new failure modes from updated equipment',
+        },
+    },
+
+    // ── Logistics & Supply Chain ──────────────────────────────────────────────
+    {
+        id: 'logistics-delivery-delay',
+        datasetId: 'logistics-delivery-delay',
+        defaultObjectiveId: 'delay-predict',
+        label: 'Delivery Delay Prediction',
+        industry: 'Logistics & Supply Chain',
+        tagline: 'Predict delays before they happen',
+        heroHeadline: 'Know which shipments will be late — before they leave the warehouse.',
+        heroSubtitle:
+            'Watch VibeModel analyse 25,000 delivery records across 9 courier partners, 6 vehicle types, and 5 regions to predict delay risk at booking time — enabling proactive rerouting and customer alerts.',
+        color: '#14b8a6',
+        gradient: 'from-teal-500 to-emerald-500',
+        icon: 'truck',
+        badge: 'Logistics',
+        stageSubtitles: {
+            profiling: 'Profiling logistics context — profiling 25,000 delivery records across couriers, routes, weather conditions, and vehicle types',
+            patterns: 'Auto-discovering delay-risk cohorts and high-reliability route segments hidden in your logistics data',
+            features: 'Engineering distance-time ratios, weather severity indices, and partner reliability scores automatically',
+            arena: '6 algorithms competing to identify the most accurate delay predictor for your delivery network',
+            evaluation: '360° Quality Gate — validating model fairness across regions, couriers, and weather conditions with white-box explainability',
+            drift: 'Continuous Monitoring for silent model drift — detecting seasonal route changes and new courier performance shifts',
+        },
+    },
+    {
+        id: 'logistics-freight-cost',
+        datasetId: 'logistics-freight-cost',
+        defaultObjectiveId: 'freight-estimate',
+        label: 'Freight Cost Prediction',
+        industry: 'Logistics & Supply Chain',
+        tagline: 'Instant, accurate freight quotes',
+        heroHeadline: 'Predict freight costs to the dollar — across any route, any cargo.',
+        heroSubtitle:
+            'See VibeModel analyse 5,964 global supply chain shipments spanning 43 countries and 4 transport modes to predict freight costs with 20–40% better accuracy than manual rate lookups.',
+        color: '#6366f1',
+        gradient: 'from-indigo-500 to-violet-500',
+        icon: 'ship',
+        badge: 'Logistics',
+        stageSubtitles: {
+            profiling: 'Profiling supply chain context — profiling 5,964 shipment records across 43 countries, 4 transport modes, and multiple vendor terms',
+            patterns: 'Auto-discovering cost cohorts, premium route clusters, and vendor pricing anomalies hidden in your freight data',
+            features: 'Engineering weight-distance interactions, vendor term adjustments, and product group cost multipliers automatically',
+            arena: '6 models competing on RMSE — from linear baselines to gradient boosting ensembles for cost prediction',
+            evaluation: '360° Quality Gate — validating forecast accuracy across shipment modes, countries, and cargo types with full white-box visibility',
+            drift: 'Continuous Monitoring for silent model drift — detecting fuel surcharge changes, new trade routes, and vendor pricing shifts',
+        },
+    },
+    {
+        id: 'logistics-delivery-outcome',
+        datasetId: 'logistics-delivery-outcome',
+        defaultObjectiveId: 'outcome-classify',
+        label: 'Delivery Outcome Classification',
+        industry: 'Logistics & Supply Chain',
+        tagline: 'Predict every delivery outcome',
+        heroHeadline: 'Classify shipments into four outcomes — before they happen.',
+        heroSubtitle:
+            'Watch VibeModel analyse 180,519 global e-commerce records across 5 markets and 23 regions to predict Late, On Time, Advance, or Canceled outcomes — enabling outcome-specific automation at scale.',
+        color: '#d946ef',
+        gradient: 'from-fuchsia-500 to-pink-500',
+        icon: 'package-check',
+        badge: 'Logistics',
+        stageSubtitles: {
+            profiling: 'Profiling e-commerce logistics context — profiling 180,519 orders across 5 global markets, 23 regions, and 4 delivery outcome classes',
+            patterns: 'Auto-discovering outcome-driving cohorts — late-delivery risk clusters, cancellation hotspots, and advance-shipping segments',
+            features: 'Engineering shipping gap ratios, discount-profit interactions, and market-specific delivery velocity features automatically',
+            arena: '6 algorithms competing on multi-class F1 — handling 55% late-delivery class dominance with stratified evaluation',
+            evaluation: '360° Quality Gate — validating per-class precision and recall across all 4 delivery outcomes with confusion matrix analysis',
+            drift: 'Continuous Monitoring for silent model drift — detecting seasonal delivery pattern shifts and new market behaviour changes',
+        },
+    },
+    {
+        id: 'logistics-demand-forecast',
+        datasetId: 'logistics-demand-forecast',
+        defaultObjectiveId: 'demand-predict',
+        label: 'Logistics Demand Forecasting',
+        industry: 'Logistics & Supply Chain',
+        tagline: 'Forecast demand, optimise capacity',
+        heroHeadline: 'Forecast logistics demand — tomorrow, next week, next month.',
+        heroSubtitle:
+            'See VibeModel analyse 1,337 days of aggregated logistics data with 10 exogenous variables — weather severity, traffic congestion, port delays — to forecast daily demand and optimise fleet utilisation.',
+        color: '#0ea5e9',
+        gradient: 'from-sky-500 to-cyan-500',
+        icon: 'bar-chart-3',
+        badge: 'Logistics',
+        stageSubtitles: {
+            profiling: 'Profiling time-series context — profiling 1,337 daily observations with weather, traffic, port congestion, and supplier reliability signals',
+            patterns: 'Auto-discovering seasonal demand cohorts, weather-driven spikes, and congestion-correlated demand dips in your logistics data',
+            features: 'Engineering lag features, rolling demand windows, and weather-traffic interaction terms — zero manual effort',
+            arena: '6 models competing on MAPE — from ARIMA baselines to gradient boosting with exogenous variable support',
+            evaluation: '360° Quality Gate — validating forecast accuracy across peak, off-peak, and disruption periods with full white-box visibility',
+            drift: 'Continuous Monitoring for silent model drift — detecting demand regime changes from new customers, seasonal shifts, or supply chain disruptions',
         },
     },
 ]

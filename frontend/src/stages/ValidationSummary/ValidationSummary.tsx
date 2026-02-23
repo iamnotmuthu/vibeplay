@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShieldCheck, Eye } from 'lucide-react'
+import { ShieldCheck, Eye, Database } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
-import { getPrecomputedValidation } from './validationSummaryData'
+import { getPrecomputedValidation, getBacktestData } from './validationSummaryData'
+import type { BacktestPoint } from './validationSummaryData'
+import { BacktestChart } from './BacktestChart'
 import type { StageId, ValidationSummaryResults, ValidationCategory, ValidationOverallMetrics } from '@/store/types'
 
 type CategoryKey = 'sufficient' | 'insufficient' | 'helpMe' | 'augmented'
@@ -103,28 +105,11 @@ function MetricEyeTooltip({ explanation }: { explanation: string }) {
 
 function OverallPerformanceBanner({
   metrics,
-  sufficient,
-  insufficient,
-  helpMe,
-  total,
-  suffRecall,
-  insuffRecall,
-  helpMeRecall,
   businessGoal,
 }: {
   metrics: ValidationOverallMetrics
-  sufficient: ValidationCategory
-  insufficient: ValidationCategory
-  helpMe: ValidationCategory
-  total: number
-  suffRecall: number
-  insuffRecall: number
-  helpMeRecall: number
   businessGoal: string | null
 }) {
-  const suffPct = total > 0 ? (sufficient.count / total) * 100 : 0
-  const insuffPct = total > 0 ? (insufficient.count / total) * 100 : 0
-  const helpMePct = total > 0 ? (helpMe.count / total) * 100 : 0
   const isRegressionMetric = metrics.primaryMetric === 'MAPE' || metrics.primaryMetric === 'RMSE'
 
   return (
@@ -135,7 +120,7 @@ function OverallPerformanceBanner({
       className="rounded-xl border border-gray-700/60 bg-gray-800/60 p-5"
     >
       {/* Metrics row */}
-      <div className="flex items-start justify-between gap-6 mb-5">
+      <div className="flex items-start justify-between gap-6">
         <div className="flex items-center gap-8">
           <div>
             <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{metrics.primaryMetric}</div>
@@ -159,51 +144,6 @@ function OverallPerformanceBanner({
         <div className="flex items-start gap-2 max-w-sm">
           <MetricEyeTooltip explanation={getMetricExplanation(businessGoal, metrics.primaryMetric)} />
           <p className="text-xs text-gray-400 leading-relaxed italic">{metrics.statement}</p>
-        </div>
-      </div>
-
-      {/* 3-colour contribution bar */}
-      <div>
-        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-          Cohort Contribution to Overall Performance
-        </div>
-        <div className="flex h-5 rounded-full overflow-hidden gap-px">
-          {suffPct > 0 && (
-            <div
-              className="flex items-center justify-center text-[9px] font-bold text-white bg-emerald-500 overflow-hidden"
-              style={{ width: `${suffPct}%` }}
-            >
-              {suffRecall}%
-            </div>
-          )}
-          {insuffPct > 0 && (
-            <div
-              className="flex items-center justify-center text-[9px] font-bold text-white bg-red-500 overflow-hidden"
-              style={{ width: `${insuffPct}%` }}
-            >
-              {insuffRecall}%
-            </div>
-          )}
-          {helpMePct > 0 && (
-            <div
-              className="flex items-center justify-center text-[9px] font-bold text-white bg-amber-500 overflow-hidden"
-              style={{ width: `${helpMePct}%` }}
-            >
-              {helpMeRecall}%
-            </div>
-          )}
-        </div>
-        <div className="flex gap-4 mt-2">
-          {[
-            { label: 'Dominant Patterns', color: 'bg-emerald-500', pct: suffPct },
-            { label: 'Non-Dominant Patterns', color: 'bg-red-500', pct: insuffPct },
-            { label: 'Fuzzy Patterns', color: 'bg-amber-500', pct: helpMePct },
-          ].map((l) => (
-            <div key={l.label} className="flex items-center gap-1.5">
-              <div className={`w-2.5 h-2.5 rounded-sm shrink-0 ${l.color}`} />
-              <span className="text-[10px] text-gray-500">{l.label} ({l.pct.toFixed(1)}%)</span>
-            </div>
-          ))}
         </div>
       </div>
     </motion.div>
@@ -243,7 +183,7 @@ function CategoryCard({
         <CountUpNumber end={data.count} />
       </div>
       <div className={`text-sm font-medium mb-3 ${textColor}`}>{data.percentage.toFixed(1)}%</div>
-      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden mb-2">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${barFill}%` }}
@@ -251,6 +191,9 @@ function CategoryCard({
           className={`h-full rounded-full ${bgColor}`}
         />
       </div>
+      {data.actionStatement && (
+        <p className="text-[10px] text-gray-500 leading-relaxed">{data.actionStatement}</p>
+      )}
     </motion.button>
   )
 }
@@ -259,11 +202,13 @@ function CategoryCard({
 
 function BreakdownTable({
   categoryLabel,
+  categoryKey,
   textColor,
   borderColor,
   data,
 }: {
   categoryLabel: string
+  categoryKey: CategoryKey
   textColor: string
   borderColor: string
   data: ValidationCategory
@@ -336,22 +281,56 @@ function BreakdownTable({
           </button>
         )}
       </div>
+
+      {/* Category-specific action panel */}
+      {categoryKey === 'insufficient' && (
+        <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+          <p className="text-xs text-gray-400 leading-relaxed mb-3">
+            This pattern appears strong but lacks sufficient data. <span className="text-gray-300 font-medium">Recommended:</span> Collect ~{Math.max(50, Math.round(data.count * 0.3))} more records matching this cohort, OR enable synthetic augmentation.
+          </p>
+          <div className="relative group inline-flex">
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/10"
+              style={{ border: '1px solid rgba(239,68,68,0.3)' }}
+            >
+              <Database className="w-3.5 h-3.5" />
+              Augment with Synthetic Data
+            </button>
+            <div className="absolute bottom-full left-0 mb-2 w-56 rounded-lg bg-gray-900 border border-gray-700 p-2.5 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+              <p className="text-[10px] text-gray-300 leading-relaxed">Generates realistic synthetic records that match the statistical distribution of this cohort to improve model coverage.</p>
+              <div className="absolute top-full left-6 border-4 border-transparent border-t-gray-700" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {categoryKey === 'helpMe' && (
+        <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <p className="text-xs text-gray-400 leading-relaxed mb-3">
+            This pattern has ambiguous boundaries. Predictions in this zone are tagged for manual review.
+          </p>
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-amber-300 transition-colors hover:bg-amber-500/10"
+            style={{ border: '1px solid rgba(245,158,11,0.3)' }}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Configure Review Workflow
+          </button>
+        </div>
+      )}
+
+      {categoryKey === 'augmented' && (
+        <div className="mt-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+          <p className="text-xs text-gray-400 leading-relaxed">
+            Synthetic data was generated to strengthen validation. These patterns are now production-ready with caveats — monitor for distribution drift between synthetic and real-world data.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
-
-const PERF_BY_DATASET: Record<string, { suffRecall: number; insuffRecall: number; helpMeRecall: number }> = {
-  'telco-churn':            { suffRecall: 91, insuffRecall: 74, helpMeRecall: 62 },
-  'credit-fraud':           { suffRecall: 94, insuffRecall: 81, helpMeRecall: 68 },
-  'store-demand':           { suffRecall: 89, insuffRecall: 72, helpMeRecall: 58 },
-  'patient-readmission':    { suffRecall: 88, insuffRecall: 71, helpMeRecall: 60 },
-  'employee-attrition':     { suffRecall: 85, insuffRecall: 69, helpMeRecall: 57 },
-  'energy-consumption':     { suffRecall: 92, insuffRecall: 77, helpMeRecall: 63 },
-  'insurance-claims':       { suffRecall: 90, insuffRecall: 75, helpMeRecall: 61 },
-  'predictive-maintenance': { suffRecall: 91, insuffRecall: 70, helpMeRecall: 58 },
-}
 
 export function ValidationSummary() {
   const selectedDataset = usePlaygroundStore((s) => s.selectedDataset)
@@ -363,12 +342,14 @@ export function ValidationSummary() {
 
   const [data, setData] = useState<ValidationSummaryResults | null>(null)
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('sufficient')
+  const [backtestData, setBacktestData] = useState<BacktestPoint[] | null>(null)
 
   useEffect(() => {
     if (!selectedDataset) return
     const results = getPrecomputedValidation(selectedDataset.id)
     setData(results)
     setValidationSummaryResults(results)
+    setBacktestData(getBacktestData(selectedDataset.id))
     addLog(`Validation summary loaded — ${results.totalCount} samples across ${results.totalCohorts} cohorts`, 'success')
     addLog(`Dominant: ${results.sufficient.count} (${results.sufficient.percentage}%) · Non-Dominant: ${results.insufficient.count}`, 'info')
   }, [selectedDataset, setValidationSummaryResults, addLog])
@@ -382,7 +363,6 @@ export function ValidationSummary() {
 
   const activeConfig = CATEGORIES.find((c) => c.key === activeCategory)!
   const activeCategoryData = data[activeCategory]
-  const perf = PERF_BY_DATASET[selectedDataset.id] ?? { suffRecall: 88, insuffRecall: 72, helpMeRecall: 60 }
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -420,15 +400,16 @@ export function ValidationSummary() {
         {/* Overall Performance Banner */}
         <OverallPerformanceBanner
           metrics={data.overallMetrics}
-          sufficient={data.sufficient}
-          insufficient={data.insufficient}
-          helpMe={data.helpMe}
-          total={data.totalCount}
-          suffRecall={perf.suffRecall}
-          insuffRecall={perf.insuffRecall}
-          helpMeRecall={perf.helpMeRecall}
           businessGoal={businessGoal}
         />
+
+        {/* Backtesting chart for time-series datasets */}
+        {backtestData && (
+          <BacktestChart
+            data={backtestData}
+            accentColor={selectedDataset?.color}
+          />
+        )}
 
         {/* 4 Category cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -464,6 +445,7 @@ export function ValidationSummary() {
           >
             <BreakdownTable
               categoryLabel={activeConfig.label}
+              categoryKey={activeCategory}
               textColor={activeConfig.textColor}
               borderColor={activeConfig.borderColor}
               data={activeCategoryData}

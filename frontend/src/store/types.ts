@@ -134,7 +134,15 @@ export interface ModelMetrics {
   recall: number
   f1: number
   auc: number
+  // Time-series / regression optional fields
+  mape?: number
+  rmse?: number
+  mae?: number
+  forecastBias?: number
+  r2?: number
 }
+
+export type MetricDisplayMode = 'classification' | 'regression'
 
 export interface EvaluationResults {
   models: {
@@ -202,6 +210,7 @@ export interface ValidationCategory {
   count: number
   percentage: number
   cohorts: ValidationCohort[]
+  actionStatement?: string
 }
 
 export interface ValidationOverallMetrics {
@@ -233,7 +242,7 @@ export interface ModelComponentParam {
 export interface ModelComponent {
   subtype: string        // 'preprocessor' | 'model_function' | 'loss_function' | 'explicit_regularization' | 'optimization_algo' | 'capacity_controls' | 'complexity_controls' | 'inference_tuning'
   subtypeLabel: string   // 'Preprocessor' | 'Model Component' | 'Loss Function' | ...
-  name: string           // ML technical term, e.g. 'one_hot_encoding'
+  name: string           // AI technical term, e.g. 'one_hot_encoding'
   factors: ModelComponentFactor[]
   params: ModelComponentParam[]
 }
@@ -243,6 +252,9 @@ export interface CohortPerformance {
   label: string
   recall: number
   precision: number
+  // Regression / time-series optional overrides
+  mape?: number
+  mae?: number
 }
 
 export interface ModelSelectionResults {
@@ -264,7 +276,7 @@ export type StageId = 1 | 2 | 3 | 4 | 5 | 6
 export const STAGE_LABELS: Record<StageId, string> = {
   1: 'Dataset',
   2: 'Business Setup',
-  3: 'Auto EDA',
+  3: 'Data Profiling',
   4: 'Pattern Recognition',
   5: 'Validation Summary',
   6: 'Model Selection',

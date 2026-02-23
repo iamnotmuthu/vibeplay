@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Check, Loader2, Circle, Sparkles,
@@ -41,18 +41,6 @@ function autoBuckets(stats: { min: number; max: number; median: number }): { lab
     { label: `${stats.min} – ${mid}`, min: stats.min, max: mid },
     { label: `${mid} – ${stats.max}`, min: mid, max: stats.max },
   ]
-}
-
-function computeTotalDimensions(
-  distributions: DistributionData[],
-  bucketized: Set<string>,
-  buckets: Record<string, { label: string }[]>,
-): number {
-  return distributions.reduce((sum, d) => {
-    if (d.type === 'categorical') return sum + (d.bins?.length ?? 1)
-    if (bucketized.has(d.feature)) return sum + (buckets[d.feature]?.length ?? 2)
-    return sum + 1
-  }, 0)
 }
 
 // Compute initial (un-bucketized) total derived features for the stats row
@@ -241,15 +229,126 @@ function AttributeRow({
   )
 }
 
+// ── Time-Series Configuration Panel ──────────────────────────────────────────
+
+function TimeSeriesConfigPanel({ accentColor }: { accentColor: string }) {
+  const [granularity, setGranularity] = useState('daily')
+  const [horizon, setHorizon] = useState('7')
+  const [lookback, setLookback] = useState('30')
+  const [exogVars, setExogVars] = useState<Record<string, boolean>>({
+    weather: true,
+    traffic: true,
+    holidays: false,
+    promotions: false,
+  })
+
+  const toggleVar = (key: string) => setExogVars((prev) => ({ ...prev, [key]: !prev[key] }))
+
+  const selectStyle = {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    color: '#e5e7eb',
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl border border-gray-700/60 bg-gray-800/50 p-5 space-y-5"
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <div className="w-2 h-2 rounded-full" style={{ background: accentColor }} />
+        <span className="text-sm font-semibold text-gray-200">Time-Series Configuration</span>
+      </div>
+
+      {/* Granularity */}
+      <div>
+        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">Granularity</label>
+        <div className="flex gap-2">
+          {['hourly', 'daily', 'weekly', 'monthly'].map((g) => (
+            <button
+              key={g}
+              onClick={() => setGranularity(g)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              style={granularity === g
+                ? { background: `${accentColor}22`, border: `1px solid ${accentColor}`, color: accentColor }
+                : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#9ca3af' }
+              }
+            >
+              {g.charAt(0).toUpperCase() + g.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Forecast Horizon + Lookback */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">Forecast Horizon</label>
+          <select
+            value={horizon}
+            onChange={(e) => setHorizon(e.target.value)}
+            className="w-full rounded-lg px-3 py-2 text-sm"
+            style={selectStyle}
+          >
+            <option value="1">1 day</option>
+            <option value="7">7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">Lookback Window</label>
+          <select
+            value={lookback}
+            onChange={(e) => setLookback(e.target.value)}
+            className="w-full rounded-lg px-3 py-2 text-sm"
+            style={selectStyle}
+          >
+            <option value="7">7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+            <option value="60">60 days</option>
+            <option value="90">90 days</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Exogenous Variables */}
+      <div>
+        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-2">Exogenous Variables</label>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(exogVars).map(([key, enabled]) => (
+            <button
+              key={key}
+              onClick={() => toggleVar(key)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              style={enabled
+                ? { background: `${accentColor}18`, border: `1px solid ${accentColor}55`, color: accentColor }
+                : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#6b7280' }
+              }
+            >
+              <span className={`w-2 h-2 rounded-full ${enabled ? 'bg-current' : 'bg-gray-600'}`} />
+              {key.charAt(0).toUpperCase() + key.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <p className="text-[10px] text-gray-500 italic">
+        These settings inform the model composition — granularity and horizon affect lag feature depth, while exogenous toggles control which external signals enter the pipeline.
+      </p>
+    </motion.div>
+  )
+}
+
 // ── AutoADS panel ─────────────────────────────────────────────────────────────
 
 function AutoADSPanel({
   edaData,
-  _dimData,
   accentColor,
 }: {
   edaData: EDAResults
-  _dimData: DimensionResults
   accentColor: string
 }) {
   const distributions = edaData.distributions
@@ -319,8 +418,8 @@ function AutoADSPanel({
         <div>
           <span className="text-sm font-bold text-violet-300">Automated Dimension Discovery: </span>
           <span className="text-sm text-gray-400">
-            We are able to find dimensions in the existing features, which means we are extracting meaningful patterns
-            from your raw data that matter for predictions but might be hard to spot manually.
+            We derived new features from your existing data columns — transforming raw fields into richer signals
+            that capture patterns not visible in the original feature set, improving AI model accuracy.
           </span>
         </div>
       </div>
@@ -393,7 +492,7 @@ export function AutoEDA() {
   const completeStep = usePlaygroundStore((s) => s.completeStep)
   const setStep = usePlaygroundStore((s) => s.setStep)
   const subtitle = useDomainSubtitle(
-    'eda',
+    'profiling',
     `The AI is autonomously analyzing ${selectedDataset?.rows.toLocaleString()} records across ${selectedDataset?.features} features`,
   )
 
@@ -408,9 +507,14 @@ export function AutoEDA() {
   const [dimData, setDimData] = useState<DimensionResults | null>(null)
   const [dimComplete, setDimComplete] = useState(false)
 
+  const analysisStartedRef = useRef(false)
+
   const runAnalysis = useCallback(async () => {
     if (!selectedDataset) return
+    if (analysisStartedRef.current) return
+    analysisStartedRef.current = true
 
+    setVisibleInsights([])
     const data = getPrecomputedEDA(selectedDataset.id)
     setEdaData(data)
 
@@ -646,12 +750,16 @@ export function AutoEDA() {
             </div>
           )}
 
+          {/* Time-Series Config (only for time-series datasets) */}
+          {dimComplete && selectedDataset?.taskType === 'time-series' && (
+            <TimeSeriesConfigPanel accentColor={accentColor} />
+          )}
+
           {/* 5 & 6. AutoADS content (no heading) */}
           <AnimatePresence>
             {dimComplete && edaData && dimData && (
               <AutoADSPanel
                 edaData={edaData}
-                _dimData={dimData}
                 accentColor={accentColor}
               />
             )}

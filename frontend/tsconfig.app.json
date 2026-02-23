@@ -28,5 +28,11 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/stages/DriftAndRetrain",
+    "src/stages/EvaluationHub",
+    "src/stages/FeatureIntelligence",
+    "src/stages/ModelArena"
+  ]
 }

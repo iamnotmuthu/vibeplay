@@ -16,6 +16,10 @@ const domainGoals: Record<string, string[]> = {
   'energy-consumption': ['Forecast Hourly Demand', 'Detect Consumption Anomalies', 'Predict Peak Demand Windows', 'Optimise Grid Balancing'],
   'insurance-claims': ['Detect Fraudulent Claims', 'Score Claim Risk', 'Discover Fraud Networks', 'Prioritise Investigations'],
   'predictive-maintenance': ['Predict Equipment Failure', 'Detect Sensor Anomalies', 'Estimate Remaining Useful Life', 'Optimise Maintenance Schedule'],
+  'logistics-delivery-delay': ['Predict Delivery Delays', 'Identify Delay Drivers', 'Score Shipment Risk', 'Optimise Route Planning'],
+  'logistics-freight-cost': ['Estimate Freight Cost', 'Detect Cost Anomalies', 'Optimise Shipping Routes', 'Improve Quote Accuracy'],
+  'logistics-delivery-outcome': ['Classify Delivery Outcomes', 'Predict Cancellation Risk', 'Segment by Outcome', 'Automate Outcome Workflows'],
+  'logistics-demand-forecast': ['Forecast Daily Demand', 'Optimise Fleet Capacity', 'Plan Inventory Replenishment', 'Detect Demand Anomalies'],
 }
 
 const fallbackGoals = ['Improve Prediction Accuracy', 'Identify Key Drivers', 'Segment Key Groups', 'Optimise Business Outcomes']
@@ -40,10 +44,70 @@ const goalDeploymentHint: Record<string, { mode: DeploymentMode; reason: string 
   'Forecast Hourly Demand': { mode: 'batch', reason: 'Hourly forecasts are pre-computed and fed into grid scheduling systems.' },
   'Estimate Remaining Useful Life': { mode: 'batch', reason: 'RUL estimates are computed on a scheduled basis to drive maintenance planning cycles.' },
   'Optimise Maintenance Schedule': { mode: 'batch', reason: 'Scheduled batch runs align with shift planning and maintenance window calendars.' },
+  'Predict Delivery Delays': { mode: 'realtime', reason: 'Delay predictions must be available at booking time to enable proactive rerouting and customer alerts.' },
+  'Identify Delay Drivers': { mode: 'batch', reason: 'Root cause analysis runs in scheduled batches to inform logistics planning and partner reviews.' },
+  'Score Shipment Risk': { mode: 'realtime', reason: 'Risk scores at dispatch time enable real-time SLA management and priority routing.' },
+  'Optimise Route Planning': { mode: 'batch', reason: 'Route optimisation models run in batch to generate next-day delivery plans.' },
+  'Estimate Freight Cost': { mode: 'realtime', reason: 'Instant cost estimates are needed at quote time for customer-facing pricing.' },
+  'Detect Cost Anomalies': { mode: 'batch', reason: 'Cost anomaly detection runs in scheduled audits to flag billing discrepancies.' },
+  'Optimise Shipping Routes': { mode: 'batch', reason: 'Route optimisation runs in scheduled batches to inform procurement and vendor negotiations.' },
+  'Improve Quote Accuracy': { mode: 'realtime', reason: 'Quote accuracy improvements must be reflected in real-time pricing engines.' },
+  'Classify Delivery Outcomes': { mode: 'batch', reason: 'Outcome classification runs in batch to trigger outcome-specific automation workflows.' },
+  'Predict Cancellation Risk': { mode: 'realtime', reason: 'Cancellation risk must be scored at order time to trigger proactive retention outreach.' },
+  'Segment by Outcome': { mode: 'batch', reason: 'Segmentation analysis runs in batch to inform customer experience strategy.' },
+  'Automate Outcome Workflows': { mode: 'batch', reason: 'Workflow automation triggers are generated in scheduled runs aligned with fulfilment cycles.' },
+  'Optimise Fleet Capacity': { mode: 'batch', reason: 'Fleet capacity plans are generated in advance to align with shift scheduling and vehicle allocation.' },
+  'Plan Inventory Replenishment': { mode: 'batch', reason: 'Replenishment orders are planned in batch cycles aligned with supplier lead times.' },
+  'Detect Demand Anomalies': { mode: 'realtime', reason: 'Demand spikes from weather events or disruptions need immediate detection for rapid response.' },
+  // credit-fraud
+  'Minimise False Positives': { mode: 'realtime', reason: 'False-positive tuning must be applied in real time so legitimate customers are not blocked at point of sale.' },
+  'Identify Fraud Patterns': { mode: 'batch', reason: 'Pattern discovery runs in scheduled analysis windows to update fraud rules and detection models.' },
+  // store-demand
+  'Measure Promotion Impact': { mode: 'batch', reason: 'Promotion lift analysis is computed post-campaign in batch to inform future marketing spend.' },
+  'Identify Seasonal Trends': { mode: 'batch', reason: 'Seasonal decomposition runs in scheduled batches across historical data.' },
+  // patient-readmission
+  'Identify High-Risk Patients': { mode: 'batch', reason: 'Risk stratification runs nightly so care teams have updated lists each morning.' },
+  'Optimise Care Plans': { mode: 'batch', reason: 'Care plan recommendations are generated in batch and reviewed by clinical staff.' },
+  'Reduce 30-Day Readmissions': { mode: 'batch', reason: 'Readmission reduction programs are driven by batch-scored cohort lists refreshed at discharge.' },
+  // employee-attrition
+  'Discover Attrition Drivers': { mode: 'batch', reason: 'Driver analysis runs in scheduled batches to produce SHAP-based reports for HR leadership.' },
+  'Identify High-Risk Employees': { mode: 'batch', reason: 'Weekly batch scoring gives managers a prioritised flight-risk list.' },
+  'Improve Retention Rate': { mode: 'batch', reason: 'Retention improvement programs run on batch-scored segments refreshed monthly.' },
+  // energy-consumption
+  'Optimise Grid Balancing': { mode: 'batch', reason: 'Grid balancing schedules are pre-computed in batch to align with dispatch planning windows.' },
+  // insurance-claims
+  'Discover Fraud Networks': { mode: 'batch', reason: 'Network analysis runs in scheduled batches to map provider and claimant relationships.' },
+  'Prioritise Investigations': { mode: 'batch', reason: 'Investigation queues are populated in nightly batch runs ranked by fraud probability.' },
+  // telco-churn
+  'Segment by Churn Propensity': { mode: 'batch', reason: 'Propensity segmentation is refreshed nightly to feed CRM campaign targeting systems.' },
 }
 
 function getHint(goal: string): { mode: DeploymentMode; reason: string } | null {
   return goalDeploymentHint[goal] ?? null
+}
+
+function DeploymentTooltip() {
+  const [visible, setVisible] = useState(false)
+  return (
+    <div
+      className="relative inline-flex shrink-0"
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
+      <Info className="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-200 transition-colors" />
+      {visible && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 rounded-lg bg-gray-900 border border-gray-700 p-3 shadow-xl z-50">
+          <p className="text-[11px] text-gray-300 leading-relaxed mb-2">
+            <span className="font-semibold text-white">Realtime</span> — single-record predictions via API with sub-second latency. Optimises for low-latency model architectures and lightweight preprocessing.
+          </p>
+          <p className="text-[11px] text-gray-300 leading-relaxed">
+            <span className="font-semibold text-white">Batch</span> — scheduled bulk scoring (hourly/daily). Allows heavier ensembles and more complex feature pipelines since latency is not a constraint.
+          </p>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700" />
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function BusinessSetup() {
@@ -160,6 +224,7 @@ export function BusinessSetup() {
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
               <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">2</span>
               Deployment Mode
+              <DeploymentTooltip />
             </h3>
             <p className="text-xs text-gray-500 mb-3 ml-7">How will predictions be served? This directly informs model architecture.</p>
 
@@ -289,7 +354,7 @@ export function BusinessSetup() {
       <BottomActionBar
         onNext={canContinue ? handleNext : undefined}
         nextDisabled={!canContinue}
-        nextLabel="Continue to Auto EDA"
+        nextLabel="Continue to Data Profiling"
       />
     </div>
   )

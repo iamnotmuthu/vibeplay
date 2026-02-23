@@ -9,6 +9,7 @@ import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CompletionModal } from '@/components/shared/CompletionModal'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import { getPrecomputedModelSelection } from './modelSelectionData'
+import { generateDeploymentPDF } from '@/lib/generateDeploymentPDF'
 import type { ModelSelectionResults, CohortPerformance, ModelComponent } from '@/store/types'
 
 const CATEGORY_COLORS: Record<string, { pill: string; track: string }> = {
@@ -288,7 +289,7 @@ function MetricBar({ label, value, colorClass }: { label: string; value: number;
   )
 }
 
-function PerformanceRow({ row }: { row: CohortPerformance }) {
+function PerformanceRow({ row, isRegression }: { row: CohortPerformance; isRegression?: boolean }) {
   const colors = CATEGORY_COLORS[row.category]
   return (
     <div className="rounded-xl border border-gray-700/60 bg-gray-800/50 p-4 space-y-2">
@@ -298,8 +299,17 @@ function PerformanceRow({ row }: { row: CohortPerformance }) {
       }`}>
         {row.label}
       </div>
-      <MetricBar label="Recall" value={row.recall} colorClass={colors.track} />
-      <MetricBar label="Precision" value={row.precision} colorClass={colors.track} />
+      {isRegression ? (
+        <>
+          <MetricBar label="MAPE" value={row.mape ?? row.recall} colorClass={colors.track} />
+          <MetricBar label="MAE" value={row.mae ?? row.precision} colorClass={colors.track} />
+        </>
+      ) : (
+        <>
+          <MetricBar label="Recall" value={row.recall} colorClass={colors.track} />
+          <MetricBar label="Precision" value={row.precision} colorClass={colors.track} />
+        </>
+      )}
     </div>
   )
 }
@@ -410,7 +420,7 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
                 className={`flex items-center justify-center text-[9px] font-bold text-white ${color} overflow-hidden`}
                 style={{ width: `${pct}%` }}
               >
-                {row.recall}%
+                {isRegression ? `${row.mape ?? row.recall}%` : `${row.recall}%`}
               </div>
             )
           })}
@@ -497,13 +507,10 @@ function LineChart({
   const path2 = data2?.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i).toFixed(1)} ${toY(v).toFixed(1)}`).join(' ')
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height }}>
+    <svg viewBox={`0 0 ${w} ${h + 16}`} className="w-full" style={{ height: height + 16 }}>
       {[0.25, 0.5, 0.75].map((t) => (
         <line key={t} x1={pad} y1={h * t} x2={w - pad} y2={h * t}
           stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-      ))}
-      {labels.map((l, i) => (
-        <text key={l} x={toX(i)} y={h - 1} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.25)">{l}</text>
       ))}
       <path d={path1} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       {data.map((v, i) => (
@@ -517,6 +524,11 @@ function LineChart({
           ))}
         </>
       )}
+      {labels.map((l, i) => (
+        i % (labels.length > 14 ? 3 : labels.length > 7 ? 2 : 1) === 0 ? (
+          <text key={i} x={toX(i)} y={h + 10} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.25)">{l}</text>
+        ) : null
+      ))}
     </svg>
   )
 }
@@ -526,7 +538,7 @@ function BarChart({ data, labels, color }: { data: number[]; labels: string[]; c
   const w = 400; const h = 80; const pad = 4
   const barW = (w - pad * 2) / data.length - 4
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: h }}>
+    <svg viewBox={`0 0 ${w} ${h + 16}`} className="w-full" style={{ height: h + 16 }}>
       {[0.25, 0.5, 0.75].map((t) => (
         <line key={t} x1={pad} y1={h * t} x2={w - pad} y2={h * t}
           stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
@@ -545,7 +557,9 @@ function BarChart({ data, labels, color }: { data: number[]; labels: string[]; c
               transition={{ delay: i * 0.06, duration: 0.5, ease: 'easeOut' }}
               style={{ transformOrigin: `${x + barW / 2}px ${h - pad}px` }}
             />
-            <text x={x + barW / 2} y={h - 1} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.25)">{labels[i]}</text>
+            {i % (labels.length > 14 ? 3 : labels.length > 7 ? 2 : 1) === 0 && (
+              <text x={x + barW / 2} y={h + 10} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.25)">{labels[i]}</text>
+            )}
           </g>
         )
       })}
@@ -746,6 +760,9 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
 
 export function ModelSelection() {
   const selectedDataset    = usePlaygroundStore((s) => s.selectedDataset)
+  const businessGoal       = usePlaygroundStore((s) => s.businessGoal)
+  const deploymentMode     = usePlaygroundStore((s) => s.deploymentMode)
+  const validationResults  = usePlaygroundStore((s) => s.validationSummaryResults)
   const setModelSelectionResults = usePlaygroundStore((s) => s.setModelSelectionResults)
   const completeStep       = usePlaygroundStore((s) => s.completeStep)
   const addLog             = usePlaygroundStore((s) => s.addLog)
@@ -766,6 +783,15 @@ export function ModelSelection() {
   }, [selectedDataset, setModelSelectionResults, addLog])
 
   const handleDownload = () => {
+    if (data) {
+      generateDeploymentPDF({
+        datasetName: selectedDataset?.name ?? 'Unknown',
+        businessGoal,
+        deploymentMode,
+        model: data,
+        validation: validationResults,
+      })
+    }
     setShowDownloaded(true)
     setTimeout(() => setShowDownloaded(false), 3000)
   }
@@ -793,21 +819,47 @@ export function ModelSelection() {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-900">
 
-        {/* Info banner */}
+        {/* Info banner — model composition messaging */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-teal-500/30 bg-gray-800/60 p-5"
+          className="rounded-xl border border-teal-500/30 bg-gray-800/60 p-5 relative overflow-hidden"
           style={{ borderLeft: '4px solid #14b8a6' }}
         >
-          <div className="flex items-start gap-3">
-            <Info className="w-4 h-4 text-teal-400 mt-0.5 shrink-0" />
+          {/* Animated shimmer to draw attention */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'linear-gradient(105deg, transparent 40%, rgba(20,184,166,0.08) 45%, rgba(20,184,166,0.15) 50%, rgba(20,184,166,0.08) 55%, transparent 60%)',
+            }}
+            animate={{ x: ['-100%', '200%'] }}
+            transition={{ duration: 2.5, ease: 'easeInOut', delay: 0.8, repeat: 2, repeatDelay: 1 }}
+          />
+          <div className="flex items-start gap-3 relative">
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, ease: 'easeInOut', delay: 0.5, repeat: 2, repeatDelay: 1.5 }}
+            >
+              <Info className="w-4 h-4 text-teal-400 mt-0.5 shrink-0" />
+            </motion.div>
             <div>
-              <div className="text-sm font-semibold text-teal-300 mb-1">A Model Built for Your Data</div>
+              <div className="text-sm font-semibold text-teal-300 mb-1">Model Composition — Not Selection</div>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Based on your dataset characteristics, validation distribution, and business objective, our system has composed the best-fit model.
+                VibeModel doesn't pick from a menu — it composes a model from scratch. Every component below was chosen based on your data profile, pattern distribution, and business objective.
               </p>
             </div>
+          </div>
+
+          {/* Horizontal pipeline visualization */}
+          <div className="mt-4 flex items-center gap-1 overflow-x-auto">
+            {['Preprocessor', 'Feature Eng.', 'Model Function', 'Loss Function', 'Regularization', 'Optimization', 'Inference'].map((step, i) => (
+              <div key={step} className="flex items-center gap-1 shrink-0">
+                <div className="px-2.5 py-1 rounded-md text-[10px] font-semibold text-gray-300 bg-gray-700/60 border border-gray-600/40 whitespace-nowrap">
+                  {step}
+                </div>
+                {i < 6 && <span className="text-gray-600 text-xs">→</span>}
+              </div>
+            ))}
           </div>
         </motion.div>
 
@@ -857,7 +909,7 @@ export function ModelSelection() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 + i * 0.07 }}
                 >
-                  <PerformanceRow row={row} />
+                  <PerformanceRow row={row} isRegression={data.primaryMetric === 'MAPE' || data.primaryMetric === 'RMSE'} />
                 </motion.div>
               ))}
             </div>
@@ -881,8 +933,11 @@ export function ModelSelection() {
 
           {/* 5. Why this model? */}
           <div className="px-5 py-5">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Why this model?</div>
-            <p className="text-sm text-gray-400 leading-relaxed">{data.whyThisModel}</p>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Why this composition?</div>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              <span className="text-gray-300 font-medium">This isn't model selection — it's model composition. </span>
+              {data.whyThisModel}
+            </p>
           </div>
         </motion.div>
 

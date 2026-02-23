@@ -175,7 +175,7 @@ export function DriftAndRetrain() {
                 <Rocket className="w-8 h-8 text-primary" />
               </motion.div>
               <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                You just experienced autonomous ML
+                You just experienced autonomous AI
               </h2>
               <p className="text-gray-600 leading-relaxed mb-6">
                 From raw data to deployed model with drift monitoring and automatic retraining

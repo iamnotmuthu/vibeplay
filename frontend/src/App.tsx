@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, LayoutGrid } from 'lucide-react'
 import { StepperNav } from '@/components/layout/StepperNav'
 import { DomainSelector } from '@/components/DomainSelector'
 import { usePlaygroundStore } from '@/store/playgroundStore'
@@ -21,7 +21,19 @@ const stageComponents = {
 }
 
 function BrandHeader() {
+  const currentStep = usePlaygroundStore((s) => s.currentStep)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  const handleBackToHome = () => {
+    if (currentStep > 1) {
+      setConfirmOpen(true)
+    } else {
+      usePlaygroundStore.getState().setShouldGoHome(true)
+    }
+  }
+
   return (
+    <>
     <header
       className="h-14 px-6 flex items-center justify-between shrink-0 z-50"
       style={{
@@ -30,18 +42,48 @@ function BrandHeader() {
         borderBottom: '1px solid rgba(255,255,255,0.07)',
       }}
     >
-      <a
-        href="https://vibemodel.ai"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center hover:opacity-80 transition-opacity"
+      <div className="flex items-center gap-3">
+        <a
+          href="https://vibemodel.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center hover:opacity-80 transition-opacity"
+        >
+          <img
+            src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}
+            alt="VibeModel"
+            style={{ height: 36, width: 'auto' }}
+          />
+        </a>
+        <button
+          onClick={handleBackToHome}
+          title="Back to scenario selection"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          style={{ color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#fff'
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'
+            e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'rgba(255,255,255,0.5)'
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+            e.currentTarget.style.background = 'transparent'
+          }}
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Scenarios</span>
+        </button>
+      </div>
+
+      {/* Demo mode pill */}
+      <div
+        className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
+        style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', color: '#fbbf24' }}
       >
-        <img
-          src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}
-          alt="VibeModel"
-          style={{ height: 36, width: 'auto' }}
-        />
-      </a>
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+        Demo Mode · Simulated Data
+      </div>
 
       <div className="flex items-center gap-3">
         <a
@@ -90,6 +132,53 @@ function BrandHeader() {
         </motion.a>
       </div>
     </header>
+
+    {/* Confirmation dialog */}
+    <AnimatePresence>
+      {confirmOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+          onClick={() => setConfirmOpen(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="w-full max-w-sm rounded-xl p-6 shadow-2xl"
+            style={{ background: '#161b22', border: '1px solid rgba(255,255,255,0.1)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-white mb-2">Switch Scenario?</h3>
+            <p className="text-sm text-gray-400 mb-5">
+              Your current progress will be lost. Are you sure you want to go back to scenario selection?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700/50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmOpen(false)
+                  usePlaygroundStore.getState().setShouldGoHome(true)
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
+                style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
+              >
+                Switch Scenario
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   )
 }
 
