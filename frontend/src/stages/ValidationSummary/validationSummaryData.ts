@@ -596,41 +596,50 @@ export function getPrecomputedValidation(datasetId: string): ValidationSummaryRe
   return validationDataMap[datasetId] ?? validationDataMap['telco-churn']
 }
 
-// ── Backtest data for time-series datasets ───────────────────────────────────
+// ── Backtest validation criteria for time-series datasets ────────────────────
 
-export interface BacktestPoint {
-  date: string
-  actual: number
-  predicted: number
+import type { BacktestConfig } from './BacktestChart'
+export type { BacktestConfig }
+
+const backtestConfigMap: Record<string, BacktestConfig> = {
+  'store-demand': {
+    windowLabel: '60-day rolling window',
+    totalDataPoints: 45000,
+    validationSlices: 12,
+    granularity: 'Daily',
+    dateRange: 'Jan 2023 — Mar 2024',
+    strategy: 'Walk-Forward',
+    purgeGap: '1 day',
+  },
+  'energy-consumption': {
+    windowLabel: '60-day rolling window',
+    totalDataPoints: 35040,
+    validationSlices: 24,
+    granularity: 'Hourly',
+    dateRange: 'Jan 2023 — Dec 2023',
+    strategy: 'Walk-Forward',
+    purgeGap: '1 hour',
+  },
+  'logistics-freight-cost': {
+    windowLabel: '90-day rolling window',
+    totalDataPoints: 5964,
+    validationSlices: 6,
+    granularity: 'Daily',
+    dateRange: 'Jun 2022 — Dec 2023',
+    strategy: 'Expanding Window',
+    purgeGap: '3 days',
+  },
+  'logistics-demand-forecast': {
+    windowLabel: '30-day rolling window',
+    totalDataPoints: 1337,
+    validationSlices: 8,
+    granularity: 'Daily',
+    dateRange: 'Mar 2022 — Dec 2025',
+    strategy: 'Walk-Forward',
+    purgeGap: '1 day',
+  },
 }
 
-function generateBacktestData(base: number, noise: number, days: number): BacktestPoint[] {
-  const points: BacktestPoint[] = []
-  const startDate = new Date('2024-01-01')
-  for (let i = 0; i < days; i++) {
-    const d = new Date(startDate)
-    d.setDate(d.getDate() + i)
-    const dayOfWeek = d.getDay()
-    const seasonalFactor = 1 + 0.15 * Math.sin((i / 365) * 2 * Math.PI)
-    const weekendDip = (dayOfWeek === 0 || dayOfWeek === 6) ? 0.82 : 1
-    const actual = Math.round(base * seasonalFactor * weekendDip + (Math.random() - 0.5) * noise)
-    const predicted = Math.round(actual + (Math.random() - 0.5) * noise * 0.6)
-    points.push({
-      date: `${d.getMonth() + 1}/${d.getDate()}`,
-      actual,
-      predicted,
-    })
-  }
-  return points
-}
-
-const backtestDataMap: Record<string, BacktestPoint[]> = {
-  'store-demand': generateBacktestData(420, 80, 60),
-  'energy-consumption': generateBacktestData(3200, 600, 60),
-  'logistics-freight-cost': generateBacktestData(1850, 400, 60),
-  'logistics-demand-forecast': generateBacktestData(580, 120, 60),
-}
-
-export function getBacktestData(datasetId: string): BacktestPoint[] | null {
-  return backtestDataMap[datasetId] ?? null
+export function getBacktestConfig(datasetId: string): BacktestConfig | null {
+  return backtestConfigMap[datasetId] ?? null
 }

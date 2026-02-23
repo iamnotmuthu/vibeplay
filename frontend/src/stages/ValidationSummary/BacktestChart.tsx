@@ -1,20 +1,36 @@
 import { motion } from 'framer-motion'
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-} from 'recharts'
+import { Calendar, Database, Layers, TrendingUp } from 'lucide-react'
 
-export interface BacktestPoint {
-  date: string
-  actual: number
-  predicted: number
+export interface BacktestConfig {
+  /** Human-readable label, e.g. "60-day rolling window" */
+  windowLabel: string
+  /** Total data points used in backtesting */
+  totalDataPoints: number
+  /** Number of validation slices / folds */
+  validationSlices: number
+  /** Granularity of the data */
+  granularity: 'Hourly' | 'Daily' | 'Weekly' | 'Monthly'
+  /** Date range covered */
+  dateRange: string
+  /** Backtesting strategy used */
+  strategy: string
+  /** Gap between train and validation sets to prevent leakage */
+  purgeGap?: string
 }
 
-interface BacktestChartProps {
-  data: BacktestPoint[]
+interface BacktestSummaryProps {
+  config: BacktestConfig
   accentColor?: string
 }
 
-export function BacktestChart({ data, accentColor = '#3b82f6' }: BacktestChartProps) {
+export function BacktestSummary({ config, accentColor = '#3b82f6' }: BacktestSummaryProps) {
+  const stats = [
+    { icon: Database, label: 'Data Points', value: config.totalDataPoints.toLocaleString() },
+    { icon: Layers, label: 'Validation Slices', value: String(config.validationSlices) },
+    { icon: Calendar, label: 'Granularity', value: config.granularity },
+    { icon: TrendingUp, label: 'Strategy', value: config.strategy },
+  ]
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -24,76 +40,46 @@ export function BacktestChart({ data, accentColor = '#3b82f6' }: BacktestChartPr
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="text-sm font-semibold text-gray-200">Backtesting — Actual vs Predicted</div>
+          <div className="text-sm font-semibold text-gray-200">
+            Backtesting Validation — {config.windowLabel}
+          </div>
           <div className="text-[10px] text-gray-500 mt-0.5">
-            Walk-forward validation on held-out time slices
+            Walk-forward validation criteria and data coverage
           </div>
         </div>
-        <div className="flex items-center gap-3 text-[10px]">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 rounded-full bg-gray-400 inline-block" />
-            Actual
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 rounded-full inline-block" style={{ background: accentColor }} />
-            Predicted
-          </span>
+        <div
+          className="px-2.5 py-1 rounded-md text-[10px] font-semibold"
+          style={{ background: `${accentColor}15`, color: accentColor, border: `1px solid ${accentColor}30` }}
+        >
+          {config.dateRange}
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={240}>
-        <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-          <defs>
-            <linearGradient id="gradActual" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#9ca3af" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="#9ca3af" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="gradPredicted" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={accentColor} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={accentColor} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-          <XAxis
-            dataKey="date"
-            tick={{ fill: '#6b7280', fontSize: 10 }}
-            axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fill: '#6b7280', fontSize: 10 }}
-            axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
-            tickLine={false}
-            width={45}
-          />
-          <Tooltip
-            contentStyle={{
-              background: '#1f2937',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 8,
-              fontSize: 11,
-              color: '#e5e7eb',
-            }}
-          />
-          <Legend wrapperStyle={{ display: 'none' }} />
-          <Area
-            type="monotone"
-            dataKey="actual"
-            stroke="#9ca3af"
-            strokeWidth={1.5}
-            fill="url(#gradActual)"
-            dot={false}
-          />
-          <Area
-            type="monotone"
-            dataKey="predicted"
-            stroke={accentColor}
-            strokeWidth={2}
-            fill="url(#gradPredicted)"
-            dot={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {stats.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 + i * 0.05 }}
+            className="rounded-lg border border-gray-700/40 bg-gray-800/40 p-3"
+          >
+            <div className="flex items-center gap-2 mb-1.5">
+              <stat.icon className="w-3.5 h-3.5 text-gray-500" />
+              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{stat.label}</span>
+            </div>
+            <div className="text-lg font-bold text-white">{stat.value}</div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Purge gap note */}
+      {config.purgeGap && (
+        <div className="mt-3 text-[10px] text-gray-500 leading-relaxed">
+          <span className="text-gray-400 font-medium">Purge gap:</span> {config.purgeGap} between training and validation sets to prevent data leakage.
+        </div>
+      )}
     </motion.div>
   )
 }

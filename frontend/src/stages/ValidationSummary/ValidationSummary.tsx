@@ -4,9 +4,9 @@ import { ShieldCheck, Eye, Database } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
-import { getPrecomputedValidation, getBacktestData } from './validationSummaryData'
-import type { BacktestPoint } from './validationSummaryData'
-import { BacktestChart } from './BacktestChart'
+import { getPrecomputedValidation, getBacktestConfig } from './validationSummaryData'
+import type { BacktestConfig } from './validationSummaryData'
+import { BacktestSummary } from './BacktestChart'
 import type { StageId, ValidationSummaryResults, ValidationCategory, ValidationOverallMetrics } from '@/store/types'
 
 type CategoryKey = 'sufficient' | 'insufficient' | 'helpMe' | 'augmented'
@@ -342,14 +342,14 @@ export function ValidationSummary() {
 
   const [data, setData] = useState<ValidationSummaryResults | null>(null)
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('sufficient')
-  const [backtestData, setBacktestData] = useState<BacktestPoint[] | null>(null)
+  const [backtestConfig, setBacktestConfig] = useState<BacktestConfig | null>(null)
 
   useEffect(() => {
     if (!selectedDataset) return
     const results = getPrecomputedValidation(selectedDataset.id)
     setData(results)
     setValidationSummaryResults(results)
-    setBacktestData(getBacktestData(selectedDataset.id))
+    setBacktestConfig(getBacktestConfig(selectedDataset.id))
     addLog(`Validation summary loaded — ${results.totalCount} samples across ${results.totalCohorts} cohorts`, 'success')
     addLog(`Dominant: ${results.sufficient.count} (${results.sufficient.percentage}%) · Non-Dominant: ${results.insufficient.count}`, 'info')
   }, [selectedDataset, setValidationSummaryResults, addLog])
@@ -403,10 +403,10 @@ export function ValidationSummary() {
           businessGoal={businessGoal}
         />
 
-        {/* Backtesting chart for time-series datasets */}
-        {backtestData && (
-          <BacktestChart
-            data={backtestData}
+        {/* Backtesting criteria for time-series datasets */}
+        {backtestConfig && (
+          <BacktestSummary
+            config={backtestConfig}
             accentColor={selectedDataset?.color}
           />
         )}
