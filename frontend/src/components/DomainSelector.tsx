@@ -336,7 +336,7 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
             >
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-xs text-gray-400">
-                        Built by AI veterans from Amazon & Google · © 2026 VibeModel.ai
+                        © 2026 VibeModel.ai
                     </p>
                     <div className="flex items-center gap-6">
                         <a
