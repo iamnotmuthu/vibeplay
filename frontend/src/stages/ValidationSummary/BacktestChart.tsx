@@ -36,11 +36,12 @@ export function BacktestSummary({ config, accentColor = '#3b82f6' }: BacktestSum
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="rounded-xl border border-gray-700/60 bg-gray-800/50 p-5"
+      className="rounded-xl p-5"
+      style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="text-sm font-semibold text-gray-200">
+          <div className="text-sm font-semibold text-gray-800">
             Backtesting Validation — {config.windowLabel}
           </div>
           <div className="text-[10px] text-gray-500 mt-0.5">
@@ -63,13 +64,14 @@ export function BacktestSummary({ config, accentColor = '#3b82f6' }: BacktestSum
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 + i * 0.05 }}
-            className="rounded-lg border border-gray-700/40 bg-gray-800/40 p-3"
+            className="rounded-lg p-3"
+            style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}
           >
             <div className="flex items-center gap-2 mb-1.5">
               <stat.icon className="w-3.5 h-3.5 text-gray-500" />
               <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{stat.label}</span>
             </div>
-            <div className="text-lg font-bold text-white">{stat.value}</div>
+            <div className="text-lg font-bold text-gray-900">{stat.value}</div>
           </motion.div>
         ))}
       </div>
@@ -77,7 +79,7 @@ export function BacktestSummary({ config, accentColor = '#3b82f6' }: BacktestSum
       {/* Purge gap note */}
       {config.purgeGap && (
         <div className="mt-3 text-[10px] text-gray-500 leading-relaxed">
-          <span className="text-gray-400 font-medium">Purge gap:</span> {config.purgeGap} between training and validation sets to prevent data leakage.
+          <span className="text-gray-600 font-medium">Purge gap:</span> {config.purgeGap} between training and validation sets to prevent data leakage.
         </div>
       )}
     </motion.div>

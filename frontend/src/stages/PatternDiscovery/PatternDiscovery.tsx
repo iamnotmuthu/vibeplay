@@ -134,10 +134,10 @@ function PatternCard({
   if (ignored) return null
 
   const borderColor = isInsufficient
-    ? 'rgba(239,68,68,0.2)'
+    ? 'rgba(239,68,68,0.25)'
     : isHelpMe
-      ? 'rgba(234,179,8,0.2)'
-      : 'rgba(255,255,255,0.07)'
+      ? 'rgba(234,179,8,0.25)'
+      : '#e5e7eb'
 
   return (
     <motion.div
@@ -146,18 +146,18 @@ function PatternCard({
       exit={{ opacity: 0, y: -8 }}
       transition={{ delay }}
       className="rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.01]"
-      style={{ background: '#0d1117', border: `1px solid ${borderColor}` }}
+      style={{ background: '#ffffff', border: `1px solid ${borderColor}`, boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
     >
       {/* Insufficient banner */}
       {isInsufficient && (
         <div
           className="px-4 py-2.5 flex items-start gap-2.5"
-          style={{ background: 'rgba(239,68,68,0.07)', borderBottom: '1px solid rgba(239,68,68,0.15)' }}
+          style={{ background: 'rgba(239,68,68,0.05)', borderBottom: '1px solid rgba(239,68,68,0.15)' }}
         >
-          <TriangleAlert className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+          <TriangleAlert className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
           <div>
-            <div className="text-xs font-semibold text-red-400">High Impact with Insufficient Data:</div>
-            <div className="text-xs mt-0.5" style={{ color: 'rgba(248,113,113,0.7)' }}>
+            <div className="text-xs font-semibold text-red-600">High Impact with Insufficient Data:</div>
+            <div className="text-xs mt-0.5 text-red-400">
               This cohort has insufficient data for reliable modeling.
             </div>
           </div>
@@ -168,10 +168,10 @@ function PatternCard({
       {isHelpMe && (
         <div
           className="px-4 py-2.5 flex items-start gap-2.5"
-          style={{ background: 'rgba(234,179,8,0.06)', borderBottom: '1px solid rgba(234,179,8,0.12)' }}
+          style={{ background: 'rgba(234,179,8,0.05)', borderBottom: '1px solid rgba(234,179,8,0.15)' }}
         >
-          <HelpCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-400">Cohorts with mixed patterns requiring human review</div>
+          <HelpCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-600">Cohorts with mixed patterns requiring human review</div>
         </div>
       )}
 
@@ -179,14 +179,14 @@ function PatternCard({
       <div className="p-4">
         {/* Title + confidence */}
         <div className="flex items-center gap-2 flex-wrap mb-2">
-          <span className="text-sm font-semibold text-white">{condition}</span>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-500 ml-auto shrink-0" />
+          <span className="text-sm font-semibold text-gray-900">{condition}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-gray-400 ml-auto shrink-0" />
           <span
             className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
             style={
               confidence === 'high'
-                ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80' }
-                : { background: 'rgba(239,68,68,0.12)', color: '#f87171' }
+                ? { background: 'rgba(34,197,94,0.12)', color: '#16a34a' }
+                : { background: 'rgba(239,68,68,0.10)', color: '#dc2626' }
             }
           >
             {confidence === 'high' ? 'High Confidence' : 'Low Confidence'}
@@ -195,30 +195,30 @@ function PatternCard({
 
         {/* Stats */}
         <p className="text-sm mb-0.5">
-          <span className="font-bold text-white">{pct}%</span>
-          <span className="text-gray-400"> of this pattern has </span>
-          <span className="font-bold text-white">Recommended IND</span>
-          <span className="text-gray-400"> = </span>
-          <span className="font-bold text-white">{targetInd}</span>
+          <span className="font-bold text-gray-900">{pct}%</span>
+          <span className="text-gray-500"> of this pattern has </span>
+          <span className="font-bold text-gray-900">Recommended IND</span>
+          <span className="text-gray-500"> = </span>
+          <span className="font-bold text-gray-900">{targetInd}</span>
         </p>
         <p className="text-xs text-gray-500 mb-3">
-          Records in cohort: <span className="text-gray-300 font-semibold">{pattern.count.toLocaleString()}</span>
+          Records in cohort: <span className="text-gray-700 font-semibold">{pattern.count.toLocaleString()}</span>
         </p>
 
         {/* Defining Attributes table */}
-        <div className="text-xs font-medium text-gray-400 mb-1.5">Defining Attributes:</div>
-        <div className="rounded-lg overflow-hidden mb-3" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="text-xs font-medium text-gray-500 mb-1.5">Defining Attributes:</div>
+        <div className="rounded-lg overflow-hidden mb-3" style={{ border: '1px solid #e5e7eb' }}>
           {attrs.map((attr, i) => (
             <div
               key={i}
               className="flex items-center px-3 py-2.5"
               style={{
-                borderBottom: i < attrs.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                background: 'rgba(255,255,255,0.02)',
+                borderBottom: i < attrs.length - 1 ? '1px solid #e5e7eb' : 'none',
+                background: i % 2 === 0 ? '#f9fafb' : '#ffffff',
               }}
             >
-              <span className="text-xs text-gray-400 flex-1">{attr.name}</span>
-              <span className="text-xs text-gray-300 font-mono">{attr.value}</span>
+              <span className="text-xs text-gray-500 flex-1">{attr.name}</span>
+              <span className="text-xs text-gray-700 font-mono">{attr.value}</span>
             </div>
           ))}
         </div>
@@ -228,8 +228,8 @@ function PatternCard({
           <div className="mb-3">
             <button
               onClick={() => setShowIncluded((v) => !v)}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5"
-              style={{ color: '#a78bfa', border: '1px solid rgba(167,139,250,0.25)' }}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:bg-gray-50"
+              style={{ color: '#7c3aed', border: '1px solid rgba(124,58,237,0.25)' }}
             >
               <Users className="w-3.5 h-3.5" />
               Included Cohorts
@@ -252,11 +252,11 @@ function PatternCard({
                       <div
                         key={ci}
                         className="rounded-lg px-3 py-2.5"
-                        style={{ background: 'rgba(167,139,250,0.04)', border: '1px solid rgba(167,139,250,0.15)' }}
+                        style={{ background: 'rgba(124,58,237,0.04)', border: '1px solid rgba(124,58,237,0.15)' }}
                       >
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           {cohort.features.map((f, fi) => (
-                            <span key={fi} className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(167,139,250,0.1)', color: '#c4b5fd' }}>
+                            <span key={fi} className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(124,58,237,0.08)', color: '#7c3aed' }}>
                               {f.name}={f.value}
                             </span>
                           ))}
@@ -285,8 +285,8 @@ function PatternCard({
             </button>
             <button
               onClick={() => setIgnored(true)}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-gray-300 transition-colors"
-              style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
+              style={{ border: '1px solid #e5e7eb' }}
             >
               Ignore
             </button>
@@ -296,7 +296,7 @@ function PatternCard({
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-3 px-3 py-2.5 rounded-lg text-xs text-teal-300"
+            className="mt-3 px-3 py-2.5 rounded-lg text-xs text-teal-700"
             style={{ background: 'rgba(20,184,166,0.08)', border: '1px solid rgba(20,184,166,0.2)' }}
           >
             ✓ Augmentation queued — synthetic samples will be generated during validation.
@@ -315,8 +315,8 @@ function PatternCard({
             </button>
             <button
               onClick={() => setIgnored(true)}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-gray-300 transition-colors"
-              style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
+              style={{ border: '1px solid #e5e7eb' }}
             >
               Ignore
             </button>
@@ -326,7 +326,7 @@ function PatternCard({
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-3 px-3 py-2.5 rounded-lg text-xs text-amber-300"
+            className="mt-3 px-3 py-2.5 rounded-lg text-xs text-amber-700"
             style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}
           >
             ⚠ Low confidence prediction scheduled — model will flag these cohorts for human review.
@@ -397,9 +397,9 @@ function AddPatternForm({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-xl p-4"
-      style={{ background: '#0d1117', border: '1px solid rgba(99,102,241,0.35)' }}
+      style={{ background: '#ffffff', border: '1px solid rgba(99,102,241,0.35)', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
     >
-      <div className="text-sm font-semibold text-white mb-1">Add New Pattern</div>
+      <div className="text-sm font-semibold text-gray-900 mb-1">Add New Pattern</div>
       <p className="text-xs text-gray-500 mb-3">
         Select features and values to define a cohort — the system will find matching records.
       </p>
@@ -415,7 +415,7 @@ function AddPatternForm({
                   <select
                     value={row.feature}
                     onChange={(e) => updateRow(i, 'feature', e.target.value)}
-                    className="w-44 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500"
+                    className="w-44 px-2.5 py-1.5 rounded-lg text-xs text-gray-900 bg-white border border-gray-200 focus:outline-none focus:border-indigo-500"
                   >
                     <option value="">Select feature…</option>
                     {featureNames.map((f) => (
@@ -428,7 +428,7 @@ function AddPatternForm({
                     value={row.value}
                     onChange={(e) => updateRow(i, 'value', e.target.value)}
                     disabled={!row.feature}
-                    className="w-36 px-2.5 py-1.5 rounded-lg text-xs text-white bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500 disabled:opacity-40"
+                    className="w-36 px-2.5 py-1.5 rounded-lg text-xs text-gray-900 bg-white border border-gray-200 focus:outline-none focus:border-indigo-500 disabled:opacity-40"
                   >
                     <option value="">Select value…</option>
                     {values.map((v) => (
@@ -439,7 +439,7 @@ function AddPatternForm({
                   {rows.length > 1 && (
                     <button
                       onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="text-gray-600 hover:text-red-400 transition-colors p-1 shrink-0"
+                      className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -451,7 +451,7 @@ function AddPatternForm({
 
           <button
             onClick={() => setRows((prev) => [...prev, { feature: featureNames[0] ?? '', value: '' }])}
-            className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 mb-4"
+            className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-500 mb-4"
           >
             <Plus className="w-3 h-3" /> Add Feature
           </button>
@@ -466,8 +466,8 @@ function AddPatternForm({
             </button>
             <button
               onClick={onCancel}
-              className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors"
+              style={{ border: '1px solid #e5e7eb' }}
             >
               Cancel
             </button>
@@ -481,8 +481,8 @@ function AddPatternForm({
           animate={{ opacity: 1 }}
           className="flex flex-col items-center gap-3 py-6"
         >
-          <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-          <div className="text-xs text-gray-400 text-center">
+          <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+          <div className="text-xs text-gray-500 text-center">
             Scanning dataset for cohorts matching your pattern…
           </div>
         </motion.div>
@@ -492,16 +492,16 @@ function AddPatternForm({
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
           <div
             className="rounded-lg p-3 mb-3"
-            style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}
+            style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.2)' }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-xs font-semibold text-emerald-400">Cohort Discovered</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-xs font-semibold text-emerald-600">Cohort Discovered</span>
             </div>
-            <div className="text-xs text-gray-300 mb-2">{discovered.condition}</div>
+            <div className="text-xs text-gray-700 mb-2">{discovered.condition}</div>
             <div className="flex items-center gap-4 text-[10px] text-gray-500">
-              <span>Records: <span className="text-gray-300 font-semibold">{discovered.count.toLocaleString()}</span></span>
-              <span>Target IND: <span className="text-gray-300 font-semibold">{discovered.pct}%</span></span>
+              <span>Records: <span className="text-gray-700 font-semibold">{discovered.count.toLocaleString()}</span></span>
+              <span>Target IND: <span className="text-gray-700 font-semibold">{discovered.pct}%</span></span>
             </div>
           </div>
           <div className="flex gap-2">
@@ -513,12 +513,12 @@ function AddPatternForm({
             </button>
             <button
               onClick={() => { setPhase('input'); setDiscovered(null); setRows([{ feature: featureNames[0] ?? '', value: '' }]) }}
-              className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors"
+              style={{ border: '1px solid #e5e7eb' }}
             >
               Search Again
             </button>
-            <button onClick={onCancel} className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors">
+            <button onClick={onCancel} className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors">
               Cancel
             </button>
           </div>
@@ -543,8 +543,8 @@ function SectionHeader({
   return (
     <button
       onClick={onToggle}
-      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl mb-3 hover:bg-white/[0.03] transition-colors"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl mb-3 hover:bg-gray-50 transition-colors"
+      style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}
     >
       <div className="flex items-center gap-2">
         {icon}
@@ -558,8 +558,8 @@ function SectionHeader({
           {count} cohort{count !== 1 ? 's' : ''}
         </span>
         {collapsed
-          ? <ChevronRight className="w-4 h-4 text-gray-500" />
-          : <ChevronDown className="w-4 h-4 text-gray-500" />}
+          ? <ChevronRight className="w-4 h-4 text-gray-400" />
+          : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </div>
     </button>
   )
@@ -630,17 +630,17 @@ export function PatternDiscovery() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="px-6 py-4 border-b shrink-0" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
+      <div className="px-6 py-4 border-b shrink-0" style={{ borderColor: '#e5e7eb', background: '#ffffff' }}>
         <div className="flex items-center gap-3">
-          <Search className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-lg font-bold text-white">Pattern Recognition</h2>
-          {phase !== 'complete' && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
+          <Search className="w-5 h-5 text-indigo-500" />
+          <h2 className="text-lg font-bold text-gray-900">Pattern Recognition</h2>
+          {phase !== 'complete' && <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />}
           {phase === 'complete' && (
             <motion.span
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               className="text-xs px-2 py-1 rounded-full font-medium"
-              style={{ background: 'rgba(20,184,166,0.12)', color: '#2dd4bf' }}
+              style={{ background: 'rgba(20,184,166,0.10)', color: '#0d9488' }}
             >
               Analysis Complete
             </motion.span>
@@ -651,7 +651,7 @@ export function PatternDiscovery() {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#060809' }}>
+      <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
 
         {/* Stats row */}
         <AnimatePresence>
@@ -662,15 +662,15 @@ export function PatternDiscovery() {
               className={`grid gap-3 ${hasHelpMe ? 'grid-cols-4' : 'grid-cols-3'}`}
             >
               {[
-                { label: 'Total Records', value: data.totalRecords, color: '#fff', accent: 'rgba(255,255,255,0.06)' },
-                { label: 'Sufficient Patterns', value: data.sufficient.length, sub: `${totalSufficient.toLocaleString()} records`, color: '#4ade80', accent: 'rgba(74,222,128,0.08)' },
-                { label: 'Need Augmentation', value: data.insufficient.length, sub: `${totalInsufficient.toLocaleString()} records`, color: '#f87171', accent: 'rgba(248,113,113,0.08)' },
-                ...(hasHelpMe ? [{ label: 'Fuzzy Patterns', value: data.helpMe.length, sub: `${totalHelpMe.toLocaleString()} records`, color: '#fbbf24', accent: 'rgba(251,191,36,0.08)' }] : []),
+                { label: 'Total Records', value: data.totalRecords, color: '#1e293b', accent: '#f3f4f6' },
+                { label: 'Sufficient Patterns', value: data.sufficient.length, sub: `${totalSufficient.toLocaleString()} records`, color: '#16a34a', accent: 'rgba(74,222,128,0.10)' },
+                { label: 'Need Augmentation', value: data.insufficient.length, sub: `${totalInsufficient.toLocaleString()} records`, color: '#dc2626', accent: 'rgba(248,113,113,0.10)' },
+                ...(hasHelpMe ? [{ label: 'Fuzzy Patterns', value: data.helpMe.length, sub: `${totalHelpMe.toLocaleString()} records`, color: '#d97706', accent: 'rgba(251,191,36,0.10)' }] : []),
               ].map((s) => (
                 <div
                   key={s.label}
                   className="rounded-xl p-4 text-center"
-                  style={{ background: s.accent, border: `1px solid ${s.color}22` }}
+                  style={{ background: s.accent, border: `1px solid ${s.color}22`, boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
                 >
                   <div className="text-2xl font-bold" style={{ color: s.color }}>
                     <CountUpNumber end={s.value} />
@@ -689,7 +689,7 @@ export function PatternDiscovery() {
             animate={{ opacity: [0.4, 1, 0.4] }}
             transition={{ repeat: Infinity, duration: 1.5 }}
             className="flex items-center gap-3 px-5 py-6 rounded-xl border border-dashed text-sm text-gray-500"
-            style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+            style={{ borderColor: '#d1d5db' }}
           >
             <Loader2 className="w-4 h-4 animate-spin" />
             Scanning {selectedDataset?.rows.toLocaleString()} records for cohort patterns...
@@ -701,10 +701,10 @@ export function PatternDiscovery() {
           {data && phase !== 'loading' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <SectionHeader
-                icon={<CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />}
                 label="Dominant Patterns: Pattern with Sufficient Data"
                 count={data.sufficient.length + userPatterns.filter(u => u.status === 'sufficient').length}
-                color="#4ade80"
+                color="#16a34a"
                 collapsed={!!collapsed['sufficient']}
                 onToggle={() => toggleCollapse('sufficient')}
               />
@@ -717,9 +717,9 @@ export function PatternDiscovery() {
                     transition={{ duration: 0.25 }}
                     style={{ overflow: 'hidden' }}
                   >
-                    <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}>
-                      <ChevronRight className="w-4 h-4 text-indigo-400 shrink-0" />
-                      <p className="text-xs text-indigo-300 font-medium">Click any pattern card to explore details</p>
+                    <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.15)' }}>
+                      <ChevronRight className="w-4 h-4 text-indigo-500 shrink-0" />
+                      <p className="text-xs text-indigo-600 font-medium">Click any pattern card to explore details</p>
                     </div>
                     <div className="space-y-3">
                       {data.sufficient.map((p, i) => (
@@ -741,10 +741,10 @@ export function PatternDiscovery() {
           {data && showInsufficient && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <SectionHeader
-                icon={<AlertCircle className="w-4 h-4 text-red-400" />}
+                icon={<AlertCircle className="w-4 h-4 text-red-500" />}
                 label="Non-Dominant Patterns: Impactful Patterns with Insufficient Data"
                 count={data.insufficient.length + userPatterns.filter(u => u.status === 'insufficient').length}
-                color="#f87171"
+                color="#dc2626"
                 collapsed={!!collapsed['insufficient']}
                 onToggle={() => toggleCollapse('insufficient')}
               />
@@ -777,10 +777,10 @@ export function PatternDiscovery() {
           {data && hasHelpMe && showHelpMe && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <SectionHeader
-                icon={<HelpCircle className="w-4 h-4 text-amber-400" />}
+                icon={<HelpCircle className="w-4 h-4 text-amber-500" />}
                 label="Fuzzy Patterns"
                 count={data.helpMe.length + userPatterns.filter(u => u.status === 'helpMe').length}
-                color="#fbbf24"
+                color="#d97706"
                 collapsed={!!collapsed['helpMe']}
                 onToggle={() => toggleCollapse('helpMe')}
               />
@@ -819,8 +819,8 @@ export function PatternDiscovery() {
             ) : (
               <button
                 onClick={() => setAddingNew(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-colors hover:bg-white/5"
-                style={{ border: '1px dashed rgba(99,102,241,0.4)', color: '#818cf8' }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-colors hover:bg-gray-50"
+                style={{ border: '1px dashed rgba(99,102,241,0.4)', color: '#6366f1', background: '#ffffff' }}
               >
                 <Plus className="w-4 h-4" /> Add New Pattern
               </button>
@@ -830,8 +830,8 @@ export function PatternDiscovery() {
       </div>
 
       {phase === 'complete' && (
-        <div className="px-6 py-2.5 text-center" style={{ background: 'rgba(99,102,241,0.04)', borderTop: '1px solid rgba(99,102,241,0.1)' }}>
-          <p className="text-xs text-indigo-300/80 font-medium">
+        <div className="px-6 py-2.5 text-center" style={{ background: 'rgba(99,102,241,0.04)', borderTop: '1px solid rgba(99,102,241,0.12)' }}>
+          <p className="text-xs text-indigo-600 font-medium">
             Review and adjust patterns above, then continue to validation.
           </p>
         </div>

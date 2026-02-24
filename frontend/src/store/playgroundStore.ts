@@ -66,10 +66,6 @@ interface PlaygroundState {
   shouldGoHome: boolean
   setShouldGoHome: (value: boolean) => void
 
-  // Theme
-  theme: 'light' | 'dark'
-  toggleTheme: () => void
-
   reset: () => void
 }
 
@@ -134,20 +130,6 @@ export const usePlaygroundStore = create<PlaygroundState>((set) => ({
   setActiveDomain: (id) => set({ activeDomainId: id }),
 
   setShouldGoHome: (value) => set({ shouldGoHome: value }),
-
-  // Theme
-  theme: 'dark' as 'light' | 'dark',
-  toggleTheme: () =>
-    set((state) => {
-      const newTheme = state.theme === 'dark' ? 'light' : 'dark'
-      localStorage.setItem('theme', newTheme)
-      if (newTheme === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-      return { theme: newTheme }
-    }),
 
   reset: () => set({ ...initialState, completedSteps: new Set() }),
 }))

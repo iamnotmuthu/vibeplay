@@ -94,16 +94,23 @@ function DeploymentTooltip() {
       onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
     >
-      <Info className="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-200 transition-colors" />
+      <Info className="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-600 transition-colors" />
       {visible && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 rounded-lg bg-gray-900 border border-gray-700 p-3 shadow-xl z-50">
-          <p className="text-[11px] text-gray-300 leading-relaxed mb-2">
-            <span className="font-semibold text-white">Realtime</span> — single-record predictions via API with sub-second latency. Optimises for low-latency model architectures and lightweight preprocessing.
+        <div
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 rounded-lg p-3 z-50"
+          style={{
+            background: '#ffffff',
+            border: '1px solid #d1d5db',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.06)',
+          }}
+        >
+          <p className="text-[11px] leading-relaxed mb-2" style={{ color: '#475569' }}>
+            <span className="font-semibold" style={{ color: '#1e293b' }}>Realtime</span> — single-record predictions via API with sub-second latency. Optimises for low-latency model architectures and lightweight preprocessing.
           </p>
-          <p className="text-[11px] text-gray-300 leading-relaxed">
-            <span className="font-semibold text-white">Batch</span> — scheduled bulk scoring (hourly/daily). Allows heavier ensembles and more complex feature pipelines since latency is not a constraint.
+          <p className="text-[11px] leading-relaxed" style={{ color: '#475569' }}>
+            <span className="font-semibold" style={{ color: '#1e293b' }}>Batch</span> — scheduled bulk scoring (hourly/daily). Allows heavier ensembles and more complex feature pipelines since latency is not a constraint.
           </p>
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#d1d5db]" />
         </div>
       )}
     </div>
@@ -142,10 +149,10 @@ export function BusinessSetup() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="px-6 py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
           <Target className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Business Setup</h2>
+          <h2 className="text-lg font-semibold" style={{ color: '#1e293b' }}>Business Setup</h2>
           {domain && (
             <span
               className="text-xs font-semibold px-2.5 py-1 rounded-full"
@@ -155,21 +162,21 @@ export function BusinessSetup() {
             </span>
           )}
         </div>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm mt-1" style={{ color: '#6b7280' }}>
           Define your business goal and how predictions will be delivered — this shapes the model selection downstream.
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6" style={{ background: '#fafafa' }}>
         <div className="max-w-4xl mx-auto space-y-8">
 
           {/* Section 1: Business Goal */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
+            <h3 className="text-sm font-semibold mb-1 flex items-center gap-2" style={{ color: '#1e293b' }}>
               <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">1</span>
               Business Goal
             </h3>
-            <p className="text-xs text-gray-500 mb-4 ml-7">What outcome do you want this model to drive?</p>
+            <p className="text-xs mb-4 ml-7" style={{ color: '#6b7280' }}>What outcome do you want this model to drive?</p>
             <div className="grid grid-cols-2 gap-3 ml-7">
               {goals.map((goal) => {
                 const isSelected = localGoal === goal
@@ -185,29 +192,30 @@ export function BusinessSetup() {
                     style={
                       isSelected
                         ? {
-                            background: 'rgba(59,130,246,0.08)',
-                            border: '2px solid #3b82f6',
+                            background: '#eff6ff',
+                            border: '2px solid #60a5fa',
                             color: '#3b82f6',
-                            boxShadow: '0 8px 20px -6px rgba(59,130,246,0.25)',
+                            boxShadow: '0 8px 20px -6px rgba(59,130,246,0.18)',
                           }
                         : {
-                            background: 'rgba(255,255,255,0.03)',
-                            border: '1.5px solid rgba(255,255,255,0.1)',
-                            color: 'rgba(255,255,255,0.7)',
+                            background: '#ffffff',
+                            border: '1.5px solid #e5e7eb',
+                            color: '#475569',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
                           }
                     }
                     onMouseEnter={(e) => {
                       if (!isSelected) {
                         e.currentTarget.style.borderColor = 'rgba(59,130,246,0.5)'
-                        e.currentTarget.style.color = '#fff'
-                        e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(59,130,246,0.15)'
+                        e.currentTarget.style.color = '#1e293b'
+                        e.currentTarget.style.boxShadow = '0 8px 20px -6px rgba(59,130,246,0.12)'
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isSelected) {
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
-                        e.currentTarget.style.boxShadow = 'none'
+                        e.currentTarget.style.borderColor = '#e5e7eb'
+                        e.currentTarget.style.color = '#475569'
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)'
                       }
                     }}
                   >
@@ -221,12 +229,12 @@ export function BusinessSetup() {
 
           {/* Section 2: Deployment Mode */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
+            <h3 className="text-sm font-semibold mb-1 flex items-center gap-2" style={{ color: '#1e293b' }}>
               <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">2</span>
               Deployment Mode
               <DeploymentTooltip />
             </h3>
-            <p className="text-xs text-gray-500 mb-3 ml-7">How will predictions be served? This directly informs model architecture.</p>
+            <p className="text-xs mb-3 ml-7" style={{ color: '#6b7280' }}>How will predictions be served? This directly informs model architecture.</p>
 
             {/* Contextual hint based on selected goal */}
             <AnimatePresence>
@@ -238,7 +246,7 @@ export function BusinessSetup() {
                   exit={{ opacity: 0, height: 0 }}
                   className="ml-7 mb-4 overflow-hidden"
                 >
-                  <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 text-xs text-gray-500">
+                  <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 text-xs" style={{ color: '#6b7280' }}>
                     <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                     <span>
                       For <span className="font-semibold text-primary">"{localGoal}"</span>:{' '}
@@ -265,24 +273,25 @@ export function BusinessSetup() {
                   localMode === 'realtime'
                     ? {
                         border: '2px solid #06b6d4',
-                        background: 'rgba(6,182,212,0.06)',
-                        boxShadow: '0 12px 30px -8px rgba(6,182,212,0.3)',
+                        background: '#ecfeff',
+                        boxShadow: '0 12px 30px -8px rgba(6,182,212,0.2)',
                       }
                     : {
-                        border: '1.5px solid rgba(255,255,255,0.1)',
-                        background: 'rgba(255,255,255,0.03)',
+                        border: '1.5px solid #e5e7eb',
+                        background: '#ffffff',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
                       }
                 }
                 onMouseEnter={(e) => {
                   if (localMode !== 'realtime') {
                     e.currentTarget.style.borderColor = 'rgba(6,182,212,0.5)'
-                    e.currentTarget.style.boxShadow = '0 12px 30px -8px rgba(6,182,212,0.15)'
+                    e.currentTarget.style.boxShadow = '0 12px 30px -8px rgba(6,182,212,0.12)'
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (localMode !== 'realtime') {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-                    e.currentTarget.style.boxShadow = 'none'
+                    e.currentTarget.style.borderColor = '#e5e7eb'
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)'
                   }
                 }}
               >
@@ -295,9 +304,9 @@ export function BusinessSetup() {
                     <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                   </motion.div>
                 )}
-                <Zap className="w-7 h-7 text-cyan-400 mb-3" />
-                <div className="text-sm font-bold text-gray-100 mb-1">Real-Time</div>
-                <div className="text-xs text-gray-500">Latency-optimised. Sub-100ms inference. Best for fraud detection, live scoring.</div>
+                <Zap className="w-7 h-7 text-cyan-500 mb-3" />
+                <div className="text-sm font-bold mb-1" style={{ color: '#1e293b' }}>Real-Time</div>
+                <div className="text-xs" style={{ color: '#6b7280' }}>Latency-optimised. Sub-100ms inference. Best for fraud detection, live scoring.</div>
               </motion.button>
 
               {/* Batch */}
@@ -312,24 +321,25 @@ export function BusinessSetup() {
                   localMode === 'batch'
                     ? {
                         border: '2px solid #8b5cf6',
-                        background: 'rgba(139,92,246,0.06)',
-                        boxShadow: '0 12px 30px -8px rgba(139,92,246,0.3)',
+                        background: '#f5f3ff',
+                        boxShadow: '0 12px 30px -8px rgba(139,92,246,0.2)',
                       }
                     : {
-                        border: '1.5px solid rgba(255,255,255,0.1)',
-                        background: 'rgba(255,255,255,0.03)',
+                        border: '1.5px solid #e5e7eb',
+                        background: '#ffffff',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
                       }
                 }
                 onMouseEnter={(e) => {
                   if (localMode !== 'batch') {
                     e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)'
-                    e.currentTarget.style.boxShadow = '0 12px 30px -8px rgba(139,92,246,0.15)'
+                    e.currentTarget.style.boxShadow = '0 12px 30px -8px rgba(139,92,246,0.12)'
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (localMode !== 'batch') {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-                    e.currentTarget.style.boxShadow = 'none'
+                    e.currentTarget.style.borderColor = '#e5e7eb'
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)'
                   }
                 }}
               >
@@ -342,9 +352,9 @@ export function BusinessSetup() {
                     <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                   </motion.div>
                 )}
-                <Layers className="w-7 h-7 text-violet-400 mb-3" />
-                <div className="text-sm font-bold text-gray-100 mb-1">Batch Processing</div>
-                <div className="text-xs text-gray-500">High-accuracy, scheduled runs. Best for churn scoring, demand forecasting.</div>
+                <Layers className="w-7 h-7 text-violet-500 mb-3" />
+                <div className="text-sm font-bold mb-1" style={{ color: '#1e293b' }}>Batch Processing</div>
+                <div className="text-xs" style={{ color: '#6b7280' }}>High-accuracy, scheduled runs. Best for churn scoring, demand forecasting.</div>
               </motion.button>
             </div>
           </motion.div>

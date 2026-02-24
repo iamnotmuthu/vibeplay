@@ -31,11 +31,11 @@ function LogItem({ entry }: { entry: LogEntry }) {
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="flex items-start gap-2 py-2 border-b border-gray-100 dark:border-gray-800 last:border-0"
+      className="flex items-start gap-2 py-2 border-b border-gray-100 last:border-0"
     >
       <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${color}`} />
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{entry.message}</p>
+        <p className="text-xs text-gray-700 leading-relaxed">{entry.message}</p>
         <span className="text-[10px] text-gray-400 font-mono">{time}</span>
       </div>
     </motion.div>
@@ -63,15 +63,15 @@ export function SessionSidebar() {
             animate={{ x: 0 }}
             exit={{ x: 320 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 z-50 flex flex-col shadow-xl"
+            className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-gray-200 z-50 flex flex-col shadow-xl"
           >
-            <div className="h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-              <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">Session Log</h3>
+            <div className="h-14 px-4 flex items-center justify-between border-b border-gray-200">
+              <h3 className="font-semibold text-sm text-gray-900">Session Log</h3>
               <button
                 onClick={toggleSidebar}
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="p-1.5 rounded-lg hover:bg-gray-100"
               >
-                <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <X className="w-4 h-4 text-gray-500" />
               </button>
             </div>
 

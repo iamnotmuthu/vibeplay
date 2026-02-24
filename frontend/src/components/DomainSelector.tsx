@@ -16,13 +16,10 @@ import {
     ArrowRight,
     Sparkles,
     ExternalLink,
-    Moon,
-    Sun,
 } from 'lucide-react'
 import { DOMAIN_SCENARIOS, type DomainScenario } from '@/lib/domainData'
 import { PREBUILT_DATASETS } from '@/lib/constants'
 import { usePlaygroundStore } from '@/store/playgroundStore'
-import { useTheme } from '@/hooks/useTheme'
 import type { StageId } from '@/store/types'
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -49,7 +46,6 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [launching, setLaunching] = useState(false)
 
-    const { theme, toggleTheme } = useTheme()
     const setActiveDomain = usePlaygroundStore((s) => s.setActiveDomain)
     const selectDataset = usePlaygroundStore((s) => s.selectDataset)
     const selectObjective = usePlaygroundStore((s) => s.selectObjective)
@@ -63,7 +59,6 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
 
         await new Promise((r) => setTimeout(r, 600))
 
-        // Find the dataset
         const dataset = PREBUILT_DATASETS.find((d) => d.id === scenario.datasetId)
         const objective = dataset?.objectives.find((o) => o.id === scenario.defaultObjectiveId)
 
@@ -87,15 +82,15 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
         <div
             className="min-h-screen flex flex-col relative overflow-hidden"
             style={{
-                background: '#080808',
-                color: '#fff',
+                background: '#fafafa',
+                color: '#1e293b',
             }}
         >
-            {/* Ambient background glow matching website */}
+            {/* Subtle ambient glow */}
             <div
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] opacity-20 pointer-events-none"
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] opacity-[0.07] pointer-events-none"
                 style={{
-                    background: 'radial-gradient(ellipse 80% 40% at 50% -10%, rgba(59,130,246,0.5) 0%, transparent 70%)',
+                    background: 'radial-gradient(ellipse 80% 40% at 50% -10%, rgba(59,130,246,0.8) 0%, rgba(139,92,246,0.4) 40%, transparent 70%)',
                 }}
             />
 
@@ -103,13 +98,12 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
             <header
                 className="h-20 border-b px-6 flex items-center justify-between shrink-0 z-50 sticky top-0"
                 style={{
-                    background: 'rgba(8,8,8,0.6)',
+                    background: 'rgba(255,255,255,0.85)',
                     backdropFilter: 'blur(12px)',
-                    borderColor: 'rgba(255,255,255,0.08)',
+                    borderColor: '#e5e7eb',
                 }}
             >
                 <div className="flex items-center gap-3">
-                    {/* VibeModel logo — clickable home */}
                     <a
                         href="https://vibemodel.ai"
                         target="_blank"
@@ -126,36 +120,22 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Dark mode toggle */}
-                    <button
-                        onClick={toggleTheme}
-                        className="p-2 rounded-lg transition-colors border"
-                        style={{
-                            borderColor: 'rgba(255,255,255,0.15)',
-                            color: 'rgba(255,255,255,0.6)',
-                            background: 'transparent',
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.color = '#fff'
-                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.color = 'rgba(255,255,255,0.6)'
-                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
-                        }}
-                        aria-label="Toggle theme"
-                    >
-                        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                    </button>
-
                     <a
                         href="https://vibemodel.ai/#beta-signup"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                         style={{
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            color: 'rgba(255,255,255,0.7)',
+                            border: '1px solid #e5e7eb',
+                            color: '#374151',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#9ca3af'
+                            e.currentTarget.style.color = '#111827'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = '#e5e7eb'
+                            e.currentTarget.style.color = '#374151'
                         }}
                     >
                         Beta Waitlist
@@ -169,13 +149,13 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                         className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-all relative overflow-hidden"
                         style={{
                             background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                            boxShadow: '0 0 16px rgba(59,130,246,0.3)',
+                            boxShadow: '0 1px 4px rgba(59,130,246,0.3)',
                         }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow = '0 0 24px rgba(59,130,246,0.5), 0 4px 12px rgba(0,0,0,0.2)'
+                            e.currentTarget.style.boxShadow = '0 4px 16px rgba(59,130,246,0.4)'
                         }}
                         onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow = '0 0 16px rgba(59,130,246,0.3)'
+                            e.currentTarget.style.boxShadow = '0 1px 4px rgba(59,130,246,0.3)'
                         }}
                     >
                         <motion.div
@@ -203,26 +183,26 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                     <div
                         className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-6"
                         style={{
-                            background: 'rgba(255,255,255,0.06)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            color: 'rgba(255,255,255,0.9)',
+                            background: 'rgba(59,130,246,0.06)',
+                            border: '1px solid rgba(59,130,246,0.15)',
+                            color: '#475569',
                         }}
                     >
-                        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                        <span style={{ background: 'linear-gradient(to right, #60a5fa, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                        <span style={{ background: 'linear-gradient(to right, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                             Autonomous AI Lifecycle
                         </span>
-                        <span className="text-gray-500">·</span>
+                        <span className="text-gray-300">·</span>
                         <span>End-to-End in Minutes</span>
                     </div>
 
-                    <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight tracking-tight">
+                    <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight tracking-tight" style={{ color: '#0f172a' }}>
                         Choose your industry.<br />
-                        <span style={{ background: 'linear-gradient(135deg, #60a5fa, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        <span style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                             Watch AI build your model.
                         </span>
                     </h1>
-                    <p className="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">
                         Pick an industry, define your goal, and watch VibeModel build a production-ready model — end-to-end in under 3 minutes.
                     </p>
                 </motion.div>
@@ -255,13 +235,13 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                                     transition={{ duration: 0.2, ease: 'easeOut' }}
                                     className="relative rounded-2xl p-6 h-full flex flex-col overflow-hidden"
                                     style={{
-                                        background: 'rgba(255,255,255,0.03)',
+                                        background: '#ffffff',
                                         border: isHovered
-                                            ? `1px solid ${scenario.color}60`
-                                            : '1px solid rgba(255,255,255,0.08)',
+                                            ? `1px solid ${scenario.color}50`
+                                            : '1px solid #e5e7eb',
                                         boxShadow: isHovered
-                                            ? `0 12px 40px -12px ${scenario.color}25`
-                                            : 'none',
+                                            ? `0 12px 40px -12px ${scenario.color}20, 0 4px 12px rgba(0,0,0,0.06)`
+                                            : '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
                                     }}
                                 >
                                     {/* Icon + Badge */}
@@ -269,9 +249,8 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                                         <div
                                             className="w-12 h-12 rounded-xl flex items-center justify-center"
                                             style={{
-                                                background: `linear-gradient(135deg, ${scenario.color}20, ${scenario.color}05)`,
-                                                border: `1px solid ${scenario.color}30`,
-                                                boxShadow: `0 0 12px ${scenario.color}15`,
+                                                background: `linear-gradient(135deg, ${scenario.color}15, ${scenario.color}05)`,
+                                                border: `1px solid ${scenario.color}25`,
                                             }}
                                         >
                                             <IconComp className="w-6 h-6" style={{ color: scenario.color }} />
@@ -279,9 +258,9 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                                         <span
                                             className="text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
                                             style={{
-                                                background: 'rgba(255,255,255,0.05)',
-                                                color: 'rgba(255,255,255,0.6)',
-                                                border: '1px solid rgba(255,255,255,0.05)',
+                                                background: '#f3f4f6',
+                                                color: '#6b7280',
+                                                border: '1px solid #e5e7eb',
                                             }}
                                         >
                                             {scenario.badge}
@@ -290,11 +269,11 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
 
                                     {/* Content */}
                                     <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-white mb-2">{scenario.label}</h3>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">{scenario.label}</h3>
                                         <p className="text-sm font-medium mb-3" style={{ color: scenario.color }}>
                                             {scenario.tagline}
                                         </p>
-                                        <p className="text-sm text-gray-400 leading-relaxed line-clamp-3">
+                                        <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
                                             {scenario.heroSubtitle}
                                         </p>
                                     </div>
@@ -302,15 +281,15 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                                     {/* Stats row */}
                                     <div
                                         className="flex items-center gap-3 mt-5 pt-4"
-                                        style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+                                        style={{ borderTop: '1px solid #f3f4f6' }}
                                     >
                                         {(() => {
                                             const ds = PREBUILT_DATASETS.find((d) => d.id === scenario.datasetId)
                                             return ds ? (
                                                 <>
-                                                    <span className="text-xs text-gray-500 font-mono">{ds.rows.toLocaleString()} rows</span>
-                                                    <span className="text-gray-700">·</span>
-                                                    <span className="text-xs text-gray-500 font-mono">{ds.features} features</span>
+                                                    <span className="text-xs text-gray-400 font-mono">{ds.rows.toLocaleString()} rows</span>
+                                                    <span className="text-gray-300">·</span>
+                                                    <span className="text-xs text-gray-400 font-mono">{ds.features} features</span>
                                                 </>
                                             ) : null
                                         })()}
@@ -351,12 +330,12 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
             <footer
                 className="border-t px-6 py-6"
                 style={{
-                    background: 'rgba(0,0,0,0.4)',
-                    borderColor: 'rgba(255,255,255,0.08)',
+                    background: '#ffffff',
+                    borderColor: '#e5e7eb',
                 }}
             >
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-400">
                         Built by AI veterans from Amazon & Google · © 2026 VibeModel.ai
                     </p>
                     <div className="flex items-center gap-6">
@@ -364,13 +343,13 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                             href="https://vibemodel.ai/#beta-signup"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-gray-400 hover:text-blue-400 font-medium transition-colors"
+                            className="text-xs text-gray-500 hover:text-blue-500 font-medium transition-colors"
                         >
                             Sign up for Beta Waitlist →
                         </a>
                         <a
                             href="mailto:hello@vibemodel.ai"
-                            className="text-xs text-gray-500 hover:text-white transition-colors"
+                            className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
                         >
                             hello@vibemodel.ai
                         </a>

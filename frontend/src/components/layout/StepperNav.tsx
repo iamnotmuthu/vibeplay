@@ -14,8 +14,8 @@ export function StepperNav() {
     <nav
       className="px-8 py-5 shrink-0 overflow-x-auto"
       style={{
-        background: '#0a0a0a',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        background: '#ffffff',
+        borderBottom: '1px solid #e5e7eb',
       }}
     >
       <div className="flex items-center justify-between w-full min-w-[760px]">
@@ -29,7 +29,7 @@ export function StepperNav() {
               <button
                 onClick={() => isClickable && setStep(step)}
                 className="flex items-center gap-3.5 group"
-                style={{ cursor: isClickable ? 'pointer' : 'default', opacity: isClickable ? 1 : 0.38 }}
+                style={{ cursor: isClickable ? 'pointer' : 'default', opacity: isClickable ? 1 : 0.45 }}
               >
                 {/* Step circle */}
                 <motion.div
@@ -39,22 +39,22 @@ export function StepperNav() {
                   style={
                     isCompleted
                       ? {
-                        background: 'rgba(20,184,166,0.12)',
-                        border: '2px solid rgba(20,184,166,0.55)',
-                        color: '#14b8a6',
-                        boxShadow: '0 0 12px rgba(20,184,166,0.2)',
+                        background: 'rgba(20,184,166,0.08)',
+                        border: '2px solid rgba(20,184,166,0.5)',
+                        color: '#0d9488',
+                        boxShadow: '0 0 10px rgba(20,184,166,0.15)',
                       }
                       : isCurrent
                         ? {
                           background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
                           border: '2px solid transparent',
                           color: '#fff',
-                          boxShadow: '0 0 22px rgba(59,130,246,0.55)',
+                          boxShadow: '0 0 18px rgba(59,130,246,0.4)',
                         }
                         : {
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '2px solid rgba(255,255,255,0.1)',
-                          color: 'rgba(255,255,255,0.25)',
+                          background: '#f3f4f6',
+                          border: '2px solid #e5e7eb',
+                          color: '#d1d5db',
                         }
                   }
                 >
@@ -63,7 +63,7 @@ export function StepperNav() {
                   {isCurrent && (
                     <motion.div
                       className="absolute inset-0 rounded-full"
-                      style={{ border: '2px solid rgba(99,102,241,0.5)' }}
+                      style={{ border: '2px solid rgba(99,102,241,0.4)' }}
                       animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
                       transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
                     />
@@ -76,21 +76,21 @@ export function StepperNav() {
                     className="text-sm font-bold whitespace-nowrap leading-tight tracking-tight"
                     style={
                       isCurrent
-                        ? { color: '#ffffff' }
+                        ? { color: '#1e293b' }
                         : isCompleted
-                          ? { color: '#14b8a6' }
-                          : { color: 'rgba(255,255,255,0.28)' }
+                          ? { color: '#0d9488' }
+                          : { color: '#9ca3af' }
                     }
                   >
                     {STAGE_LABELS[step]}
                   </span>
                   {isCurrent && (
-                    <span className="text-[11px] font-semibold mt-0.5" style={{ color: 'rgba(99,102,241,0.85)' }}>
+                    <span className="text-[11px] font-semibold mt-0.5" style={{ color: '#6366f1' }}>
                       In progress
                     </span>
                   )}
                   {isCompleted && (
-                    <span className="text-[11px] font-semibold mt-0.5" style={{ color: 'rgba(20,184,166,0.65)' }}>
+                    <span className="text-[11px] font-semibold mt-0.5" style={{ color: '#14b8a6' }}>
                       Complete
                     </span>
                   )}
@@ -100,7 +100,7 @@ export function StepperNav() {
               {/* Connector */}
               {index < steps.length - 1 && (
                 <div className="flex-1 mx-4 relative h-[3px] rounded-full overflow-hidden"
-                  style={{ background: 'rgba(255,255,255,0.07)' }}>
+                  style={{ background: '#e5e7eb' }}>
                   {isCompleted && (
                     <motion.div
                       className="absolute inset-0 rounded-full"

@@ -21,7 +21,6 @@ export function BottomActionBar({
   alwaysShowNext = false,
 }: BottomActionBarProps) {
   const currentStep = usePlaygroundStore((s) => s.currentStep)
-  const theme = usePlaygroundStore((s) => s.theme)
   const setStep = usePlaygroundStore((s) => s.setStep)
 
   const canGoBack = currentStep > 1
@@ -31,10 +30,10 @@ export function BottomActionBar({
 
   return (
     <div
-      className="shrink-0 border-t px-6 py-3 flex items-center justify-between transition-colors duration-300"
+      className="shrink-0 border-t px-6 py-3 flex items-center justify-between"
       style={{
-        borderColor: theme === 'dark' ? 'rgba(255,255,255,0.07)' : '#e5e7eb',
-        background: theme === 'dark' ? 'rgba(9,9,11,0.95)' : 'rgba(255,255,255,0.97)',
+        borderColor: '#e5e7eb',
+        background: 'rgba(255,255,255,0.97)',
         backdropFilter: 'blur(12px)',
       }}
     >
@@ -46,12 +45,12 @@ export function BottomActionBar({
             whileHover={{ x: -2 }}
             whileTap={{ scale: 0.96 }}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            style={{ color: theme === 'dark' ? '#6b7280' : '#9ca3af' }}
+            style={{ color: '#9ca3af' }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = theme === 'dark' ? '#e5e7eb' : '#374151'
+              e.currentTarget.style.color = '#374151'
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = theme === 'dark' ? '#6b7280' : '#9ca3af'
+              e.currentTarget.style.color = '#9ca3af'
             }}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -63,7 +62,7 @@ export function BottomActionBar({
       {/* Step counter */}
       <span
         className="text-[11px] hidden sm:block tracking-wide font-mono"
-        style={{ color: theme === 'dark' ? '#4b5563' : '#d1d5db' }}
+        style={{ color: '#9ca3af' }}
       >
         {currentStep} / {Object.keys(STAGE_LABELS).length}
       </span>
@@ -79,9 +78,9 @@ export function BottomActionBar({
                 style={{
                   background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
                   filter: 'blur(10px)',
-                  opacity: 0.5,
+                  opacity: 0.4,
                 }}
-                animate={{ opacity: [0.35, 0.65, 0.35] }}
+                animate={{ opacity: [0.25, 0.5, 0.25] }}
                 transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
               />
             )}
@@ -95,13 +94,13 @@ export function BottomActionBar({
               style={
                 nextDisabled
                   ? {
-                      background: theme === 'dark' ? 'rgba(255,255,255,0.08)' : '#f3f4f6',
-                      border: theme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',
-                      color: theme === 'dark' ? 'rgba(255,255,255,0.3)' : '#9ca3af',
+                      background: '#f3f4f6',
+                      border: '1px solid #e5e7eb',
+                      color: '#9ca3af',
                     }
                   : {
                       background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                      boxShadow: '0 0 24px rgba(59,130,246,0.4), 0 2px 8px rgba(0,0,0,0.4)',
+                      boxShadow: '0 2px 12px rgba(59,130,246,0.3), 0 2px 8px rgba(0,0,0,0.1)',
                       border: '1px solid rgba(139,92,246,0.4)',
                     }
               }

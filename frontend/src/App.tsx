@@ -37,9 +37,9 @@ function BrandHeader() {
     <header
       className="h-14 px-6 flex items-center justify-between shrink-0 z-50"
       style={{
-        background: 'rgba(8,8,8,0.85)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        background: '#ffffff',
+        borderBottom: '1px solid #e5e7eb',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}
     >
       <div className="flex items-center gap-3">
@@ -59,15 +59,15 @@ function BrandHeader() {
           onClick={handleBackToHome}
           title="Back to scenario selection"
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-          style={{ color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}
+          style={{ color: '#6b7280', border: '1px solid #e5e7eb' }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#fff'
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'
-            e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+            e.currentTarget.style.color = '#111827'
+            e.currentTarget.style.borderColor = '#9ca3af'
+            e.currentTarget.style.background = '#f3f4f6'
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.5)'
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+            e.currentTarget.style.color = '#6b7280'
+            e.currentTarget.style.borderColor = '#e5e7eb'
             e.currentTarget.style.background = 'transparent'
           }}
         >
@@ -79,9 +79,9 @@ function BrandHeader() {
       {/* Demo mode pill */}
       <div
         className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
-        style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', color: '#fbbf24' }}
+        style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#d97706' }}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
         Demo Mode · Simulated Data
       </div>
 
@@ -91,14 +91,14 @@ function BrandHeader() {
           target="_blank"
           rel="noopener noreferrer"
           className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          style={{ border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)' }}
+          style={{ border: '1px solid #e5e7eb', color: '#374151' }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'
-            e.currentTarget.style.color = '#fff'
+            e.currentTarget.style.borderColor = '#9ca3af'
+            e.currentTarget.style.color = '#111827'
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
-            e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
+            e.currentTarget.style.borderColor = '#e5e7eb'
+            e.currentTarget.style.color = '#374151'
           }}
         >
           Beta Waitlist
@@ -113,10 +113,10 @@ function BrandHeader() {
           className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-white text-sm font-semibold relative overflow-hidden"
           style={{
             background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            boxShadow: '0 0 14px rgba(59,130,246,0.3)',
+            boxShadow: '0 1px 4px rgba(59,130,246,0.3)',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 22px rgba(59,130,246,0.5)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 0 14px rgba(59,130,246,0.3)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(59,130,246,0.4)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(59,130,246,0.3)' }}
         >
           <motion.div
             className="absolute inset-0"
@@ -141,25 +141,25 @@ function BrandHeader() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+          style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}
           onClick={() => setConfirmOpen(false)}
         >
           <motion.div
             initial={{ scale: 0.92, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="w-full max-w-sm rounded-xl p-6 shadow-2xl"
-            style={{ background: '#161b22', border: '1px solid rgba(255,255,255,0.1)' }}
+            className="w-full max-w-sm rounded-xl p-6"
+            style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-white mb-2">Switch Scenario?</h3>
-            <p className="text-sm text-gray-400 mb-5">
+            <h3 className="text-base font-semibold text-gray-900 mb-2">Switch Scenario?</h3>
+            <p className="text-sm text-gray-500 mb-5">
               Your current progress will be lost. Are you sure you want to go back to scenario selection?
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setConfirmOpen(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700/50"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
               >
                 Cancel
               </button>
@@ -202,11 +202,6 @@ export default function App() {
     }
   }, [shouldGoHome])
 
-  // Always dark mode
-  useEffect(() => {
-    document.documentElement.classList.add('dark')
-  }, [])
-
   if (!domainChosen) {
     return (
       <AnimatePresence mode="wait">
@@ -230,7 +225,7 @@ export default function App() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="h-screen flex flex-col overflow-hidden bg-surface dark"
+        className="h-screen flex flex-col overflow-hidden bg-surface"
       >
         <BrandHeader />
         <StepperNav />

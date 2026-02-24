@@ -20,12 +20,12 @@ const CATEGORY_COLORS: Record<string, { pill: string; track: string }> = {
 
 function levelColor(level: string): string {
   switch (level.toLowerCase()) {
-    case 'high':     return 'text-amber-400'
-    case 'low':      return 'text-teal-400'
-    case 'median':   return 'text-gray-300'
-    case 'yes':      return 'text-emerald-400'
-    case 'no':       return 'text-red-400'
-    default:         return 'text-gray-400'
+    case 'high':     return 'text-amber-600'
+    case 'low':      return 'text-teal-600'
+    case 'median':   return 'text-gray-500'
+    case 'yes':      return 'text-emerald-600'
+    case 'no':       return 'text-red-500'
+    default:         return 'text-gray-500'
   }
 }
 
@@ -275,8 +275,8 @@ function getMonitoringConfig(datasetId: string): MonitoringConfig {
 function MetricBar({ label, value, colorClass }: { label: string; value: number; colorClass: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs text-gray-400 w-16 shrink-0 text-right">{label}</span>
-      <div className={`flex-1 h-2.5 rounded-full ${colorClass} overflow-hidden`}>
+      <span className="text-xs text-gray-500 w-16 shrink-0 text-right">{label}</span>
+      <div className={`flex-1 h-2.5 rounded-full bg-gray-100 overflow-hidden`}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${value}%` }}
@@ -284,7 +284,7 @@ function MetricBar({ label, value, colorClass }: { label: string; value: number;
           className={`h-full rounded-full ${colorClass.replace('/20', '')}`}
         />
       </div>
-      <span className="text-xs font-mono font-semibold text-gray-200 w-10 text-right">{value}%</span>
+      <span className="text-xs font-mono font-semibold text-gray-800 w-10 text-right">{value}%</span>
     </div>
   )
 }
@@ -292,10 +292,13 @@ function MetricBar({ label, value, colorClass }: { label: string; value: number;
 function PerformanceRow({ row, isRegression }: { row: CohortPerformance; isRegression?: boolean }) {
   const colors = CATEGORY_COLORS[row.category]
   return (
-    <div className="rounded-xl border border-gray-700/60 bg-gray-800/50 p-4 space-y-2">
+    <div
+      className="rounded-xl p-4 space-y-2"
+      style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
+    >
       <div className={`text-xs font-semibold uppercase tracking-wider mb-3 ${
-        row.category === 'sufficient' ? 'text-emerald-400' :
-        row.category === 'insufficient' ? 'text-red-400' : 'text-amber-400'
+        row.category === 'sufficient' ? 'text-emerald-600' :
+        row.category === 'insufficient' ? 'text-red-500' : 'text-amber-600'
       }`}>
         {row.label}
       </div>
@@ -351,11 +354,14 @@ function MetricEyeTooltip({ explanation }: { explanation: string }) {
       onMouseEnter={() => setTooltipVisible(true)}
       onMouseLeave={() => setTooltipVisible(false)}
     >
-      <Eye className="w-3 h-3 text-gray-500 cursor-help hover:text-gray-300 transition-colors" />
+      <Eye className="w-3 h-3 text-gray-400 cursor-help hover:text-gray-600 transition-colors" />
       {tooltipVisible && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-gray-900 border border-gray-700 p-3 shadow-xl z-50">
-          <p className="text-[11px] text-gray-300 leading-relaxed">{explanation}</p>
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700" />
+        <div
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg p-3 z-50"
+          style={{ background: '#ffffff', border: '1px solid #d1d5db', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
+        >
+          <p className="text-[11px] text-gray-600 leading-relaxed">{explanation}</p>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-300" />
         </div>
       )}
     </div>
@@ -375,8 +381,8 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
   const totalW = weights.sufficient + weights.insufficient + weights.helpMe
 
   return (
-    <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+    <div className="px-5 py-5" style={{ borderBottom: '1px solid #e5e7eb' }}>
+      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
         Overall Model Performance
       </div>
 
@@ -384,14 +390,14 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
       <div className="flex items-center gap-8 mb-4">
         <div>
           <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{data.primaryMetric}</div>
-          <div className="text-3xl font-bold text-white">
+          <div className="text-3xl font-bold text-gray-900">
             {isRegression ? data.overallRecall : <><CountUpNumber end={data.overallRecall} />%</>}
           </div>
-          <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">Primary</div>
+          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Primary</div>
         </div>
         <div>
           <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{data.secondaryMetric}</div>
-          <div className="text-3xl font-bold text-gray-300">
+          <div className="text-3xl font-bold text-gray-600">
             {isRegression ? data.overallPrecision : <><CountUpNumber end={data.overallPrecision} />%</>}
           </div>
           <div className="text-[10px] text-gray-500 font-semibold mt-0.5">Secondary</div>
@@ -431,8 +437,8 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
               row.category === 'sufficient' ? 'bg-emerald-500' :
               row.category === 'insufficient' ? 'bg-red-500' : 'bg-amber-500'
             const textColor =
-              row.category === 'sufficient' ? 'text-emerald-400' :
-              row.category === 'insufficient' ? 'text-red-400' : 'text-amber-400'
+              row.category === 'sufficient' ? 'text-emerald-600' :
+              row.category === 'insufficient' ? 'text-red-500' : 'text-amber-600'
             const w = weights[row.category as keyof typeof weights] ?? 0
             const pct = (w / totalW) * 100
             return (
@@ -456,7 +462,8 @@ function ComponentCard({ comp, delay }: { comp: ModelComponent; delay: number })
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="rounded-xl bg-gray-900 border border-gray-700/60 p-4"
+      className="rounded-xl p-4"
+      style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
     >
       {/* Name */}
       <div className="text-sm font-bold text-primary mb-0.5 font-mono">{comp.name}</div>
@@ -467,8 +474,8 @@ function ComponentCard({ comp, delay }: { comp: ModelComponent; delay: number })
       <div className="space-y-1">
         {comp.factors.map((f) => (
           <div key={f.name} className="flex items-baseline gap-1.5 text-xs">
-            <span className="text-gray-500 shrink-0">·</span>
-            <span className="text-gray-400">{f.name}</span>
+            <span className="text-gray-400 shrink-0">·</span>
+            <span className="text-gray-600">{f.name}</span>
             <span className={`font-semibold ${levelColor(f.level)}`}>({f.level})</span>
           </div>
         ))}
@@ -476,11 +483,11 @@ function ComponentCard({ comp, delay }: { comp: ModelComponent; delay: number })
 
       {/* Technical params */}
       {comp.params.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-700/50 space-y-1.5">
+        <div className="mt-3 pt-3 space-y-1.5" style={{ borderTop: '1px solid #e5e7eb' }}>
           {comp.params.map((p) => (
             <div key={p.name} className="flex items-start gap-2 text-xs">
               <span className="text-gray-500 shrink-0 min-w-[110px]">{p.name}</span>
-              <span className="text-gray-300 font-mono">{p.value}</span>
+              <span className="text-gray-700 font-mono">{p.value}</span>
             </div>
           ))}
         </div>
@@ -510,7 +517,7 @@ function LineChart({
     <svg viewBox={`0 0 ${w} ${h + 16}`} className="w-full" style={{ height: height + 16 }}>
       {[0.25, 0.5, 0.75].map((t) => (
         <line key={t} x1={pad} y1={h * t} x2={w - pad} y2={h * t}
-          stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+          stroke="rgba(0,0,0,0.06)" strokeWidth="1" />
       ))}
       <path d={path1} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       {data.map((v, i) => (
@@ -526,7 +533,7 @@ function LineChart({
       )}
       {labels.map((l, i) => (
         i % (labels.length > 14 ? 3 : labels.length > 7 ? 2 : 1) === 0 ? (
-          <text key={i} x={toX(i)} y={h + 10} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.25)">{l}</text>
+          <text key={i} x={toX(i)} y={h + 10} textAnchor="middle" fontSize="7" fill="rgba(0,0,0,0.4)">{l}</text>
         ) : null
       ))}
     </svg>
@@ -541,7 +548,7 @@ function BarChart({ data, labels, color }: { data: number[]; labels: string[]; c
     <svg viewBox={`0 0 ${w} ${h + 16}`} className="w-full" style={{ height: h + 16 }}>
       {[0.25, 0.5, 0.75].map((t) => (
         <line key={t} x1={pad} y1={h * t} x2={w - pad} y2={h * t}
-          stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+          stroke="rgba(0,0,0,0.06)" strokeWidth="1" />
       ))}
       {data.map((v, i) => {
         const bh = ((v / max) * (h - pad * 3))
@@ -558,7 +565,7 @@ function BarChart({ data, labels, color }: { data: number[]; labels: string[]; c
               style={{ transformOrigin: `${x + barW / 2}px ${h - pad}px` }}
             />
             {i % (labels.length > 14 ? 3 : labels.length > 7 ? 2 : 1) === 0 && (
-              <text x={x + barW / 2} y={h + 10} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.25)">{labels[i]}</text>
+              <text x={x + barW / 2} y={h + 10} textAnchor="middle" fontSize="7" fill="rgba(0,0,0,0.4)">{labels[i]}</text>
             )}
           </g>
         )
@@ -585,7 +592,7 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}
     >
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
@@ -593,19 +600,19 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
         exit={{ opacity: 0, y: 10, scale: 0.97 }}
         transition={{ duration: 0.3 }}
         className="w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 rounded-2xl"
-        style={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.1)' }}
+        style={{ background: '#ffffff', border: '1px solid #d1d5db', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}
       >
         <div
           className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b"
-          style={{ background: '#0d1117', borderColor: 'rgba(255,255,255,0.07)' }}
+          style={{ background: '#ffffff', borderColor: '#e5e7eb' }}
         >
           <div>
             <div className="flex items-center gap-2.5">
-              <Monitor className="w-5 h-5 text-teal-400" />
-              <h2 className="text-base font-bold text-white">{datasetName}</h2>
+              <Monitor className="w-5 h-5 text-teal-500" />
+              <h2 className="text-base font-bold text-gray-900">{datasetName}</h2>
               <span
                 className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}
+                style={{ background: 'rgba(74,222,128,0.1)', color: '#16a34a', border: '1px solid rgba(74,222,128,0.3)' }}
               >
                 Healthy
               </span>
@@ -616,13 +623,13 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             <select
               value={weeksRange}
               onChange={(e) => setWeeksRange(Number(e.target.value) as 1 | 2 | 3)}
-              className="text-xs bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-gray-300 focus:outline-none focus:border-teal-500"
+              className="text-xs bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-gray-700 focus:outline-none focus:border-teal-500"
             >
               <option value={1}>Last week</option>
               <option value={2}>Last 2 weeks</option>
               <option value={3}>Last 3 weeks</option>
             </select>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 transition-colors">
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
               <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
@@ -632,94 +639,94 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {config.stats.map((s) => (
               <div key={s.label} className="rounded-xl p-4"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}>
                 <div className="text-[10px] text-gray-500 mb-1">{s.label}</div>
                 <div className="text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
-                <div className="text-[10px] text-gray-600 mt-1">{s.sub}</div>
+                <div className="text-[10px] text-gray-500 mt-1">{s.sub}</div>
               </div>
             ))}
           </div>
 
           <div className="rounded-xl p-4"
-            style={{ background: 'rgba(239,68,68,0.06)', border: '1.5px solid rgba(239,68,68,0.25)' }}>
+            style={{ background: 'rgba(254,242,242,0.8)', border: '1.5px solid rgba(239,68,68,0.3)' }}>
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.15)' }}>
-                <AlertTriangle className="w-4 h-4 text-red-400" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                <AlertTriangle className="w-4 h-4 text-red-500" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-bold text-white">Pattern Drift Detected</div>
-                  <span className="text-[10px] text-red-400">Detected 3 hours ago</span>
+                  <div className="text-sm font-bold text-gray-900">Pattern Drift Detected</div>
+                  <span className="text-[10px] text-red-500">Detected 3 hours ago</span>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold mt-1 inline-block" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold mt-1 inline-block" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626' }}>
                   Critical Alert
                 </span>
               </div>
             </div>
-            <div className="rounded-lg p-3 mb-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div className="text-xs font-semibold text-white mb-1">
-                Affected Cohort: <span className="text-gray-300">{config.driftAlert.cohortName}</span>
+            <div className="rounded-lg p-3 mb-2" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid #e5e7eb' }}>
+              <div className="text-xs font-semibold text-gray-900 mb-1">
+                Affected Cohort: <span className="text-gray-600">{config.driftAlert.cohortName}</span>
               </div>
-              <div className="text-[10px] text-red-300/70">{config.driftAlert.detail}</div>
+              <div className="text-[10px] text-red-600/70">{config.driftAlert.detail}</div>
             </div>
-            <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div className="text-xs font-semibold text-white mb-1">Impact:</div>
+            <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid #e5e7eb' }}>
+              <div className="text-xs font-semibold text-gray-900 mb-1">Impact:</div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-300">{config.driftAlert.metricLabel}: {config.driftAlert.metricValue}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>{config.driftAlert.decrease}</span>
+                <span className="text-xs text-gray-700">{config.driftAlert.metricLabel}: {config.driftAlert.metricValue}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626' }}>{config.driftAlert.decrease}</span>
               </div>
             </div>
             <div className="flex gap-2">
               <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#dc2626' }}>
                 <Download className="w-3.5 h-3.5" /> Review Analysis
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-gray-400" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-gray-600" style={{ border: '1px solid #d1d5db' }}>
                 <Sparkles className="w-3.5 h-3.5" /> Trigger Relearning
               </button>
             </div>
           </div>
 
           <div className="rounded-xl p-4"
-            style={{ background: 'rgba(234,179,8,0.05)', border: '1.5px solid rgba(234,179,8,0.2)' }}>
+            style={{ background: 'rgba(255,251,235,0.8)', border: '1.5px solid rgba(234,179,8,0.3)' }}>
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(234,179,8,0.15)' }}>
-                <Sparkles className="w-4 h-4 text-amber-400" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(234,179,8,0.1)' }}>
+                <Sparkles className="w-4 h-4 text-amber-500" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-bold text-white">New Dimension Discovered</div>
-                  <span className="text-[10px] text-amber-400">Detected 5 hours ago</span>
+                  <div className="text-sm font-bold text-gray-900">New Dimension Discovered</div>
+                  <span className="text-[10px] text-amber-600">Detected 5 hours ago</span>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold mt-1 inline-block" style={{ background: 'rgba(234,179,8,0.12)', color: '#fbbf24' }}>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold mt-1 inline-block" style={{ background: 'rgba(234,179,8,0.1)', color: '#d97706' }}>
                   Medium Alert
                 </span>
               </div>
             </div>
-            <p className="text-xs text-gray-300 mb-2">
+            <p className="text-xs text-gray-700 mb-2">
               A new dimension <strong>{config.dimensionAlert.name}</strong> has been identified in production data that was not present during initial model training. This dimension appears in <strong>{config.dimensionAlert.affectedPct}%</strong> of recent records and shows a pattern where risk cases are increasing.
             </p>
-            <div className="rounded-lg p-3 mb-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div className="text-xs font-semibold text-white mb-1">Dimension Details:</div>
-              <div className="text-[10px] text-gray-400">{config.dimensionAlert.detail}</div>
+            <div className="rounded-lg p-3 mb-2" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid #e5e7eb' }}>
+              <div className="text-xs font-semibold text-gray-900 mb-1">Dimension Details:</div>
+              <div className="text-[10px] text-gray-600">{config.dimensionAlert.detail}</div>
             </div>
-            <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div className="text-xs font-semibold text-white mb-0.5">Expected Impact:</div>
-              <div className="text-[10px] text-gray-400">{config.dimensionAlert.impact}</div>
+            <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid #e5e7eb' }}>
+              <div className="text-xs font-semibold text-gray-900 mb-0.5">Expected Impact:</div>
+              <div className="text-[10px] text-gray-600">{config.dimensionAlert.impact}</div>
             </div>
             <div className="flex gap-2">
               <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#d97706' }}>
                 <Download className="w-3.5 h-3.5" /> Review Analysis
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-gray-400" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-gray-600" style={{ border: '1px solid #d1d5db' }}>
                 <Sparkles className="w-3.5 h-3.5" /> Add New Dimension &amp; Relearn
               </button>
             </div>
           </div>
 
-          <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="rounded-xl p-5" style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}>
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="w-4 h-4 text-teal-400" />
-              <h4 className="text-sm font-semibold text-white">Performance Metrics</h4>
+              <TrendingUp className="w-4 h-4 text-teal-500" />
+              <h4 className="text-sm font-semibold text-gray-900">Performance Metrics</h4>
             </div>
             <p className="text-[10px] text-gray-500 mb-3">Precision and Recall trends — last {weeksRange === 1 ? 'week' : `${weeksRange} weeks`}</p>
             <LineChart data={slicedPrecision} data2={slicedRecall} labels={slicedLabels} color="#06b6d4" color2="#818cf8" height={90} />
@@ -733,19 +740,19 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             </div>
           </div>
 
-          <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="rounded-xl p-5" style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}>
             <div className="flex items-center gap-2 mb-1">
-              <BarChart3 className="w-4 h-4 text-violet-400" />
-              <h4 className="text-sm font-semibold text-white">Request Volume</h4>
+              <BarChart3 className="w-4 h-4 text-violet-500" />
+              <h4 className="text-sm font-semibold text-gray-900">Request Volume</h4>
             </div>
             <p className="text-[10px] text-gray-500 mb-3">Prediction requests — last {weeksRange === 1 ? 'week' : `${weeksRange} weeks`}</p>
             <BarChart data={slicedVolume} labels={slicedLabels} color="rgba(20,184,166,0.7)" />
           </div>
 
-          <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="rounded-xl p-5" style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}>
             <div className="flex items-center gap-2 mb-1">
-              <Activity className="w-4 h-4 text-blue-400" />
-              <h4 className="text-sm font-semibold text-white">Response Latency</h4>
+              <Activity className="w-4 h-4 text-blue-500" />
+              <h4 className="text-sm font-semibold text-gray-900">Response Latency</h4>
             </div>
             <p className="text-[10px] text-gray-500 mb-3">Average response time — last {weeksRange === 1 ? 'week' : `${weeksRange} weeks`}</p>
             <LineChart data={slicedLatency} labels={slicedLabels} color="#a78bfa" height={80} />
@@ -807,30 +814,30 @@ export function ModelSelection() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-700 bg-gray-900">
+      <div className="px-6 py-4 border-b" style={{ borderColor: '#e5e7eb', background: '#ffffff' }}>
         <div className="flex items-center gap-3">
           <Cpu className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-100">Model Selection &amp; Launch</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Model Selection &amp; Launch</h2>
         </div>
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-gray-500 mt-1">
           Your data profile has been matched to the optimal model architecture. Review the selected model and its components before launching.
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-900">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
 
         {/* Info banner — model composition messaging */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-teal-500/30 bg-gray-800/60 p-5 relative overflow-hidden"
-          style={{ borderLeft: '4px solid #14b8a6' }}
+          className="rounded-xl p-5 relative overflow-hidden"
+          style={{ border: '1px solid rgba(20,184,166,0.3)', background: 'rgba(240,253,250,0.8)', borderLeft: '4px solid #14b8a6' }}
         >
           {/* Animated shimmer to draw attention */}
           <motion.div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: 'linear-gradient(105deg, transparent 40%, rgba(20,184,166,0.08) 45%, rgba(20,184,166,0.15) 50%, rgba(20,184,166,0.08) 55%, transparent 60%)',
+              background: 'linear-gradient(105deg, transparent 40%, rgba(20,184,166,0.06) 45%, rgba(20,184,166,0.12) 50%, rgba(20,184,166,0.06) 55%, transparent 60%)',
             }}
             animate={{ x: ['-100%', '200%'] }}
             transition={{ duration: 2.5, ease: 'easeInOut', delay: 0.8, repeat: 2, repeatDelay: 1 }}
@@ -840,11 +847,11 @@ export function ModelSelection() {
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, ease: 'easeInOut', delay: 0.5, repeat: 2, repeatDelay: 1.5 }}
             >
-              <Info className="w-4 h-4 text-teal-400 mt-0.5 shrink-0" />
+              <Info className="w-4 h-4 text-teal-500 mt-0.5 shrink-0" />
             </motion.div>
             <div>
-              <div className="text-sm font-semibold text-teal-300 mb-1">Model Composition — Not Selection</div>
-              <p className="text-sm text-gray-400 leading-relaxed">
+              <div className="text-sm font-semibold text-teal-700 mb-1">Model Composition — Not Selection</div>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 VibeModel doesn't pick from a menu — it composes a model from scratch. Every component below was chosen based on your data profile, pattern distribution, and business objective.
               </p>
             </div>
@@ -854,10 +861,10 @@ export function ModelSelection() {
           <div className="mt-4 flex items-center gap-1 overflow-x-auto">
             {['Preprocessor', 'Feature Eng.', 'Model Function', 'Loss Function', 'Regularization', 'Optimization', 'Inference'].map((step, i) => (
               <div key={step} className="flex items-center gap-1 shrink-0">
-                <div className="px-2.5 py-1 rounded-md text-[10px] font-semibold text-gray-300 bg-gray-700/60 border border-gray-600/40 whitespace-nowrap">
+                <div className="px-2.5 py-1 rounded-md text-[10px] font-semibold text-gray-700 bg-white border border-gray-200 whitespace-nowrap" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                   {step}
                 </div>
-                {i < 6 && <span className="text-gray-600 text-xs">→</span>}
+                {i < 6 && <span className="text-gray-400 text-xs">&rarr;</span>}
               </div>
             ))}
           </div>
@@ -870,20 +877,23 @@ export function ModelSelection() {
           transition={{ delay: 0.08 }}
           className="rounded-xl overflow-hidden"
           style={{
-            border: '1px solid rgba(59,130,246,0.35)',
-            background: 'rgba(59,130,246,0.04)',
-            boxShadow: '0 0 30px rgba(59,130,246,0.1)',
+            border: '1px solid #e5e7eb',
+            background: '#ffffff',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+            borderTop: '3px solid transparent',
+            borderImage: 'linear-gradient(135deg, #3b82f6, #8b5cf6) 1',
+            borderImageSlice: '1 1 0 1',
           }}
         >
           {/* Model name header */}
           <div
             className="px-5 py-4 flex items-center gap-3"
             style={{
-              borderBottom: '1px solid rgba(59,130,246,0.2)',
-              background: 'linear-gradient(90deg, rgba(59,130,246,0.12) 0%, rgba(139,92,246,0.06) 100%)',
+              borderBottom: '1px solid #e5e7eb',
+              background: 'linear-gradient(90deg, rgba(59,130,246,0.05) 0%, rgba(139,92,246,0.03) 100%)',
             }}
           >
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Chosen Model</span>
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Chosen Model</span>
             <span className="px-3 py-1 rounded-full text-sm font-bold text-white"
               style={{
                 background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
@@ -899,8 +909,8 @@ export function ModelSelection() {
           <OverallPerformanceSection data={data} />
 
           {/* 2. Per-category performance bars */}
-          <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Performance by Cohort Type</div>
+          <div className="px-5 py-5" style={{ borderBottom: '1px solid #e5e7eb' }}>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Performance by Cohort Type</div>
             <div className="space-y-3">
               {data.performance.map((row, i) => (
                 <motion.div
@@ -916,13 +926,13 @@ export function ModelSelection() {
           </div>
 
           {/* 3. Model Function description */}
-          <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="px-5 py-5" style={{ borderBottom: '1px solid #e5e7eb' }}>
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Model Function</div>
-            <p className="text-sm text-gray-300 leading-relaxed">{data.modelFunction}</p>
+            <p className="text-sm text-gray-700 leading-relaxed">{data.modelFunction}</p>
           </div>
 
           {/* 4. Model Components */}
-          <div className="px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="px-5 py-5" style={{ borderBottom: '1px solid #e5e7eb' }}>
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Model Components</div>
             <div className="grid sm:grid-cols-2 gap-3">
               {data.components.map((comp, i) => (
@@ -934,8 +944,8 @@ export function ModelSelection() {
           {/* 5. Why this model? */}
           <div className="px-5 py-5">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Why this composition?</div>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              <span className="text-gray-300 font-medium">This isn't model selection — it's model composition. </span>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              <span className="text-gray-800 font-medium">This isn't model selection — it's model composition. </span>
               {data.whyThisModel}
             </p>
           </div>
@@ -950,13 +960,13 @@ export function ModelSelection() {
         >
           <div
             className="rounded-xl p-5 flex flex-col"
-            style={{ background: 'rgba(20,184,166,0.05)', border: '1px solid rgba(20,184,166,0.2)' }}
+            style={{ background: 'rgba(240,253,250,0.8)', border: '1px solid rgba(20,184,166,0.25)' }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Download className="w-4 h-4 text-teal-400" />
-              <span className="text-sm font-semibold text-white">Preview Deployment Guide</span>
+              <Download className="w-4 h-4 text-teal-500" />
+              <span className="text-sm font-semibold text-gray-900">Preview Deployment Guide</span>
             </div>
-            <p className="text-xs text-gray-400 leading-relaxed mb-4 flex-1">
+            <p className="text-xs text-gray-600 leading-relaxed mb-4 flex-1">
               Download the comprehensive deployment guide with rollout strategy, A/B testing configuration, and monitoring setup.
             </p>
             <button
@@ -971,19 +981,19 @@ export function ModelSelection() {
 
           <div
             className="rounded-xl p-5 flex flex-col"
-            style={{ background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.2)' }}
+            style={{ background: 'rgba(245,243,255,0.8)', border: '1px solid rgba(139,92,246,0.25)' }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Monitor className="w-4 h-4 text-violet-400" />
-              <span className="text-sm font-semibold text-white">Monitor Your Model in Production</span>
+              <Monitor className="w-4 h-4 text-violet-500" />
+              <span className="text-sm font-semibold text-gray-900">Monitor Your Model in Production</span>
             </div>
-            <p className="text-xs text-gray-400 leading-relaxed mb-4 flex-1">
+            <p className="text-xs text-gray-600 leading-relaxed mb-4 flex-1">
               Track performance metrics, detect pattern drift, and discover new dimensions in real-time.
             </p>
             <button
               onClick={() => setShowMonitor(true)}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-              style={{ background: 'rgba(139,92,246,0.15)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.3)' }}
+              style={{ background: 'rgba(139,92,246,0.1)', color: '#7c3aed', border: '1px solid rgba(139,92,246,0.3)' }}
             >
               <TrendingUp className="w-4 h-4" />
               View Monitoring Dashboard
@@ -1006,7 +1016,7 @@ export function ModelSelection() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-semibold text-white"
-            style={{ background: 'rgba(13,148,136,0.95)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'rgba(13,148,136,0.95)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', backdropFilter: 'blur(8px)' }}
           >
             <Download className="w-4 h-4" />
             Your model deployment guide has been downloaded.

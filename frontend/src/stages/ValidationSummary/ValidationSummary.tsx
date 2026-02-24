@@ -24,7 +24,7 @@ const CATEGORIES: {
     label: 'Dominant Patterns',
     color: '#10b981',
     borderColor: 'border-emerald-500',
-    textColor: 'text-emerald-400',
+    textColor: 'text-emerald-600',
     bgColor: 'bg-emerald-500',
   },
   {
@@ -32,7 +32,7 @@ const CATEGORIES: {
     label: 'Non-Dominant Patterns',
     color: '#ef4444',
     borderColor: 'border-red-500',
-    textColor: 'text-red-400',
+    textColor: 'text-red-600',
     bgColor: 'bg-red-500',
   },
   {
@@ -40,7 +40,7 @@ const CATEGORIES: {
     label: 'Fuzzy Patterns',
     color: '#f59e0b',
     borderColor: 'border-amber-500',
-    textColor: 'text-amber-400',
+    textColor: 'text-amber-600',
     bgColor: 'bg-amber-500',
   },
   {
@@ -48,7 +48,7 @@ const CATEGORIES: {
     label: 'Augmented Data',
     color: '#3b82f6',
     borderColor: 'border-blue-500',
-    textColor: 'text-blue-400',
+    textColor: 'text-blue-600',
     bgColor: 'bg-blue-500',
   },
 ]
@@ -90,11 +90,14 @@ function MetricEyeTooltip({ explanation }: { explanation: string }) {
       onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
     >
-      <Eye className="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-200 transition-colors" />
+      <Eye className="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-600 transition-colors" />
       {visible && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg bg-gray-900 border border-gray-700 p-3 shadow-xl z-50">
-          <p className="text-[11px] text-gray-300 leading-relaxed">{explanation}</p>
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-700" />
+        <div
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-lg border p-3 z-50"
+          style={{ background: '#ffffff', borderColor: '#e5e7eb', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)' }}
+        >
+          <p className="text-[11px] text-gray-600 leading-relaxed">{explanation}</p>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: '#e5e7eb' }} />
         </div>
       )}
     </div>
@@ -117,23 +120,24 @@ function OverallPerformanceBanner({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.06 }}
-      className="rounded-xl border border-gray-700/60 bg-gray-800/60 p-5"
+      className="rounded-xl p-5"
+      style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
     >
       {/* Metrics row */}
       <div className="flex items-start justify-between gap-6">
         <div className="flex items-center gap-8">
           <div>
             <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{metrics.primaryMetric}</div>
-            <div className="text-3xl font-bold text-white">
+            <div className="text-3xl font-bold text-gray-900">
               {isRegressionMetric
                 ? metrics.primaryValue
                 : <><CountUpNumber end={metrics.primaryValue} />%</>}
             </div>
-            <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">Primary</div>
+            <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Primary</div>
           </div>
           <div>
             <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{metrics.secondaryMetric}</div>
-            <div className="text-3xl font-bold text-gray-300">
+            <div className="text-3xl font-bold text-gray-600">
               {isRegressionMetric
                 ? metrics.secondaryValue
                 : <><CountUpNumber end={metrics.secondaryValue} />%</>}
@@ -143,7 +147,7 @@ function OverallPerformanceBanner({
         </div>
         <div className="flex items-start gap-2 max-w-sm">
           <MetricEyeTooltip explanation={getMetricExplanation(businessGoal, metrics.primaryMetric)} />
-          <p className="text-xs text-gray-400 leading-relaxed italic">{metrics.statement}</p>
+          <p className="text-xs text-gray-500 leading-relaxed italic">{metrics.statement}</p>
         </div>
       </div>
     </motion.div>
@@ -176,14 +180,15 @@ function CategoryCard({
       onClick={onClick}
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
-      className={`text-left p-5 rounded-xl border-2 transition-all w-full ${isActive ? borderColor : 'border-gray-700/60'} bg-gray-800/60`}
+      className={`text-left p-5 rounded-xl transition-all w-full ${isActive ? `border-l-4 ${borderColor}` : 'border border-gray-200'}`}
+      style={{ background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
     >
       <div className={`text-xs font-semibold mb-2 ${textColor}`}>{label}</div>
-      <div className="text-3xl font-bold text-white mb-1">
+      <div className="text-3xl font-bold text-gray-900 mb-1">
         <CountUpNumber end={data.count} />
       </div>
       <div className={`text-sm font-medium mb-3 ${textColor}`}>{data.percentage.toFixed(1)}%</div>
-      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden mb-2">
+      <div className="h-1.5 rounded-full overflow-hidden mb-2" style={{ background: '#e5e7eb' }}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${barFill}%` }}
@@ -231,14 +236,17 @@ function BreakdownTable({
         <h4 className={`text-sm font-semibold ${textColor}`}>
           {categoryLabel} — Detailed Breakdown
         </h4>
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-gray-500">
           {data.cohorts.length} cohorts · {data.count} validation samples
         </span>
       </div>
 
-      <div className={`rounded-xl border-2 ${borderColor} overflow-hidden`}>
+      <div
+        className={`rounded-xl border-2 ${borderColor} overflow-hidden`}
+        style={{ background: '#ffffff' }}
+      >
         {/* Table header — 4 proper columns */}
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] bg-gray-800/50 px-4 py-2.5 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-700">
+        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
           <div>Cohort Name</div>
           <div className="text-right">Total Count</div>
           <div className="text-right">Validation Samples</div>
@@ -252,11 +260,12 @@ function BreakdownTable({
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="grid grid-cols-[2fr_1fr_1fr_1fr] px-4 py-3 border-b border-gray-700/50 last:border-0 bg-gray-800/30 hover:bg-gray-700/30 transition-colors"
+            className="grid grid-cols-[2fr_1fr_1fr_1fr] px-4 py-3 last:border-0 transition-colors hover:bg-gray-100"
+            style={{ borderBottom: '1px solid #f3f4f6' }}
           >
-            <div className="text-sm text-gray-200 font-mono truncate pr-4">{cohort.name}</div>
-            <div className="text-right text-sm text-gray-300 font-mono">{cohort.totalCount.toLocaleString()}</div>
-            <div className="text-right text-sm font-mono text-gray-300">{cohort.validationSamples}</div>
+            <div className="text-sm text-gray-800 font-mono truncate pr-4">{cohort.name}</div>
+            <div className="text-right text-sm text-gray-600 font-mono">{cohort.totalCount.toLocaleString()}</div>
+            <div className="text-right text-sm font-mono text-gray-600">{cohort.validationSamples}</div>
             <div className={`text-right text-xs font-semibold font-mono ${textColor}`}>
               {cohort.samplingPct === 0 ? '—' : `${cohort.samplingPct}%`}
             </div>
@@ -267,7 +276,7 @@ function BreakdownTable({
         {!showAll && remaining > 0 && (
           <button
             onClick={() => setShowAll(true)}
-            className={`w-full py-3 text-sm font-semibold transition-colors ${textColor} hover:bg-gray-700/30`}
+            className={`w-full py-3 text-sm font-semibold transition-colors ${textColor} hover:bg-gray-50`}
           >
             Load More ({remaining} remaining)
           </button>
@@ -275,7 +284,7 @@ function BreakdownTable({
         {showAll && data.cohorts.length > 3 && (
           <button
             onClick={() => setShowAll(false)}
-            className={`w-full py-3 text-sm font-semibold transition-colors ${textColor} hover:bg-gray-700/30`}
+            className={`w-full py-3 text-sm font-semibold transition-colors ${textColor} hover:bg-gray-50`}
           >
             Show Less
           </button>
@@ -284,33 +293,36 @@ function BreakdownTable({
 
       {/* Category-specific action panel */}
       {categoryKey === 'insufficient' && (
-        <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-          <p className="text-xs text-gray-400 leading-relaxed mb-3">
-            This pattern appears strong but lacks sufficient data. <span className="text-gray-300 font-medium">Recommended:</span> Collect ~{Math.max(50, Math.round(data.count * 0.3))} more records matching this cohort, OR enable synthetic augmentation.
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+          <p className="text-xs text-gray-600 leading-relaxed mb-3">
+            This pattern appears strong but lacks sufficient data. <span className="text-gray-800 font-medium">Recommended:</span> Collect ~{Math.max(50, Math.round(data.count * 0.3))} more records matching this cohort, OR enable synthetic augmentation.
           </p>
           <div className="relative group inline-flex">
             <button
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/10"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-red-600 transition-colors hover:bg-red-100"
               style={{ border: '1px solid rgba(239,68,68,0.3)' }}
             >
               <Database className="w-3.5 h-3.5" />
               Augment with Synthetic Data
             </button>
-            <div className="absolute bottom-full left-0 mb-2 w-56 rounded-lg bg-gray-900 border border-gray-700 p-2.5 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-              <p className="text-[10px] text-gray-300 leading-relaxed">Generates realistic synthetic records that match the statistical distribution of this cohort to improve model coverage.</p>
-              <div className="absolute top-full left-6 border-4 border-transparent border-t-gray-700" />
+            <div
+              className="absolute bottom-full left-0 mb-2 w-56 rounded-lg border p-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
+              style={{ background: '#ffffff', borderColor: '#e5e7eb', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)' }}
+            >
+              <p className="text-[10px] text-gray-600 leading-relaxed">Generates realistic synthetic records that match the statistical distribution of this cohort to improve model coverage.</p>
+              <div className="absolute top-full left-6 border-4 border-transparent" style={{ borderTopColor: '#e5e7eb' }} />
             </div>
           </div>
         </div>
       )}
 
       {categoryKey === 'helpMe' && (
-        <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <p className="text-xs text-gray-400 leading-relaxed mb-3">
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-xs text-gray-600 leading-relaxed mb-3">
             This pattern has ambiguous boundaries. Predictions in this zone are tagged for manual review.
           </p>
           <button
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-amber-300 transition-colors hover:bg-amber-500/10"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-100"
             style={{ border: '1px solid rgba(245,158,11,0.3)' }}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -320,8 +332,8 @@ function BreakdownTable({
       )}
 
       {categoryKey === 'augmented' && (
-        <div className="mt-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-          <p className="text-xs text-gray-400 leading-relaxed">
+        <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <p className="text-xs text-gray-600 leading-relaxed">
             Synthetic data was generated to strengthen validation. These patterns are now production-ready with caveats — monitor for distribution drift between synthetic and real-world data.
           </p>
         </div>
@@ -367,33 +379,33 @@ export function ValidationSummary() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-700 bg-gray-900">
+      <div className="px-6 py-4" style={{ borderBottom: '1px solid #e5e7eb', background: '#ffffff' }}>
         <div className="flex items-center gap-3">
           <ShieldCheck className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-100">Validation Data Set Summary</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Validation Data Set Summary</h2>
         </div>
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-gray-500 mt-1">
           Comprehensive validation dataset combining valid cohorts, confusing edge cases, and augmented variations to provide complete coverage of real-world data distributions.
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-900">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
         {/* Total validation banner */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-emerald-500/30 bg-gray-800/60 p-5 flex items-center justify-between"
-          style={{ borderLeft: '4px solid #10b981' }}
+          className="rounded-xl p-5 flex items-center justify-between"
+          style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderLeft: '4px solid #10b981', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
         >
           <div>
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Total Validation Data</div>
-            <div className="text-4xl font-bold text-white">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Validation Data</div>
+            <div className="text-4xl font-bold text-gray-900">
               <CountUpNumber end={data.totalCount} />
             </div>
           </div>
           <div className="text-right">
             <div className="text-xs text-gray-500 mb-1">Distribution Overview</div>
-            <div className="text-sm font-semibold text-gray-300">{data.totalCohorts} cohorts total</div>
+            <div className="text-sm font-semibold text-gray-600">{data.totalCohorts} cohorts total</div>
           </div>
         </motion.div>
 

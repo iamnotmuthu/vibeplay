@@ -16,15 +16,15 @@ export function CompletionModal({ isOpen, onStartOver }: CompletionModalProps) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(14px)' }}
+          style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)' }}
         >
           <motion.div
             initial={{ scale: 0.85, opacity: 0, y: 24 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 12 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-            className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
-            style={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.1)' }}
+            className="w-full max-w-md rounded-2xl overflow-hidden"
+            style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}
           >
             {/* Gradient top bar */}
             <div
@@ -49,7 +49,7 @@ export function CompletionModal({ isOpen, onStartOver }: CompletionModalProps) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="text-2xl font-bold text-white mb-2"
+                className="text-2xl font-bold text-gray-900 mb-2"
               >
                 Your Model is Ready
               </motion.h2>
@@ -59,7 +59,7 @@ export function CompletionModal({ isOpen, onStartOver }: CompletionModalProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
                 className="text-sm leading-relaxed mb-8"
-                style={{ color: '#9ca3af' }}
+                style={{ color: '#6b7280' }}
               >
                 You've completed the full VibeModel AI pipeline — from raw data
                 to a production-ready model. Ready to build your own?
@@ -82,7 +82,7 @@ export function CompletionModal({ isOpen, onStartOver }: CompletionModalProps) {
                   className="flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl font-semibold text-white text-sm relative overflow-hidden"
                   style={{
                     background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                    boxShadow: '0 0 28px rgba(59,130,246,0.45), 0 2px 8px rgba(0,0,0,0.4)',
+                    boxShadow: '0 2px 12px rgba(59,130,246,0.3), 0 2px 8px rgba(0,0,0,0.1)',
                     border: '1px solid rgba(139,92,246,0.4)',
                   }}
                 >
@@ -109,17 +109,17 @@ export function CompletionModal({ isOpen, onStartOver }: CompletionModalProps) {
                   whileTap={{ scale: 0.97 }}
                   className="flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl font-semibold text-sm transition-colors"
                   style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    color: 'rgba(255,255,255,0.82)',
+                    background: '#f9fafb',
+                    border: '1px solid #e5e7eb',
+                    color: '#374151',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.09)'
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'
+                    e.currentTarget.style.background = '#f3f4f6'
+                    e.currentTarget.style.borderColor = '#d1d5db'
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+                    e.currentTarget.style.background = '#f9fafb'
+                    e.currentTarget.style.borderColor = '#e5e7eb'
                   }}
                 >
                   <Zap className="w-4 h-4" />
@@ -134,9 +134,9 @@ export function CompletionModal({ isOpen, onStartOver }: CompletionModalProps) {
                 transition={{ delay: 0.35 }}
                 onClick={onStartOver}
                 className="text-xs transition-colors"
-                style={{ color: '#4b5563' }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = '#9ca3af' }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = '#4b5563' }}
+                style={{ color: '#9ca3af' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#6b7280' }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af' }}
               >
                 ← Start over with a new dataset
               </motion.button>

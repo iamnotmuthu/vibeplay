@@ -81,23 +81,23 @@ function AttributeRow({
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ border: '1px solid rgba(255,255,255,0.07)', background: '#0d1117' }}
+      style={{ border: '1px solid #e5e7eb', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
     >
       {/* Row header */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
       >
         {expanded
           ? <ChevronDown className="w-3.5 h-3.5 text-gray-500 shrink-0" />
           : <ChevronRight className="w-3.5 h-3.5 text-gray-500 shrink-0" />}
-        <span className="text-sm font-semibold text-white flex-1 text-left">{dist.feature}</span>
+        <span className="text-sm font-semibold text-gray-900 flex-1 text-left">{dist.feature}</span>
         <span
           className="text-[10px] font-bold px-2 py-0.5 rounded-full"
           style={
             isNumeric
-              ? { background: 'rgba(99,102,241,0.12)', color: '#818cf8' }
-              : { background: hexToRgba(accentColor, 0.1), color: accentColor }
+              ? { background: 'rgba(99,102,241,0.08)', color: '#4f46e5' }
+              : { background: hexToRgba(accentColor, 0.08), color: accentColor }
           }
         >
           {isNumeric ? 'numerical' : 'categorical'}
@@ -111,10 +111,10 @@ function AttributeRow({
             className="flex items-center gap-1.5 ml-3"
             onClick={(e) => { e.stopPropagation(); onToggleBucketize() }}
           >
-            <span className="text-[10px] text-gray-400">Bucketize</span>
+            <span className="text-[10px] text-gray-500">Bucketize</span>
             {bucketized
               ? <ToggleRight className="w-5 h-5" style={{ color: accentColor }} />
-              : <ToggleLeft className="w-5 h-5 text-gray-600" />}
+              : <ToggleLeft className="w-5 h-5 text-gray-400" />}
           </div>
         )}
       </button>
@@ -127,15 +127,15 @@ function AttributeRow({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            style={{ overflow: 'hidden', borderTop: '1px solid rgba(255,255,255,0.05)' }}
+            style={{ overflow: 'hidden', borderTop: '1px solid #e5e7eb' }}
           >
             <div className="p-4">
               {isNumeric && !bucketized && dist.stats && (
                 <>
-                  <div className="text-xs font-semibold text-gray-400 mb-3">
-                    Identified Derived Features <span className="text-white ml-1">1</span>
+                  <div className="text-xs font-semibold text-gray-500 mb-3">
+                    Identified Derived Features <span className="text-gray-900 ml-1">1</span>
                   </div>
-                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #e5e7eb' }}>
                     <div className="px-4 py-2 text-xs font-semibold text-white" style={{ background: 'linear-gradient(90deg,#3b82f6,#8b5cf6)' }}>
                       Statistical Summary
                     </div>
@@ -150,15 +150,15 @@ function AttributeRow({
                         key={row.label}
                         className="flex items-center justify-between px-4 py-2.5"
                         style={{
-                          borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                          background: 'rgba(255,255,255,0.01)',
+                          borderBottom: i < arr.length - 1 ? '1px solid #f3f4f6' : 'none',
+                          background: i % 2 === 0 ? '#f9fafb' : '#ffffff',
                         }}
                       >
                         <div>
-                          <div className="text-xs font-medium text-white">{row.label}</div>
+                          <div className="text-xs font-medium text-gray-900">{row.label}</div>
                           <div className="text-[10px] text-gray-500">{row.sub}</div>
                         </div>
-                        <span className="text-xs font-bold px-3 py-1 rounded-lg" style={{ background: 'rgba(59,130,246,0.12)', color: '#93c5fd' }}>
+                        <span className="text-xs font-bold px-3 py-1 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)', color: '#2563eb' }}>
                           {row.format === 'int'
                             ? (row.value as number).toLocaleString()
                             : (row.value as number).toFixed(2)}
@@ -171,22 +171,22 @@ function AttributeRow({
 
               {isNumeric && bucketized && (
                 <>
-                  <div className="text-xs font-semibold text-gray-400 mb-3">
-                    Categories <span className="text-white ml-1">{buckets.length}</span>
+                  <div className="text-xs font-semibold text-gray-500 mb-3">
+                    Categories <span className="text-gray-900 ml-1">{buckets.length}</span>
                   </div>
                   <div className="space-y-2 mb-3">
                     {buckets.map((b, i) => (
                       <div
                         key={i}
                         className="flex items-center px-3 py-2.5 rounded-lg"
-                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                        style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}
                       >
                         <input
                           value={b.label}
                           onChange={(e) => onBucketChange(i, e.target.value)}
-                          className="flex-1 bg-transparent text-sm text-white outline-none"
+                          className="flex-1 bg-transparent text-sm text-gray-900 outline-none"
                         />
-                        <button onClick={() => onBucketDelete(i)} className="text-red-400 hover:text-red-300 ml-2">
+                        <button onClick={() => onBucketDelete(i)} className="text-red-500 hover:text-red-700 ml-2">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -194,8 +194,8 @@ function AttributeRow({
                   </div>
                   <button
                     onClick={onBucketAdd}
-                    className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-colors hover:bg-white/5"
-                    style={{ border: '1px dashed rgba(255,255,255,0.12)', color: '#9ca3af' }}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-colors hover:bg-gray-50"
+                    style={{ border: '1px dashed #d1d5db', color: '#6b7280' }}
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Category
                   </button>
@@ -204,17 +204,17 @@ function AttributeRow({
 
               {!isNumeric && dist.bins && (
                 <>
-                  <div className="text-xs font-semibold text-gray-400 mb-3">
-                    Identified Derived Features <span className="text-white ml-1">{dist.bins.length}</span>
+                  <div className="text-xs font-semibold text-gray-500 mb-3">
+                    Identified Derived Features <span className="text-gray-900 ml-1">{dist.bins.length}</span>
                   </div>
                   <div className="space-y-1.5">
                     {dist.bins.map((bin) => (
                       <div
                         key={bin.label}
                         className="flex items-center justify-between px-3 py-2 rounded-lg"
-                        style={{ background: hexToRgba(accentColor, 0.05), border: `1px solid ${hexToRgba(accentColor, 0.1)}` }}
+                        style={{ background: hexToRgba(accentColor, 0.04), border: `1px solid ${hexToRgba(accentColor, 0.1)}` }}
                       >
-                        <span className="text-xs text-gray-300">{bin.label}</span>
+                        <span className="text-xs text-gray-600">{bin.label}</span>
                         <span className="text-xs font-mono" style={{ color: accentColor }}>{bin.count.toLocaleString()}</span>
                       </div>
                     ))}
@@ -245,20 +245,21 @@ function TimeSeriesConfigPanel({ accentColor }: { accentColor: string }) {
   const toggleVar = (key: string) => setExogVars((prev) => ({ ...prev, [key]: !prev[key] }))
 
   const selectStyle = {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    color: '#e5e7eb',
+    background: '#f9fafb',
+    border: '1px solid #e5e7eb',
+    color: '#1e293b',
   }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-gray-700/60 bg-gray-800/50 p-5 space-y-5"
+      className="rounded-xl p-5 space-y-5"
+      style={{ border: '1px solid #e5e7eb', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
     >
       <div className="flex items-center gap-2 mb-1">
         <div className="w-2 h-2 rounded-full" style={{ background: accentColor }} />
-        <span className="text-sm font-semibold text-gray-200">Time-Series Configuration</span>
+        <span className="text-sm font-semibold text-gray-800">Time-Series Configuration</span>
       </div>
 
       {/* Granularity */}
@@ -271,8 +272,8 @@ function TimeSeriesConfigPanel({ accentColor }: { accentColor: string }) {
               onClick={() => setGranularity(g)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
               style={granularity === g
-                ? { background: `${accentColor}22`, border: `1px solid ${accentColor}`, color: accentColor }
-                : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#9ca3af' }
+                ? { background: `${accentColor}15`, border: `1px solid ${accentColor}`, color: accentColor }
+                : { background: '#f9fafb', border: '1px solid #e5e7eb', color: '#6b7280' }
               }
             >
               {g.charAt(0).toUpperCase() + g.slice(1)}
@@ -324,11 +325,11 @@ function TimeSeriesConfigPanel({ accentColor }: { accentColor: string }) {
               onClick={() => toggleVar(key)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
               style={enabled
-                ? { background: `${accentColor}18`, border: `1px solid ${accentColor}55`, color: accentColor }
-                : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#6b7280' }
+                ? { background: `${accentColor}12`, border: `1px solid ${accentColor}44`, color: accentColor }
+                : { background: '#f9fafb', border: '1px solid #e5e7eb', color: '#6b7280' }
               }
             >
-              <span className={`w-2 h-2 rounded-full ${enabled ? 'bg-current' : 'bg-gray-600'}`} />
+              <span className={`w-2 h-2 rounded-full ${enabled ? 'bg-current' : 'bg-gray-300'}`} />
               {key.charAt(0).toUpperCase() + key.slice(1)}
             </button>
           ))}
@@ -412,12 +413,12 @@ function AutoADSPanel({
       {/* Banner */}
       <div
         className="flex items-start gap-3 px-4 py-3 rounded-xl"
-        style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}
+        style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}
       >
-        <Sparkles className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
+        <Sparkles className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" />
         <div>
-          <span className="text-sm font-bold text-violet-300">Automated Dimension Discovery: </span>
-          <span className="text-sm text-gray-400">
+          <span className="text-sm font-bold text-violet-700">Automated Dimension Discovery: </span>
+          <span className="text-sm text-gray-600">
             We derived new features from your existing data columns — transforming raw fields into richer signals
             that capture patterns not visible in the original feature set, improving AI model accuracy.
           </span>
@@ -426,33 +427,33 @@ function AutoADSPanel({
 
       {/* Breakdown by Type */}
       <div>
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Breakdown by Type</div>
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Breakdown by Type</div>
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Categorical', attrs: categoricalCount, dims: categoricalDims, color: accentColor },
-            { label: 'Numerical', attrs: numericCount, dims: numericDims, color: '#818cf8' },
+            { label: 'Numerical', attrs: numericCount, dims: numericDims, color: '#4f46e5' },
             { label: 'Multiline Text', attrs: 0, dims: 0, color: '#6b7280' },
           ].map((t) => (
             <div
               key={t.label}
               className="rounded-xl p-4"
-              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}
+              style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}
             >
               <div className="text-xs font-semibold mb-3" style={{ color: t.color }}>{t.label}</div>
               <div>
                 <div className="text-[10px] font-semibold mb-1" style={{ color: t.color }}>
                   Features &nbsp;•&nbsp; Derived Features
                 </div>
-                <div className="text-2xl font-bold text-white">
+                <div className="text-2xl font-bold text-gray-900">
                   {t.attrs === 0 ? '—' : t.attrs}
-                  <span className="text-gray-600 mx-2 text-lg"> </span>
+                  <span className="text-gray-300 mx-2 text-lg"> </span>
                   {t.dims === 0 ? '—' : t.dims}
                 </div>
               </div>
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between px-1 mt-2 border-t pt-2" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+        <div className="flex items-center justify-between px-1 mt-2 border-t pt-2" style={{ borderColor: '#e5e7eb' }}>
           <span className="text-[10px] text-gray-500">Total derived features</span>
           <span className="text-[10px] font-bold" style={{ color: accentColor }}>{categoricalDims + numericDims}</span>
         </div>
@@ -460,8 +461,8 @@ function AutoADSPanel({
 
       {/* Per-feature rows */}
       <div>
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Dataset Features and Derived Features</div>
-        <div className="text-xs text-gray-600 mb-3">View and manage derived features for each feature in your dataset</div>
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Dataset Features and Derived Features</div>
+        <div className="text-xs text-gray-400 mb-3">View and manage derived features for each feature in your dataset</div>
         <div className="space-y-2">
           {distributions.map((dist) => (
             <AttributeRow
@@ -571,15 +572,15 @@ export function AutoEDA() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="px-6 py-4 border-b shrink-0" style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}>
+      <div className="px-6 py-4 border-b shrink-0" style={{ borderColor: '#e5e7eb', background: '#ffffff' }}>
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold text-white">Autonomous EDA</h2>
+          <h2 className="text-lg font-bold text-gray-900">Autonomous EDA</h2>
           {analysisComplete && (
             <motion.span
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               className="text-xs px-2 py-1 rounded-full font-medium"
-              style={{ background: hexToRgba(accentColor, 0.12), color: accentColor }}
+              style={{ background: hexToRgba(accentColor, 0.1), color: accentColor }}
             >
               Analysis Complete
             </motion.span>
@@ -592,7 +593,7 @@ export function AutoEDA() {
         {/* Left: analysis checklist (3 modules only) */}
         <div
           className="w-64 border-r p-4 overflow-y-auto shrink-0"
-          style={{ borderColor: 'rgba(255,255,255,0.07)', background: '#0a0a0a' }}
+          style={{ borderColor: '#e5e7eb', background: '#fafafa' }}
         >
           <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Analysis Modules</h3>
           <div className="space-y-1.5">
@@ -602,10 +603,10 @@ export function AutoEDA() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
                 style={
                   mod.status === 'running'
-                    ? { background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }
+                    ? { background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }
                     : mod.status === 'complete'
-                      ? { background: hexToRgba(accentColor, 0.05) }
-                      : { background: 'rgba(255,255,255,0.02)' }
+                      ? { background: hexToRgba(accentColor, 0.04) }
+                      : { background: '#f9fafb' }
                 }
               >
                 {mod.status === 'complete' ? (
@@ -613,18 +614,18 @@ export function AutoEDA() {
                     <Check className="w-4 h-4" style={{ color: accentColor }} />
                   </motion.div>
                 ) : mod.status === 'running' ? (
-                  <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                 ) : (
-                  <Circle className="w-4 h-4 text-gray-700" />
+                  <Circle className="w-4 h-4 text-gray-300" />
                 )}
                 <span
                   className="text-xs font-medium"
                   style={
                     mod.status === 'running'
-                      ? { color: '#60a5fa' }
+                      ? { color: '#3b82f6' }
                       : mod.status === 'complete'
-                        ? { color: '#d1d5db' }
-                        : { color: '#4b5563' }
+                        ? { color: '#374151' }
+                        : { color: '#9ca3af' }
                   }
                 >
                   {mod.label}
@@ -635,7 +636,7 @@ export function AutoEDA() {
         </div>
 
         {/* Right: analysis results + AutoADS */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#060809' }}>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
 
           {/* 1. Data Summary stats (6 cards: + Total Derived Features) */}
           <AnimatePresence>
@@ -657,13 +658,13 @@ export function AutoEDA() {
                     className="rounded-xl p-4 text-center"
                     style={
                       stat.label === 'Total Derived Features'
-                        ? { background: hexToRgba(accentColor, 0.08), border: `1px solid ${hexToRgba(accentColor, 0.25)}` }
-                        : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }
+                        ? { background: hexToRgba(accentColor, 0.06), border: `1px solid ${hexToRgba(accentColor, 0.2)}` }
+                        : { background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }
                     }
                   >
                     <div
                       className="text-2xl font-bold"
-                      style={{ color: stat.label === 'Total Derived Features' ? accentColor : '#fff' }}
+                      style={{ color: stat.label === 'Total Derived Features' ? accentColor : '#1e293b' }}
                     >
                       <CountUpNumber end={stat.value as number} />
                     </div>
@@ -680,10 +681,10 @@ export function AutoEDA() {
               .map((col, i) => ({ col, val: edaData.missingValues.values[i] }))
               .filter((x) => x.val > 0)
             return (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <h4 className="text-sm font-semibold text-white mb-4">Missing Values by Feature</h4>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-5" style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
+                <h4 className="text-sm font-semibold text-gray-900 mb-4">Missing Values by Feature</h4>
                 {nonZero.length === 0 ? (
-                  <div className="flex items-center gap-2 text-sm text-emerald-400">
+                  <div className="flex items-center gap-2 text-sm text-emerald-600">
                     <Check className="w-4 h-4" />
                     <span>No missing values detected — dataset is complete.</span>
                   </div>
@@ -693,8 +694,8 @@ export function AutoEDA() {
                       const pct = (val / edaData.summary.rows) * 100
                       return (
                         <motion.div key={col} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400 w-36 truncate font-mono">{col}</span>
-                          <div className="flex-1 h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                          <span className="text-xs text-gray-600 w-36 truncate font-mono">{col}</span>
+                          <div className="flex-1 h-4 rounded-full overflow-hidden" style={{ background: '#f3f4f6' }}>
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${Math.max(pct, 1)}%` }}
@@ -703,7 +704,7 @@ export function AutoEDA() {
                               style={{ background: pct > 20 ? '#ef4444' : pct > 5 ? '#f59e0b' : '#10b981' }}
                             />
                           </div>
-                          <span className="text-xs font-mono text-gray-400 w-20 text-right">{val.toLocaleString()} ({pct.toFixed(1)}%)</span>
+                          <span className="text-xs font-mono text-gray-500 w-20 text-right">{val.toLocaleString()} ({pct.toFixed(1)}%)</span>
                         </motion.div>
                       )
                     })}
@@ -715,11 +716,11 @@ export function AutoEDA() {
 
           {/* 3. Quality Score */}
           {edaData && modules.find((m) => m.id === 'quality')?.status === 'complete' && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-6 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <h4 className="text-sm font-semibold text-white mb-4">Data Quality Score</h4>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-6 text-center" style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
+              <h4 className="text-sm font-semibold text-gray-900 mb-4">Data Quality Score</h4>
               <div className="relative w-36 h-36 mx-auto">
                 <svg viewBox="0 0 120 120" className="w-full h-full">
-                  <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#f3f4f6" strokeWidth="10" />
                   <motion.circle
                     cx="60" cy="60" r="50" fill="none"
                     stroke={edaData.qualityScore >= 80 ? '#10b981' : edaData.qualityScore >= 60 ? '#f59e0b' : '#ef4444'}
@@ -733,7 +734,7 @@ export function AutoEDA() {
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div>
-                    <div className="text-3xl font-bold text-white"><CountUpNumber end={edaData.qualityScore} /></div>
+                    <div className="text-3xl font-bold text-gray-900"><CountUpNumber end={edaData.qualityScore} /></div>
                     <div className="text-xs text-gray-500">out of 100</div>
                   </div>
                 </div>
