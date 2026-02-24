@@ -71,10 +71,10 @@ export function EvaluationHub() {
   return (
     <div className="flex-1 flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="px-6 py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
           <BarChart3 className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Evaluation Hub</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Evaluation Hub</h2>
           <motion.span
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -90,7 +90,7 @@ export function EvaluationHub() {
       </div>
 
       {/* Tabs */}
-      <div className="px-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="px-6 border-b border-gray-200 bg-white">
         <div className="flex gap-1">
           {tabs.map((tab) => {
             const Icon = tab.icon
@@ -101,7 +101,7 @@ export function EvaluationHub() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${isActive
                     ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
               >
                 <Icon className="w-4 h-4" />
@@ -124,11 +124,11 @@ export function EvaluationHub() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-6"
             >
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                      <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
                         <th className="text-left px-4 py-3">Model</th>
                         {metricKeys.map((key) => (
                           <th key={key} className="text-right px-4 py-3">{key}</th>
@@ -146,10 +146,10 @@ export function EvaluationHub() {
                               key={model.name}
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              className={`border-t border-gray-100 dark:border-gray-700 ${isChamp ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
+                              className={`border-t border-gray-100 ${isChamp ? 'bg-amber-50/50' : ''
                                 }`}
                             >
-                              <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                              <td className="px-4 py-3 font-medium text-gray-900 flex items-center gap-2">
                                 <div
                                   className="w-2.5 h-2.5 rounded-full"
                                   style={{ backgroundColor: modelColors[model.name] }}
@@ -168,8 +168,8 @@ export function EvaluationHub() {
                                   <td
                                     key={key}
                                     className={`px-4 py-3 text-right font-mono text-xs ${isBest
-                                        ? 'text-green-600 font-bold bg-green-50 dark:bg-green-900/20 dark:text-green-400'
-                                        : 'text-gray-600 dark:text-gray-300'
+                                        ? 'text-green-600 font-bold bg-green-50'
+                                        : 'text-gray-600'
                                       }`}
                                   >
                                     {(val * 100).toFixed(1)}%
@@ -195,7 +195,7 @@ export function EvaluationHub() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-4"
             >
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-sm text-gray-600">
                 Confusion matrix for <span className="font-semibold">{data.champion}</span> (champion model)
               </div>
               <div className="flex justify-center">
@@ -299,10 +299,10 @@ export function EvaluationHub() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-4"
             >
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-sm text-gray-600">
                 ROC curves for all models — the closer to the top-left corner, the better
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <svg viewBox="0 0 400 400" className="w-full max-w-lg mx-auto">
                   {/* Grid lines */}
                   {[0.2, 0.4, 0.6, 0.8].map((v) => (
@@ -414,7 +414,7 @@ export function EvaluationHub() {
                         className="w-3 h-1 rounded"
                         style={{ backgroundColor: modelColors[model.name] }}
                       />
-                      <span className="text-[10px] text-gray-600 dark:text-gray-400">
+                      <span className="text-[10px] text-gray-500">
                         {model.name} (AUC: {model.metrics.auc.toFixed(3)})
                       </span>
                     </div>
@@ -433,10 +433,10 @@ export function EvaluationHub() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-4"
             >
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="text-sm text-gray-600">
                 SHAP values for <span className="font-semibold">{data.champion}</span> — features pushing predictions higher (right) or lower (left)
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="space-y-3">
                   {championModel.shapValues?.map((sv, i) => {
                     const maxAbs = Math.max(
@@ -453,7 +453,7 @@ export function EvaluationHub() {
                         transition={{ delay: i * 0.1 }}
                         className="flex items-center gap-3"
                       >
-                        <span className="text-xs text-gray-700 dark:text-gray-300 w-48 truncate text-right font-mono">
+                        <span className="text-xs text-gray-600 w-48 truncate text-right font-mono">
                           {sv.feature}
                         </span>
                         <div className="flex-1 flex items-center">
@@ -473,7 +473,7 @@ export function EvaluationHub() {
                             )}
                           </div>
                           {/* Center line */}
-                          <div className="w-px h-8 bg-gray-300 dark:bg-gray-600 shrink-0" />
+                          <div className="w-px h-8 bg-gray-300 shrink-0" />
                           {/* Positive side */}
                           <div className="flex-1">
                             {isPositive && (
@@ -516,8 +516,8 @@ export function EvaluationHub() {
                 <CheckCircle2 className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">AI Recommendation</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{data.recommendation}</p>
+                <h4 className="text-sm font-semibold text-gray-900 mb-1">AI Recommendation</h4>
+                <p className="text-sm text-gray-600 leading-relaxed">{data.recommendation}</p>
               </div>
             </div>
           </motion.div>

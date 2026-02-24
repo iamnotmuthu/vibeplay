@@ -72,10 +72,10 @@ export function DimensionDiscovery() {
   return (
     <div className="flex-1 flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="px-6 py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
           <Layers className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Dimension Discovery</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Dimension Discovery</h2>
           {!complete && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
           {complete && (
             <motion.span
@@ -103,25 +103,25 @@ export function DimensionDiscovery() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="rounded-xl overflow-hidden border dark:border-gray-700"
+                className="rounded-xl overflow-hidden border"
                 style={{ borderColor: `${dim.color}40` }}
               >
                 {/* Dimension header */}
                 <button
                   onClick={() => setExpandedDim(isExpanded ? null : dim.name)}
-                  className="w-full bg-white dark:bg-gray-800 px-5 py-4 flex items-center gap-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  className="w-full bg-white px-5 py-4 flex items-center gap-4 text-left hover:bg-gray-50 transition-colors"
                 >
                   {/* Color dot */}
                   <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: dim.color }} />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{dim.name}</span>
+                      <span className="text-sm font-semibold text-gray-900">{dim.name}</span>
                       <span className="text-xs text-gray-400">{dim.attributes.length} attributes</span>
                     </div>
                     {/* Confidence bar */}
                     <div className="flex items-center gap-2 mt-1.5">
-                      <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden max-w-[200px]">
+                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[200px]">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${dim.confidence}%` }}
@@ -151,7 +151,7 @@ export function DimensionDiscovery() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="bg-gray-50 dark:bg-gray-900/50 px-5 py-4 border-t dark:border-gray-700" style={{ borderColor: `${dim.color}20` }}>
+                      <div className="bg-gray-50 px-5 py-4 border-t" style={{ borderColor: `${dim.color}20` }}>
                         <div className="flex flex-wrap gap-2">
                           {dim.attributes.map((attr) => {
                             const canToggle = dim.categoricalToggles.includes(attr)
@@ -166,7 +166,7 @@ export function DimensionDiscovery() {
                                   color: isCategorical ? dim.color : undefined,
                                 }}
                               >
-                                <span className={isCategorical ? '' : 'text-gray-700 dark:text-gray-300'}>{attr}</span>
+                                <span className={isCategorical ? '' : 'text-gray-700'}>{attr}</span>
                                 {canToggle && (
                                   <button
                                     onClick={() => handleToggle(dim.name, attr)}
@@ -202,7 +202,7 @@ export function DimensionDiscovery() {
           <motion.div
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ repeat: Infinity, duration: 1.5 }}
-            className="flex items-center gap-3 px-5 py-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-400"
+            className="flex items-center gap-3 px-5 py-4 rounded-xl border border-dashed border-gray-300 text-sm text-gray-400"
           >
             <Loader2 className="w-4 h-4 animate-spin" />
             Scanning remaining attributes...

@@ -47,10 +47,10 @@ export function DatasetSelection() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="px-6 py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
           <Database className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Dataset Confirmed</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Dataset Confirmed</h2>
           <motion.span
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -66,7 +66,7 @@ export function DatasetSelection() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col" style={{ background: '#fafafa' }}>
         <div className="w-full space-y-5">
 
           {/* Dataset card */}
@@ -74,16 +74,16 @@ export function DatasetSelection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="rounded-2xl overflow-hidden border dark:border-gray-700"
-            style={{ borderColor: `${color}40` }}
+            className="rounded-2xl overflow-hidden"
+            style={{ border: `1px solid ${color}40`, boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
           >
             {/* Coloured top bar */}
             <div className="h-1.5" style={{ background: `linear-gradient(to right, ${color}, ${color}80)` }} />
 
-            <div className="bg-white dark:bg-gray-800 p-6">
+            <div className="bg-white p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{selectedDataset.name}</h3>
+                  <h3 className="text-xl font-bold text-gray-900">{selectedDataset.name}</h3>
                   <p className="text-sm text-gray-500 mt-1 max-w-lg">{selectedDataset.description}</p>
                 </div>
                 <span
@@ -107,7 +107,7 @@ export function DatasetSelection() {
                     style={{ background: `${color}08`, border: `1px solid ${color}20` }}
                   >
                     <stat.icon className="w-5 h-5 mx-auto mb-2" style={{ color }} />
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{stat.value}</div>
+                    <div className="text-lg font-bold text-gray-900">{stat.value}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{stat.label}</div>
                   </div>
                 ))}
@@ -124,8 +124,8 @@ export function DatasetSelection() {
             style={{ background: `${color}08`, border: `1px solid ${color}20` }}
           >
             <ArrowRight className="w-4 h-4 shrink-0" style={{ color }} />
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Next: Define your <span className="font-semibold text-gray-900 dark:text-gray-100">Business Goal</span> and choose a deployment mode to shape the model selection downstream.
+            <p className="text-sm text-gray-600">
+              Next: Define your <span className="font-semibold text-gray-900">Business Goal</span> and choose a deployment mode to shape the model selection downstream.
             </p>
           </motion.div>
         </div>

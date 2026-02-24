@@ -80,10 +80,10 @@ export function FeatureIntelligence() {
   return (
     <div className="flex-1 flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="px-6 py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
           <Sparkles className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Feature Intelligence</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Feature Intelligence</h2>
           {phase !== 'complete' && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
           {analysisComplete && (
             <motion.span
@@ -103,8 +103,8 @@ export function FeatureIntelligence() {
       {/* Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Feature Importance Bars */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 border-r border-gray-200 dark:border-gray-700">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Feature Importance</h3>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 border-r border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-900">Feature Importance</h3>
           {data && (
             <div className="space-y-2">
               {data.importance.slice(0, visibleBars).map((feat, i) => (
@@ -118,10 +118,10 @@ export function FeatureIntelligence() {
                   <span className="text-xs text-gray-400 w-5 text-right font-mono">
                     {feat.rank}
                   </span>
-                  <span className="text-xs text-gray-700 dark:text-gray-300 w-44 truncate font-mono" title={feat.feature}>
+                  <span className="text-xs text-gray-600 w-44 truncate font-mono" title={feat.feature}>
                     {feat.feature}
                   </span>
-                  <div className="flex-1 h-7 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="flex-1 h-7 bg-gray-100 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(feat.score / maxScore) * 100}%` }}
@@ -213,15 +213,15 @@ export function FeatureIntelligence() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 space-y-3"
+          className="px-6 py-4 bg-gray-50 border-t border-gray-200 space-y-3"
         >
           {/* Summary card */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <div className="text-sm font-semibold text-gray-900">
                 Engineered <CountUpNumber end={data.newFeatureCount} className="text-primary" /> new features
               </div>
               <div className="text-xs text-gray-500 mt-0.5">
