@@ -574,7 +574,7 @@ export function AutoEDA() {
       {/* Header */}
       <div className="px-6 py-4 border-b shrink-0" style={{ borderColor: '#e5e7eb', background: '#ffffff' }}>
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-bold text-gray-900">Autonomous EDA</h2>
+          <h2 className="text-lg font-bold text-gray-900">Automated Data Profiling</h2>
           {analysisComplete && (
             <motion.span
               initial={{ opacity: 0, scale: 0.8 }}
