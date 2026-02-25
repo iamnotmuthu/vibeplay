@@ -111,11 +111,12 @@ function getFeatureValues(dist: DistributionData): string[] {
 // ── PatternCard ───────────────────────────────────────────────────────────────
 
 function PatternCard({
-  pattern, status, delay,
+  pattern, status, delay, targetColumn,
 }: {
   pattern: SufficiencyPatternItem
   status: 'sufficient' | 'insufficient' | 'helpMe'
   delay: number
+  targetColumn: string
 }) {
   const [ignored, setIgnored] = useState(false)
   const [action, setAction] = useState<'none' | 'augment' | 'low-confidence'>('none')
@@ -196,10 +197,10 @@ function PatternCard({
         {/* Stats */}
         <p className="text-sm mb-0.5">
           <span className="font-bold text-gray-900">{pct}%</span>
-          <span className="text-gray-500"> of this pattern has </span>
-          <span className="font-bold text-gray-900">Recommended IND</span>
+          <span className="text-gray-500"> of this cohort → </span>
+          <span className="font-bold text-gray-900">{targetColumn}</span>
           <span className="text-gray-500"> = </span>
-          <span className="font-bold text-gray-900">{targetInd}</span>
+          <span className="font-bold text-gray-900">{pattern.targetValue ?? String(targetInd)}</span>
         </p>
         <p className="text-xs text-gray-500 mb-3">
           Records in cohort: <span className="text-gray-700 font-semibold">{pattern.count.toLocaleString()}</span>
@@ -723,10 +724,10 @@ export function PatternDiscovery() {
                     </div>
                     <div className="space-y-3">
                       {data.sufficient.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} />
+                        <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
                       ))}
                       {userPatterns.filter(u => u.status === 'sufficient').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="sufficient" delay={i * 0.08} />
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
                       ))}
                     </div>
                   </motion.div>
@@ -759,10 +760,10 @@ export function PatternDiscovery() {
                   >
                     <div className="space-y-3">
                       {data.insufficient.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="insufficient" delay={i * 0.08} />
+                        <PatternCard key={p.id} pattern={p} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
                       ))}
                       {userPatterns.filter(u => u.status === 'insufficient').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="insufficient" delay={i * 0.08} />
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
                       ))}
                     </div>
                   </motion.div>
@@ -795,10 +796,10 @@ export function PatternDiscovery() {
                   >
                     <div className="space-y-3">
                       {data.helpMe.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} />
+                        <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
                       ))}
                       {userPatterns.filter(u => u.status === 'helpMe').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="helpMe" delay={i * 0.08} />
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
                       ))}
                     </div>
                   </motion.div>

@@ -101,10 +101,12 @@ export interface SufficiencyPatternItem {
   confidence?: 'high' | 'low'
   pct?: number
   targetInd?: 0 | 1
+  targetValue?: string
   attributes?: { name: string; value: string }[]
 }
 
 export interface PatternResults {
+  targetColumn: string
   totalRecords: number
   sufficient: SufficiencyPatternItem[]
   insufficient: SufficiencyPatternItem[]

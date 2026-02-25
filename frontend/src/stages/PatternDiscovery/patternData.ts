@@ -2,6 +2,7 @@ import type { PatternResults } from '@/store/types'
 
 const patternsMap: Record<string, PatternResults> = {
   'telco-churn': {
+    targetColumn: 'Churn',
     totalRecords: 7043,
     sufficient: [
       {
@@ -10,6 +11,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Short-tenure customers on month-to-month contracts paying via electronic check — highest churn risk segment.',
         count: 3875,
         keySignals: ['Contract=Month-to-month', 'PaymentMethod=Electronic check', 'tenure < 12mo', 'MonthlyCharges > $65'],
+        targetValue: 'Yes',
       },
       {
         id: 1,
@@ -17,6 +19,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Two-year contract holders with autopay and 3+ years tenure — lowest churn rate, high lifetime value.',
         count: 2105,
         keySignals: ['Contract=Two year', 'tenure > 36mo', 'AutoPay=Yes', 'TechSupport=Yes'],
+        targetValue: 'No',
       },
       {
         id: 2,
@@ -24,6 +27,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Low-charge DSL subscribers with no streaming or security add-ons — moderate churn driven by competitor pricing.',
         count: 1041,
         keySignals: ['InternetService=DSL', 'MonthlyCharges < $30', 'StreamingTV=No', 'OnlineSecurity=No'],
+        targetValue: 'Yes',
       },
     ],
     insufficient: [
@@ -33,6 +37,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Senior citizens with no partner or dependents — limited samples make reliable prediction difficult.',
         count: 389,
         keySignals: ['SeniorCitizen=1', 'Partner=No', 'Dependents=No'],
+        targetValue: 'Mixed',
       },
       {
         id: 4,
@@ -40,6 +45,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Internet-only subscribers with no phone line — edge case with ambiguous churn signals.',
         count: 209,
         keySignals: ['PhoneService=No', 'MultipleLines=No phone service', 'InternetService!=None'],
+        targetValue: 'Mixed',
       },
     ],
     helpMe: [
@@ -49,6 +55,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Customers with 12–24 months tenure showing mixed signals — some upgrading, some preparing to leave. Cohort behaviour is inconsistent.',
         count: 312,
         keySignals: ['tenure in [12,24]', 'Contract changed recently', 'Mixed PaymentMethod', 'MonthlyCharges fluctuating'],
+        targetValue: 'Mixed',
       },
     ],
     insights: [
@@ -59,6 +66,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'credit-fraud': {
+    targetColumn: 'Class',
     totalRecords: 50000,
     sufficient: [
       {
@@ -67,6 +75,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Typical daily purchases under $100 — clear legitimate pattern with consistent velocity and merchant diversity.',
         count: 38500,
         keySignals: ['Amount < $100', 'Normal hours (8am-10pm)', 'Recurring merchant', 'V14 > -5'],
+        targetValue: '0 (Legitimate)',
       },
       {
         id: 1,
@@ -74,6 +83,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Large legitimate transactions with consistent account history — detectable via repeated merchant + daytime patterns.',
         count: 10650,
         keySignals: ['Amount > $500', 'V17 in normal range', 'Daytime (9am-6pm)', 'Established account'],
+        targetValue: '0 (Legitimate)',
       },
       {
         id: 2,
@@ -81,6 +91,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Off-hours transactions with anomalous PCA features (V14, V17) in known fraud cluster ranges.',
         count: 850,
         keySignals: ['V14 < -8', 'V17 < -5', 'Off-hours (2am-6am)', 'Amount spike vs. history'],
+        targetValue: '1 (Fraud)',
       },
     ],
     insufficient: [
@@ -90,6 +101,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Transactions over $5,000 with unusual PCA signatures — too few samples to distinguish fraud from legitimate.',
         count: 186,
         keySignals: ['Amount > $5,000', 'V12 < -15', 'New merchant', 'Single occurrence'],
+        targetValue: 'Uncertain',
       },
       {
         id: 4,
@@ -97,6 +109,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Rare combinations of multiple extreme PCA values — model confidence is low without additional examples.',
         count: 94,
         keySignals: ['V12 < -15', 'V14 < -15', 'V10 < -10', 'Compound anomaly'],
+        targetValue: 'Uncertain',
       },
     ],
     helpMe: [
@@ -106,6 +119,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: '$200–$500 transactions with partially anomalous PCA values — not clearly fraudulent or legitimate. Borderline feature ranges make confident scoring impossible.',
         count: 447,
         keySignals: ['Amount in [$200,$500]', 'V10 mixed signal', 'Borderline V14 range', 'Irregular but not extreme'],
+        targetValue: 'Mixed',
       },
     ],
     insights: [
@@ -116,6 +130,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'store-demand': {
+    targetColumn: 'sales',
     totalRecords: 45000,
     sufficient: [
       {
@@ -124,6 +139,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Monday–Friday baseline sales across core store clusters with low variance and consistent velocity.',
         count: 32175,
         keySignals: ['dayofweek in [0,4]', 'onpromotion=False', 'store_cluster=A/B', 'Normal oil price'],
+        targetValue: '~avg baseline',
       },
       {
         id: 1,
@@ -131,6 +147,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Promotion-active periods with clear demand uplift — strong enough signal for promotion-specific sub-model.',
         count: 11200,
         keySignals: ['onpromotion=True', '2-day lag effect', 'High-traffic stores', 'Transaction count > avg'],
+        targetValue: 'above avg (+40%)',
       },
       {
         id: 2,
@@ -138,6 +155,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'November–December elevated demand driven by seasonal categories and increased footfall.',
         count: 7560,
         keySignals: ['month in [11,12]', 'Holiday items category', 'Weekday modifier', 'Store type A'],
+        targetValue: 'peak (+85%)',
       },
     ],
     insufficient: [
@@ -147,6 +165,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Low-traffic stores in outlying regions with fewer than 5 weeks of historical data.',
         count: 445,
         keySignals: ['city=Remote region', 'Weekly transactions < 50', 'High missingness', 'No promotion history'],
+        targetValue: 'unstable',
       },
       {
         id: 4,
@@ -154,6 +173,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Demand periods correlated with Brent crude above $90 — rare macro event with insufficient examples.',
         count: 310,
         keySignals: ['dcoilwtico > 90', 'Transportation-sensitive SKUs', 'Infrequent occurrence'],
+        targetValue: 'volatile',
       },
     ],
     helpMe: [
@@ -163,6 +183,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Days marked as "transferred" holidays show demand patterns that shift unpredictably — neither standard weekday nor full holiday behaviour.',
         count: 380,
         keySignals: ['transferred=True', 'Holiday label active', 'Demand variance high', 'Pattern unclear'],
+        targetValue: 'unpredictable',
       },
     ],
     insights: [
@@ -173,6 +194,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'patient-readmission': {
+    targetColumn: 'readmitted',
     totalRecords: 25000,
     sufficient: [
       {
@@ -181,6 +203,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Patients aged 30–65 with a single diagnosis and 3–7 day hospital stay — well-documented and predictable readmission risk.',
         count: 9800,
         keySignals: ['age=[30-60]', 'time_in_hospital in [3,7]', 'num_diagnoses=1', 'Standard discharge'],
+        targetValue: 'No',
       },
       {
         id: 1,
@@ -188,6 +211,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Patients with 2+ comorbidities, multiple medications, and prior hospital visits — high readmission risk cluster.',
         count: 7200,
         keySignals: ['num_diagnoses >= 2', 'num_medications in [10,20]', 'Prior admit', 'diabetesMed=Yes'],
+        targetValue: 'Yes',
       },
       {
         id: 2,
@@ -195,6 +219,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Patients following surgical procedures requiring 7–14 day stays and post-discharge rehabilitation referral.',
         count: 5100,
         keySignals: ['Surgical procedure', 'time_in_hospital in [7,14]', 'Rehab referral=Yes', 'Physical therapy'],
+        targetValue: 'Yes',
       },
     ],
     insufficient: [
@@ -204,6 +229,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Patients aged 90+, often with extreme comorbidity loads — too few cases for reliable prediction.',
         count: 312,
         keySignals: ['age=[90-100]', 'Extreme comorbidities', 'Long-term care', 'Polypharmacy'],
+        targetValue: 'Uncertain',
       },
       {
         id: 4,
@@ -211,6 +237,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Patients on more than 25 simultaneous medications — rare presentation with unpredictable outcomes.',
         count: 284,
         keySignals: ['num_medications > 25', 'Multiple drug interactions', 'Specialist-only care'],
+        targetValue: 'Uncertain',
       },
     ],
     helpMe: [
@@ -220,6 +247,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Patients with uncommon primary diagnosis codes (diag_1 in rare ICD groups) alongside multiple comorbidities — feature interactions are contradictory and sufficiency is unclear.',
         count: 520,
         keySignals: ['diag_1 in rare code groups', 'num_diagnoses >= 3', 'Mixed readmission history', 'Unclear risk signal'],
+        targetValue: 'Mixed',
       },
     ],
     insights: [
@@ -230,6 +258,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'employee-attrition': {
+    targetColumn: 'Attrition',
     totalRecords: 14999,
     sufficient: [
       {
@@ -238,6 +267,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Employees with consistent overtime, low job satisfaction (≤2), and fewer than 3 years tenure — highest attrition risk.',
         count: 5269,
         keySignals: ['OverTime=Yes', 'JobSatisfaction <= 2', 'YearsAtCompany < 3', 'WorkLifeBalance=Bad'],
+        targetValue: 'Yes',
       },
       {
         id: 1,
@@ -245,6 +275,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Long-tenure employees with good satisfaction, stock options, and no overtime — minimal attrition risk.',
         count: 5800,
         keySignals: ['JobSatisfaction >= 3', 'YearsAtCompany >= 5', 'OverTime=No', 'StockOptionLevel >= 1'],
+        targetValue: 'No',
       },
       {
         id: 2,
@@ -252,6 +283,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Short-tenure employees with long commute and no recent promotion — exploring external opportunities.',
         count: 3800,
         keySignals: ['YearsAtCompany < 3', 'DistanceFromHome > 20mi', 'YearsSinceLastPromotion >= 2', 'Age < 30'],
+        targetValue: 'Yes',
       },
     ],
     insufficient: [
@@ -261,6 +293,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'HR professionals at Band 5+ with uncommon role-compensation combinations — insufficient samples.',
         count: 325,
         keySignals: ['JobRole=Human Resources', 'JobLevel >= 4', 'Niche compensation band'],
+        targetValue: 'Uncertain',
       },
       {
         id: 4,
@@ -268,6 +301,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Employees with maximum stock options but below-median salary — rare pattern with ambiguous retention signals.',
         count: 218,
         keySignals: ['StockOptionLevel=3', 'MonthlyIncome < median', 'Long tenure but dissatisfied'],
+        targetValue: 'Uncertain',
       },
     ],
     helpMe: [
@@ -277,6 +311,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Employees recently promoted (within 1 year) but showing low environment satisfaction — contradictory signals make attrition prediction unreliable for this group.',
         count: 412,
         keySignals: ['YearsSinceLastPromotion <= 1', 'EnvironmentSatisfaction <= 2', 'OverTime mixed', 'Ambiguous signal'],
+        targetValue: 'Mixed',
       },
     ],
     insights: [
@@ -287,6 +322,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'energy-consumption': {
+    targetColumn: 'consumption_kwh',
     totalRecords: 35040,
     sufficient: [
       {
@@ -295,6 +331,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: '7–10am weekday demand window with consistent occupancy-driven load patterns across all seasons.',
         count: 8760,
         keySignals: ['hour in [7,10]', 'dayofweek in [0,4]', 'temperature in [5,30]', 'occupancy > 0.6'],
+        targetValue: 'high (peak hours)',
       },
       {
         id: 1,
@@ -302,6 +339,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: '5–9pm demand peak driven by residential zones — consistent in summer and winter, smaller in spring/autumn.',
         count: 8760,
         keySignals: ['hour in [17,21]', 'zone=residential', 'HVAC active', 'occupancy > 0.8'],
+        targetValue: 'high (evening peak)',
       },
       {
         id: 2,
@@ -309,6 +347,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Overnight low-demand steady state — highly predictable and consistent across all seasons and days.',
         count: 13140,
         keySignals: ['hour in [23,6]', 'occupancy < 0.1', 'Baseline HVAC', 'temperature in [0,25]'],
+        targetValue: 'low (off-peak)',
       },
     ],
     insufficient: [
@@ -318,6 +357,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Maximum heating demand during temperatures below -5°C — occurs fewer than 12 times per year.',
         count: 380,
         keySignals: ['temperature < -5°C', 'HVAC at maximum', 'Heating dominant load', 'Rare event'],
+        targetValue: 'extreme spike',
       },
       {
         id: 4,
@@ -325,6 +365,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Grid-level demand response signals requiring immediate load shedding — rare critical peak events.',
         count: 420,
         keySignals: ['demand_response_active=True', 'Grid stress > 95%', 'Load shedding', 'Irregular pattern'],
+        targetValue: 'irregular',
       },
     ],
     helpMe: [
@@ -334,6 +375,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Shoulder-season demand (15–20°C) where neither heating nor cooling dominates — load patterns are inconsistent and vary unpredictably by building type.',
         count: 1840,
         keySignals: ['temperature in [15,20]', 'Mixed HVAC state', 'Season=spring/autumn', 'High variance'],
+        targetValue: 'inconsistent',
       },
     ],
     insights: [
@@ -344,6 +386,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'insurance-claims': {
+    targetColumn: 'fraud_reported',
     totalRecords: 40000,
     sufficient: [
       {
@@ -352,6 +395,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Typical claims with police reports, witnesses, established policyholders of 1–3 years — strong legitimate signal.',
         count: 28000,
         keySignals: ['police_report=Yes', 'witnesses >= 1', 'policy_tenure in [1,3]yr', 'Clean claim history'],
+        targetValue: 'No',
       },
       {
         id: 1,
@@ -359,6 +403,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Major damage claims from long-standing policyholders verified through authorised repair networks.',
         count: 8500,
         keySignals: ['incident_severity=Major Damage', 'policy_tenure > 3yr', 'Authorised body shop', 'No prior fraud flag'],
+        targetValue: 'No',
       },
       {
         id: 2,
@@ -366,6 +411,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Claims filed within 6 months of policy start — elevated fraud rate via specific repair networks.',
         count: 2200,
         keySignals: ['policy_tenure < 6mo', 'witnesses=0', 'Non-authorised repairer', 'Repeat claimant network'],
+        targetValue: 'Yes',
       },
     ],
     insufficient: [
@@ -375,6 +421,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'No at-fault driver, parked vehicle damage — edge case with ambiguous fraud vs. legitimate signals.',
         count: 390,
         keySignals: ['incident_type=Parked Car', 'No at-fault party', 'No witnesses', 'Unclear liability'],
+        targetValue: 'Uncertain',
       },
       {
         id: 4,
@@ -382,6 +429,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Multiple bodily injuries with zero witnesses — rare profile that requires more data for confident scoring.',
         count: 276,
         keySignals: ['bodily_injuries=2', 'witnesses=0', 'High claim amount', 'No police report'],
+        targetValue: 'Uncertain',
       },
     ],
     helpMe: [
@@ -391,6 +439,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Claims where policyholder hobbies (e.g. racing, skydiving) partially overlap with incident context — risk signals are contradictory and cohort labelling is disputed.',
         count: 480,
         keySignals: ['insured_hobbies=high-risk', 'Incident context mixed', 'Ambiguous fraud label', 'Borderline claim amount'],
+        targetValue: 'Mixed',
       },
     ],
     insights: [
@@ -401,6 +450,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'predictive-maintenance': {
+    targetColumn: 'failure',
     totalRecords: 50000,
     sufficient: [
       {
@@ -409,6 +459,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Machines running within all nominal sensor bounds — vibration, temperature, and pressure within healthy thresholds. Clear no-failure signal.',
         count: 34500,
         keySignals: ['vibration < 4.5mm/s', 'temperature in [60,85]°C', 'pressure in [5,12]bar', 'cycle_count < threshold'],
+        targetValue: '0 (Healthy)',
       },
       {
         id: 1,
@@ -416,6 +467,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Machines exhibiting rising vibration and temperature trends over 48 hours before recorded failure — strong precursor pattern.',
         count: 8200,
         keySignals: ['vibration trending up > 2 days', 'temperature > 95°C', 'Bearing wear signal', 'Cycle count near limit'],
+        targetValue: '1 (Failure imminent)',
       },
       {
         id: 2,
@@ -423,6 +475,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Sensor readings immediately after maintenance — temporarily elevated vibration and temperature that settle within 4 hours.',
         count: 5100,
         keySignals: ['Post-maintenance flag', 'vibration spike < 4h', 'temperature spike < 4h', 'Returns to normal'],
+        targetValue: '0 (Healthy)',
       },
     ],
     insufficient: [
@@ -432,6 +485,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Failures occurring with no prior sensor warning — rare mode with insufficient examples for reliable early detection.',
         count: 380,
         keySignals: ['Failure within 1h of normal readings', 'No trend detected', 'Catastrophic mode', 'Component fracture'],
+        targetValue: 'Uncertain',
       },
       {
         id: 4,
@@ -439,6 +493,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Sensor anomalies caused by external conditions (dust storm, flooding) rather than equipment degradation — rare and hard to model.',
         count: 290,
         keySignals: ['External cause confirmed', 'All sensors spike simultaneously', 'Environmental flag', 'Not degradation-driven'],
+        targetValue: 'Uncertain',
       },
     ],
     helpMe: [
@@ -448,6 +503,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Machines that cycle in and out of warning states without failing — sensors repeatedly breach thresholds then recover. Unclear whether failure is imminent or chronic.',
         count: 1420,
         keySignals: ['Vibration oscillates above/below limit', 'temperature borderline', 'No consistent trend', 'Recurring but non-progressive'],
+        targetValue: 'Mixed',
       },
     ],
     insights: [
@@ -458,6 +514,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'logistics-delivery-delay': {
+    targetColumn: 'is_delayed',
     totalRecords: 25000,
     sufficient: [
       {
@@ -466,6 +523,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Deliveries over 300km in stormy or foggy conditions via truck — highest delay rate at 78%. Clear route-weather interaction.',
         count: 4820,
         keySignals: ['distance_km > 300', 'weather_condition in [stormy, foggy]', 'vehicle_type=truck', 'delivery_mode=standard'],
+        targetValue: '1 (Delayed)',
       },
       {
         id: 1,
@@ -473,6 +531,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Same-day and express deliveries under 50km with bikes or scooters — consistently on time with 92% reliability.',
         count: 6240,
         keySignals: ['distance_km < 50', 'delivery_mode in [same day, express]', 'vehicle_type in [bike, scooter]', 'weather_condition=clear'],
+        targetValue: '0 (On-time)',
       },
       {
         id: 2,
@@ -480,6 +539,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Shipments via top-rated partners (rating > 4.0) on known routes — predictable delay patterns with strong historical signal.',
         count: 8420,
         keySignals: ['delivery_rating > 4.0', 'delivery_partner in [FedEx, DHL]', 'package_type=documents', 'distance_km < 200'],
+        targetValue: '0 (On-time)',
       },
     ],
     insufficient: [
@@ -489,6 +549,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'EV van and EV bike deliveries during cold weather — too few samples to assess battery-range impact on delays.',
         count: 340,
         keySignals: ['vehicle_type in [EV van, EV bike]', 'weather_condition=cold', 'distance_km > 100', 'Limited data'],
+        targetValue: 'Uncertain',
       },
       {
         id: 4,
@@ -496,6 +557,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Fragile packages over 20kg shipped 500+ km — rare combination with ambiguous delay signals.',
         count: 180,
         keySignals: ['package_type=fragile items', 'package_weight_kg > 20', 'distance_km > 500', 'High variance'],
+        targetValue: 'Uncertain',
       },
     ],
     helpMe: [
@@ -505,6 +567,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Deliveries of 100–300km in rainy conditions — delay rate varies unpredictably between 35-65% depending on region and partner combination.',
         count: 2840,
         keySignals: ['distance_km in [100, 300]', 'weather_condition=rainy', 'Mixed partner performance', 'Region-dependent'],
+        targetValue: 'Mixed',
       },
     ],
     insights: [
@@ -515,6 +578,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'logistics-freight-cost': {
+    targetColumn: 'freight_cost_usd',
     totalRecords: 5964,
     sufficient: [
       {
@@ -523,6 +587,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Regular air freight under 1,000kg to African countries via standard vendor terms — predictable cost structure.',
         count: 2840,
         keySignals: ['shipment_mode=Air', 'weight_kg < 1000', 'vendor_inco_term=EXW', 'fulfill_via=Direct Drop'],
+        targetValue: 'predictable (per-kg rate)',
       },
       {
         id: 1,
@@ -530,6 +595,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Truck shipments over 5,000kg with well-established cost-per-km rates across familiar routes.',
         count: 1420,
         keySignals: ['shipment_mode=Truck', 'weight_kg > 5000', 'fulfill_via=From RDC', 'Established routes'],
+        targetValue: 'predictable (per-km rate)',
       },
       {
         id: 2,
@@ -537,6 +603,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'ARV product group with known pricing tiers — line item value strongly predicts freight cost.',
         count: 1280,
         keySignals: ['product_group=ARV', 'line_item_value > $50k', 'Known pricing tier', 'Standard terms'],
+        targetValue: 'tiered pricing',
       },
     ],
     insufficient: [
@@ -546,6 +613,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Charter flights with custom pricing — negotiated per-shipment rates make cost prediction unreliable.',
         count: 224,
         keySignals: ['shipment_mode=Air Charter', 'weight_kg > 10000', 'Custom terms', 'Negotiated pricing'],
+        targetValue: 'custom negotiated',
       },
       {
         id: 4,
@@ -553,6 +621,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Ocean freight to small island nations — sparse route data with volatile shipping rates.',
         count: 142,
         keySignals: ['shipment_mode=Ocean', 'country=small island', 'Sparse route data', 'Rate volatility'],
+        targetValue: 'volatile',
       },
     ],
     helpMe: [
@@ -562,6 +631,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Shipments using combined truck-air transport with variable handoff costs — pricing models show inconsistent accuracy.',
         count: 380,
         keySignals: ['Mixed transport modes', 'Handoff cost variance', 'Regional price differences', 'Ambiguous terms'],
+        targetValue: 'variable',
       },
     ],
     insights: [
@@ -572,6 +642,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'logistics-delivery-outcome': {
+    targetColumn: 'delivery_status',
     totalRecords: 180519,
     sufficient: [
       {
@@ -580,6 +651,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Standard Class shipments where actual shipping days exceed scheduled — dominant pattern driving 55% late-delivery rate.',
         count: 82400,
         keySignals: ['shipping_mode=Standard Class', 'days_for_shipping_real > days_for_shipment_scheduled', 'late_delivery_risk=1', 'High volume'],
+        targetValue: 'Late',
       },
       {
         id: 1,
@@ -587,6 +659,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Same Day and First Class orders that consistently arrive ahead of schedule — strong positive signal.',
         count: 38420,
         keySignals: ['shipping_mode in [Same Day, First Class]', 'days_for_shipping_real < days_for_shipment_scheduled', 'market=USCA', 'Low discount'],
+        targetValue: 'Advance',
       },
       {
         id: 2,
@@ -594,6 +667,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Corporate segment orders with moderate discounts — reliable on-time delivery pattern across stable markets.',
         count: 28640,
         keySignals: ['customer_segment=Corporate', 'order_item_discount_rate < 15%', 'market in [Europe, USCA]', 'Consistent performance'],
+        targetValue: 'On Time',
       },
     ],
     insufficient: [
@@ -603,6 +677,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Order cancellations in African market — only 4% of total data with highly variable cancellation reasons.',
         count: 3200,
         keySignals: ['delivery_status=Shipping canceled', 'market=Africa', 'High cancellation variance', 'Sparse data per region'],
+        targetValue: 'Canceled',
       },
       {
         id: 4,
@@ -610,6 +685,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Home Office segment with >30% discount — niche pattern with ambiguous outcome signals across markets.',
         count: 2840,
         keySignals: ['customer_segment=Home Office', 'order_item_discount_rate > 30%', 'Negative profit', 'Mixed outcomes'],
+        targetValue: 'Mixed',
       },
     ],
     helpMe: [
@@ -619,6 +695,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Second Class shipments in LATAM where actual equals scheduled days — outcome oscillates between on-time and late across regions unpredictably.',
         count: 8420,
         keySignals: ['shipping_mode=Second Class', 'market=LATAM', 'days_real ≈ days_scheduled', 'Borderline outcome'],
+        targetValue: 'On Time / Late',
       },
     ],
     insights: [
@@ -629,6 +706,7 @@ const patternsMap: Record<string, PatternResults> = {
   },
 
   'logistics-demand-forecast': {
+    targetColumn: 'avg_daily_demand',
     totalRecords: 1337,
     sufficient: [
       {
@@ -637,6 +715,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Monday–Friday demand with stable patterns driven by regular shipping activity — strong autocorrelation signal.',
         count: 720,
         keySignals: ['dayofweek in [0,4]', 'avg_weather_severity < 2', 'avg_traffic_congestion < 0.5', 'Normal operations'],
+        targetValue: '~450 units/day',
       },
       {
         id: 1,
@@ -644,6 +723,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Q4 demand surge (Oct–Dec) driven by holiday shipping volumes — consistent year-over-year pattern.',
         count: 280,
         keySignals: ['month in [10,11,12]', 'avg_daily_demand > 600', 'High shipping cost', 'Seasonal pattern'],
+        targetValue: '> 600 units/day',
       },
       {
         id: 2,
@@ -651,6 +731,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Days with high weather severity (>3.0) showing consistent demand reduction — clear inverse signal.',
         count: 168,
         keySignals: ['avg_weather_severity > 3.0', 'avg_daily_demand < 300', 'High delay probability', 'Low supplier reliability'],
+        targetValue: '< 300 units/day',
       },
     ],
     insufficient: [
@@ -660,6 +741,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Days with port congestion > 0.9 — extreme supply chain disruption events with too few samples.',
         count: 42,
         keySignals: ['avg_port_congestion > 0.9', 'avg_lead_time_days > 15', 'Supply chain disruption', 'Rare event'],
+        targetValue: 'disrupted',
       },
       {
         id: 4,
@@ -667,6 +749,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Simultaneous high weather severity and high traffic congestion — compound disruptions with unpredictable demand impact.',
         count: 28,
         keySignals: ['avg_weather_severity > 4', 'avg_traffic_congestion > 0.8', 'Compound disruption', 'Insufficient data'],
+        targetValue: 'unpredictable',
       },
     ],
     helpMe: [
@@ -676,6 +759,7 @@ const patternsMap: Record<string, PatternResults> = {
         description: 'Saturday and Sunday demand patterns vary inconsistently — some weekends show near-zero activity while others show mid-week levels.',
         count: 180,
         keySignals: ['dayofweek in [5,6]', 'High variance', 'Mixed activity levels', 'No consistent pattern'],
+        targetValue: 'inconsistent',
       },
     ],
     insights: [
