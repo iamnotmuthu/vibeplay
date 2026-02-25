@@ -1098,7 +1098,7 @@ const logisticsDeliveryOutcomeEDA: EDAResults = {
   insights: [
     { id: 'ins-1', text: 'Imbalanced multi-class target: Late delivery dominates at 55%, Canceled is only 4%. Will use stratified sampling and class-weighted training.', type: 'warning' },
     { id: 'ins-2', text: 'No missing values across 31 features — high-quality e-commerce dataset. 180,519 records provide robust statistical power.', type: 'success' },
-    { id: 'ins-3', text: 'Shipping gap (actual - scheduled days) is the strongest delivery outcome predictor. Engineering this derived feature automatically.', type: 'info' },
+    { id: 'ins-3', text: 'Shipping gap (actual - scheduled days) is the strongest delivery outcome predictor. Engineering this dimension automatically.', type: 'info' },
     { id: 'ins-4', text: 'Discount rate and profit ratio are inversely correlated (-0.42) — high discounts compress margins and correlate with cancellation risk.', type: 'info' },
     { id: 'ins-5', text: '1,842 outlier orders detected with extreme benefit values. These are high-value B2B orders — retaining for model training.', type: 'warning' },
     { id: 'ins-6', text: 'Data quality score: 85/100. Large, clean dataset spanning 5 global markets. The AI will handle multi-class balancing and feature engineering automatically.', type: 'success' },

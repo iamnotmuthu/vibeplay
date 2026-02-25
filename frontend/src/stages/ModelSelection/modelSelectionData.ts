@@ -469,7 +469,7 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
         params: [
           { name: 'Scaling', value: 'MinMaxScaler for salary bands' },
           { name: 'Encoding', value: 'Ordinal for JobLevel, OHE for Department' },
-          { name: 'Derived features', value: 'SatisfactionIndex, OverTimeBurden' },
+          { name: 'Dimensions', value: 'SatisfactionIndex, OverTimeBurden' },
         ],
       },
       {
