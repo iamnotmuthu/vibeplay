@@ -142,8 +142,8 @@ export function BusinessSetup() {
     setDeploymentMode(localMode!)
     addLog(`Business Goal: ${localGoal}`, 'action')
     addLog(`Deployment Mode: ${localMode === 'realtime' ? 'Real-Time' : 'Batch Processing'}`, 'action')
-    completeStep(2)
-    setStep(3 as StageId)
+    completeStep(1)
+    setStep(2 as StageId)
   }
 
   return (
@@ -364,7 +364,7 @@ export function BusinessSetup() {
       <BottomActionBar
         onNext={canContinue ? handleNext : undefined}
         nextDisabled={!canContinue}
-        nextLabel="Continue to Data Profiling"
+        nextLabel="Continue to Dataset"
       />
     </div>
   )

@@ -274,8 +274,8 @@ export interface ModelSelectionResults {
 export type StageId = 1 | 2 | 3 | 4 | 5 | 6
 
 export const STAGE_LABELS: Record<StageId, string> = {
-  1: 'Dataset',
-  2: 'Business Setup',
+  1: 'Business Setup',
+  2: 'Dataset',
   3: 'Data Profiling',
   4: 'Pattern Recognition',
   5: 'Validation Summary',

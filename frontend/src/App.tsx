@@ -12,8 +12,8 @@ import { ValidationSummary } from '@/stages/ValidationSummary/ValidationSummary'
 import { ModelSelection } from '@/stages/ModelSelection/ModelSelection'
 
 const stageComponents = {
-  1: DatasetSelection,
-  2: BusinessSetup,
+  1: BusinessSetup,
+  2: DatasetSelection,
   3: AutoEDA,
   4: PatternDiscovery,
   5: ValidationSummary,

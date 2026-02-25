@@ -6,6 +6,7 @@ import {
   Hash,
   Rows3,
   Tag,
+  Info,
 } from 'lucide-react'
 
 import { usePlaygroundStore } from '@/store/playgroundStore'
@@ -40,8 +41,8 @@ export function DatasetSelection() {
 
   const handleNext = () => {
     addLog(`Dataset confirmed: ${selectedDataset.name}`, 'success')
-    completeStep(1)
-    setStep(2 as StageId)
+    completeStep(2)
+    setStep(3 as StageId)
   }
 
   return (
@@ -115,6 +116,24 @@ export function DatasetSelection() {
             </div>
           </motion.div>
 
+          {/* Demo disclaimer */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-xl px-4 py-3 flex items-start gap-3"
+            style={{
+              background: 'rgba(245,158,11,0.06)',
+              border: '1px solid rgba(245,158,11,0.2)',
+            }}
+          >
+            <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-sm leading-relaxed" style={{ color: '#78716c' }}>
+              <span className="font-semibold" style={{ color: '#92400e' }}>Demo dataset.</span>{' '}
+              This is a predefined sample dataset for demonstration purposes only. In production, VibeModel connects to your own data sources.
+            </p>
+          </motion.div>
+
           {/* Next step teaser */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -125,7 +144,7 @@ export function DatasetSelection() {
           >
             <ArrowRight className="w-4 h-4 shrink-0" style={{ color }} />
             <p className="text-sm text-gray-600">
-              Next: Define your <span className="font-semibold text-gray-900">Business Goal</span> and choose a deployment mode to shape the model selection downstream.
+              Next: <span className="font-semibold text-gray-900">Data Profiling</span> — VibeModel will analyse distributions, correlations, and outliers to assess data readiness.
             </p>
           </motion.div>
         </div>
@@ -133,7 +152,7 @@ export function DatasetSelection() {
 
       <BottomActionBar
         onNext={handleNext}
-        nextLabel="Continue to Business Setup"
+        nextLabel="Continue to Data Profiling"
       />
     </div>
   )
