@@ -323,8 +323,8 @@ function MetricEyeTooltip({ explanation }: { explanation: string }) {
 const PERF_LEVELS = [
   { key: 'overall',      label: 'Overall Performance', color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
   { key: 'sufficient',   label: 'Dominant Patterns',   color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
-  { key: 'insufficient', label: 'Non-Dominant Patterns', color: '#f59e0b', bg: 'rgba(245,158,11,0.10)' },
-  { key: 'helpMe',       label: 'Fuzzy Patterns',      color: '#ef4444', bg: 'rgba(239,68,68,0.10)' },
+  { key: 'insufficient', label: 'Non-Dominant Patterns', color: '#ef4444', bg: 'rgba(239,68,68,0.10)' },
+  { key: 'helpMe',       label: 'Fuzzy Patterns',      color: '#f59e0b', bg: 'rgba(245,158,11,0.10)' },
 ] as const
 
 function PerformanceBar({ label, value, color, bg, isRegression }: {

@@ -100,8 +100,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'Logistic Regression delivers strong baseline performance on tabular churn data, produces interpretable coefficients for each feature, and generalises well without extensive hyperparameter tuning. Its probability output integrates directly with intervention scoring systems, making it the operationally preferred choice over more complex ensemble methods that offer marginal accuracy gains at significant explainability cost.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 91, precision: 88 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 74, precision: 68 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 62, precision: 55 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 65, precision: 58 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 52, precision: 46 },
     ],
   },
 
@@ -230,8 +230,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'XGBoost captures non-linear interactions between transaction amount, time patterns, and merchant categories that logistic regression misses. Its native support for imbalanced class weighting and built-in regularisation (L1+L2) prevents overfitting on the rare fraud class, while SHAP-based feature importance preserves model explainability for compliance reporting.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 94, precision: 91 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 81, precision: 73 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 68, precision: 60 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 68, precision: 61 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 56, precision: 49 },
     ],
   },
 
@@ -328,8 +328,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'LightGBM provides the best trade-off between forecast accuracy and training speed on wide panel data with hundreds of store-SKU pairs. Its leaf-wise growth strategy captures sparse promotion effects more efficiently than symmetric tree methods, and gradient-based feature selection naturally downweights noisy store attributes that vary randomly across weeks.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 89, precision: 86 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 72, precision: 65 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 58, precision: 51 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 62, precision: 55 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 48, precision: 45 },
     ],
   },
 
@@ -441,8 +441,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'Random Forest is robust to the heterogeneous mix of sparse categorical (diagnosis codes) and dense numerical (lab values) features typical of clinical data. Unlike linear models, it captures non-linear interactions between comorbidities and social determinants without requiring extensive feature engineering. Its ensemble nature also provides natural variance estimates that clinicians can use to assess prediction confidence.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 88, precision: 84 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 71, precision: 64 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 60, precision: 53 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 63, precision: 56 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 50, precision: 46 },
     ],
   },
 
@@ -540,8 +540,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'Logistic Regression with L1 regularisation performs feature selection automatically, reducing the 34-attribute HR dataset to a compact set of high-signal predictors. The resulting coefficients are directly interpretable as odds ratios, making it straightforward for HR business partners to explain predictions to managers without a data science background.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 85, precision: 82 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 69, precision: 62 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 57, precision: 50 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 59, precision: 52 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 47, precision: 45 },
     ],
   },
 
@@ -638,8 +638,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'LightGBM excels at modelling the multivariate interactions between weather variables and occupancy schedules that drive energy demand, while training fast enough to support daily model refreshes on streaming sensor data. Its quantile-regression extension provides prediction intervals that facility managers rely on for demand-response bidding decisions.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 92, precision: 89 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 77, precision: 70 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 63, precision: 57 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 67, precision: 60 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 53, precision: 48 },
     ],
   },
 
@@ -751,8 +751,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'XGBoost captures complex non-linear risk interactions that actuarial GLMs miss, particularly in niche policy segments with sparse historical data. Its two-stage architecture (propensity → severity) aligns naturally with insurance pricing workflows, and the built-in fraud-signal sub-model reduces the operational overhead of running separate fraud and propensity pipelines.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 90, precision: 87 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 75, precision: 68 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 61, precision: 54 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 64, precision: 57 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 51, precision: 46 },
     ],
   },
 
@@ -864,8 +864,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'Random Forest handles the heterogeneous mix of rolling sensor statistics and categorical machine-type features better than linear models, without requiring extensive hyperparameter tuning. Its ensemble nature reduces sensitivity to individual noisy sensor readings, and the natural feature importance scores directly support maintenance team interpretability — enabling engineers to understand which sensor trends triggered each alert.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 91, precision: 88 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 70, precision: 63 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 58, precision: 51 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 62, precision: 55 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 49, precision: 45 },
     ],
   },
 
@@ -977,8 +977,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'XGBoost captures the complex non-linear interactions between route distance, weather conditions, and vehicle type that drive delivery delays. Its gradient boosting framework handles the mixed feature types (categorical partners, numeric distances) natively, while built-in regularisation prevents overfitting on weather-route interaction terms.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 89, precision: 86 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 72, precision: 65 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 60, precision: 53 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 63, precision: 56 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 50, precision: 46 },
     ],
   },
 
@@ -1074,8 +1074,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'LightGBM handles the heavily right-skewed freight cost distribution through log-space training, while its leaf-wise growth captures the sparse vendor-term and country-specific pricing interactions that linear models miss. Its fast training time on this smaller dataset (5,964 rows) enables rapid model iteration during pricing rule changes.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 87, precision: 84 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 70, precision: 63 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 56, precision: 49 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 58, precision: 51 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 46, precision: 45 },
     ],
   },
 
@@ -1172,8 +1172,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'Random Forest handles the 4-class delivery outcome problem effectively by reducing variance through bootstrap aggregation across 31 heterogeneous features. Its natural multi-class support avoids one-vs-rest decomposition, and balanced class weighting with SMOTE for the rare canceled class (4%) ensures all outcomes receive adequate learning signal.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 87, precision: 84 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 69, precision: 62 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 57, precision: 50 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 57, precision: 50 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 48, precision: 45 },
     ],
   },
 
@@ -1269,8 +1269,8 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
     whyThisModel: 'LightGBM with lag and rolling features captures both the autocorrelation in daily demand and the impact of exogenous disruptions (weather, port congestion, traffic). Its fast training enables daily model refreshes as new data arrives, and the quantile regression extension provides forecast intervals that operations teams rely on for capacity planning decisions.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 90, precision: 87 },
-      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 74, precision: 67 },
-      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 61, precision: 54 },
+      { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 65, precision: 58 },
+      { category: 'helpMe', label: 'Fuzzy Patterns', recall: 52, precision: 47 },
     ],
   },
 }
