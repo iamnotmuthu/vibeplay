@@ -7,16 +7,10 @@ import {
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CompletionModal } from '@/components/shared/CompletionModal'
-import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import { getPrecomputedModelSelection } from './modelSelectionData'
 import { generateDeploymentPDF } from '@/lib/generateDeploymentPDF'
-import type { ModelSelectionResults, CohortPerformance, ModelComponent } from '@/store/types'
+import type { ModelSelectionResults, ModelComponent } from '@/store/types'
 
-const CATEGORY_COLORS: Record<string, { pill: string; track: string }> = {
-  sufficient:   { pill: 'bg-emerald-500', track: 'bg-emerald-500/20' },
-  insufficient: { pill: 'bg-red-500',     track: 'bg-red-500/20'     },
-  helpMe:       { pill: 'bg-amber-500',   track: 'bg-amber-500/20'   },
-}
 
 function levelColor(level: string): string {
   switch (level.toLowerCase()) {
@@ -272,50 +266,6 @@ function getMonitoringConfig(datasetId: string): MonitoringConfig {
 
 // ── Chart components ──────────────────────────────────────────────────────────
 
-function MetricBar({ label, value, colorClass }: { label: string; value: number; colorClass: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-gray-500 w-16 shrink-0 text-right">{label}</span>
-      <div className={`flex-1 h-2.5 rounded-full bg-gray-100 overflow-hidden`}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${value}%` }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-          className={`h-full rounded-full ${colorClass.replace('/20', '')}`}
-        />
-      </div>
-      <span className="text-xs font-mono font-semibold text-gray-800 w-10 text-right">{value}%</span>
-    </div>
-  )
-}
-
-function PerformanceRow({ row, isRegression }: { row: CohortPerformance; isRegression?: boolean }) {
-  const colors = CATEGORY_COLORS[row.category]
-  return (
-    <div
-      className="rounded-xl p-4 space-y-2"
-      style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
-    >
-      <div className={`text-xs font-semibold uppercase tracking-wider mb-3 ${
-        row.category === 'sufficient' ? 'text-emerald-600' :
-        row.category === 'insufficient' ? 'text-red-500' : 'text-amber-600'
-      }`}>
-        {row.label}
-      </div>
-      {isRegression ? (
-        <>
-          <MetricBar label="MAPE" value={row.mape ?? row.recall} colorClass={colors.track} />
-          <MetricBar label="MAE" value={row.mae ?? row.precision} colorClass={colors.track} />
-        </>
-      ) : (
-        <>
-          <MetricBar label="Recall" value={row.recall} colorClass={colors.track} />
-          <MetricBar label="Precision" value={row.precision} colorClass={colors.track} />
-        </>
-      )}
-    </div>
-  )
-}
 
 // ── Metric explanation helper + tooltip ───────────────────────────────────────
 
@@ -368,39 +318,68 @@ function MetricEyeTooltip({ explanation }: { explanation: string }) {
   )
 }
 
-// ── Overall performance + contribution bar ────────────────────────────────────
+// ── Performance bar colours per level ──────────────────────────────────────────
+
+const PERF_LEVELS = [
+  { key: 'overall',      label: 'Overall Performance', color: '#3b82f6', bg: 'rgba(59,130,246,0.10)' },
+  { key: 'sufficient',   label: 'Dominant Patterns',   color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
+  { key: 'insufficient', label: 'Non-Dominant Patterns', color: '#f59e0b', bg: 'rgba(245,158,11,0.10)' },
+  { key: 'helpMe',       label: 'Fuzzy Patterns',      color: '#ef4444', bg: 'rgba(239,68,68,0.10)' },
+] as const
+
+function PerformanceBar({ label, value, color, bg, isRegression }: {
+  label: string; value: number; color: string; bg: string; isRegression?: boolean
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-[11px] text-gray-600 w-36 shrink-0 truncate">{label}</span>
+      <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: bg }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${isRegression ? Math.min(value, 100) : value}%` }}
+          transition={{ duration: 1, ease: 'easeOut' }}
+          className="h-full rounded-full"
+          style={{ background: color }}
+        />
+      </div>
+      <span className="text-xs font-bold w-12 text-right" style={{ color }}>
+        {isRegression ? value : `${value}%`}
+      </span>
+    </div>
+  )
+}
+
+// ── Overall performance — 4 bars per metric ───────────────────────────────────
 
 function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
   const isRegression = data.primaryMetric === 'MAPE' || data.primaryMetric === 'RMSE'
   const perf = data.performance
   const businessGoal = usePlaygroundStore((s) => s.businessGoal)
 
-  // Compute approximate cohort sizes for contribution bar (from performance order: suff > insuff > helpMe)
-  // Rough weights: 70% sufficient, 8% insufficient, 10% helpMe (rest augmented/misc)
-  const weights = { sufficient: 70, insufficient: 8, helpMe: 10 }
-  const totalW = weights.sufficient + weights.insufficient + weights.helpMe
+  // Build ordered value arrays: [overall, dominant, non-dominant, fuzzy]
+  const suff = perf.find((r) => r.category === 'sufficient')
+  const insuff = perf.find((r) => r.category === 'insufficient')
+  const helpMe = perf.find((r) => r.category === 'helpMe')
+
+  const primaryValues = [
+    data.overallRecall,
+    isRegression ? (suff?.mape ?? suff?.recall ?? 0) : (suff?.recall ?? 0),
+    isRegression ? (insuff?.mape ?? insuff?.recall ?? 0) : (insuff?.recall ?? 0),
+    isRegression ? (helpMe?.mape ?? helpMe?.recall ?? 0) : (helpMe?.recall ?? 0),
+  ]
+
+  const secondaryValues = [
+    data.overallPrecision,
+    isRegression ? (suff?.mae ?? suff?.precision ?? 0) : (suff?.precision ?? 0),
+    isRegression ? (insuff?.mae ?? insuff?.precision ?? 0) : (insuff?.precision ?? 0),
+    isRegression ? (helpMe?.mae ?? helpMe?.precision ?? 0) : (helpMe?.precision ?? 0),
+  ]
 
   return (
     <div className="px-5 py-5" style={{ borderBottom: '1px solid #e5e7eb' }}>
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-        Overall Model Performance
-      </div>
-
-      {/* Primary + secondary metric */}
-      <div className="flex items-center gap-8 mb-4">
-        <div>
-          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{data.primaryMetric}</div>
-          <div className="text-3xl font-bold text-gray-900">
-            {isRegression ? data.overallRecall : <><CountUpNumber end={data.overallRecall} />%</>}
-          </div>
-          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Primary</div>
-        </div>
-        <div>
-          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{data.secondaryMetric}</div>
-          <div className="text-3xl font-bold text-gray-600">
-            {isRegression ? data.overallPrecision : <><CountUpNumber end={data.overallPrecision} />%</>}
-          </div>
-          <div className="text-[10px] text-gray-500 font-semibold mt-0.5">Secondary</div>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Overall Model Performance
         </div>
         <div className="ml-auto flex items-start gap-2 max-w-xs">
           <MetricEyeTooltip explanation={getMetricExplanation(businessGoal, data.primaryMetric)} />
@@ -408,47 +387,62 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
         </div>
       </div>
 
-      {/* 3-colour cohort contribution bar */}
-      <div>
-        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-          Cohort Contribution to Overall Performance
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Primary metric */}
+        <div
+          className="rounded-xl p-4"
+          style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}
+        >
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+            {data.primaryMetric}
+          </div>
+          <div className="text-[10px] text-emerald-600 font-semibold mb-4">Primary Metric</div>
+          <div className="space-y-3">
+            {PERF_LEVELS.map((level, i) => (
+              <PerformanceBar
+                key={level.key}
+                label={level.label}
+                value={primaryValues[i]}
+                color={level.color}
+                bg={level.bg}
+                isRegression={isRegression}
+              />
+            ))}
+          </div>
         </div>
-        <div className="flex h-5 rounded-full overflow-hidden gap-px">
-          {perf.map((row) => {
-            const w = weights[row.category as keyof typeof weights] ?? 0
-            const pct = (w / totalW) * 100
-            const color =
-              row.category === 'sufficient' ? 'bg-emerald-500' :
-              row.category === 'insufficient' ? 'bg-red-500' : 'bg-amber-500'
-            return (
-              <div
-                key={row.category}
-                className={`flex items-center justify-center text-[9px] font-bold text-white ${color} overflow-hidden`}
-                style={{ width: `${pct}%` }}
-              >
-                {isRegression ? `${row.mape ?? row.recall}%` : `${row.recall}%`}
-              </div>
-            )
-          })}
+
+        {/* Secondary metric */}
+        <div
+          className="rounded-xl p-4"
+          style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}
+        >
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+            {data.secondaryMetric}
+          </div>
+          <div className="text-[10px] text-gray-500 font-semibold mb-4">Secondary Metric</div>
+          <div className="space-y-3">
+            {PERF_LEVELS.map((level, i) => (
+              <PerformanceBar
+                key={level.key}
+                label={level.label}
+                value={secondaryValues[i]}
+                color={level.color}
+                bg={level.bg}
+                isRegression={isRegression}
+              />
+            ))}
+          </div>
         </div>
-        <div className="flex gap-4 mt-2">
-          {perf.map((row) => {
-            const color =
-              row.category === 'sufficient' ? 'bg-emerald-500' :
-              row.category === 'insufficient' ? 'bg-red-500' : 'bg-amber-500'
-            const textColor =
-              row.category === 'sufficient' ? 'text-emerald-600' :
-              row.category === 'insufficient' ? 'text-red-500' : 'text-amber-600'
-            const w = weights[row.category as keyof typeof weights] ?? 0
-            const pct = (w / totalW) * 100
-            return (
-              <div key={row.category} className="flex items-center gap-1.5">
-                <div className={`w-2.5 h-2.5 rounded-sm shrink-0 ${color}`} />
-                <span className={`text-[10px] ${textColor}`}>{row.label} ({pct.toFixed(0)}%)</span>
-              </div>
-            )
-          })}
-        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-4 mt-4">
+        {PERF_LEVELS.map((level) => (
+          <div key={level.key} className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: level.color }} />
+            <span className="text-[10px] text-gray-600">{level.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -908,24 +902,7 @@ export function ModelSelection() {
           {/* 1. Overall Performance + contribution bar */}
           <OverallPerformanceSection data={data} />
 
-          {/* 2. Per-category performance bars */}
-          <div className="px-5 py-5" style={{ borderBottom: '1px solid #e5e7eb' }}>
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Performance by Cohort Type</div>
-            <div className="space-y-3">
-              {data.performance.map((row, i) => (
-                <motion.div
-                  key={row.category}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + i * 0.07 }}
-                >
-                  <PerformanceRow row={row} isRegression={data.primaryMetric === 'MAPE' || data.primaryMetric === 'RMSE'} />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* 3. Model Function description */}
+          {/* 2. Model Function description */}
           <div className="px-5 py-5" style={{ borderBottom: '1px solid #e5e7eb' }}>
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Model Function</div>
             <p className="text-sm text-gray-700 leading-relaxed">{data.modelFunction}</p>
