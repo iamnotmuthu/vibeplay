@@ -43,14 +43,32 @@ function autoBuckets(stats: { min: number; max: number; median: number }): { lab
   ]
 }
 
+// Per-dataset dimension multipliers (2×–4× column count) so each scenario
+// shows a distinct, realistic dimension count instead of a flat constant.
+const DIMENSION_MULTIPLIERS: Record<string, number> = {
+  'telco-churn':              2.3,
+  'credit-fraud':             3.2,
+  'store-demand':             2.8,
+  'patient-readmission':      2.5,
+  'employee-attrition':       3.6,
+  'energy-consumption':       2.1,
+  'insurance-claims':         3.4,
+  'predictive-maintenance':   2.7,
+  'logistics-delivery-delay': 3.8,
+  'logistics-freight-cost':   2.4,
+  'logistics-delivery-outcome': 3.1,
+  'logistics-demand-forecast':  2.6,
+}
+
 // Compute initial (un-bucketized) total dimensions for the stats row
 // Dimensions should be 2–4× the column count to reflect the richer signal space
-function computeInitialDimensions(distributions: DistributionData[], columns: number): number {
+function computeInitialDimensions(distributions: DistributionData[], columns: number, datasetId: string): number {
   const raw = distributions.reduce((sum, d) => {
     if (d.type === 'categorical') return sum + (d.bins?.length ?? 1)
     return sum + 1
   }, 0)
-  return Math.max(raw, columns * 3)
+  const multiplier = DIMENSION_MULTIPLIERS[datasetId] ?? 3
+  return Math.max(raw, Math.round(columns * multiplier))
 }
 
 // ── AttributeRow ─────────────────────────────────────────────────────────────
@@ -533,7 +551,7 @@ export function AutoEDA() {
   const handleNext = () => { completeStep(3); setStep(4 as StageId) }
 
   // Compute initial total dimensions for the stats row
-  const initialDimensions = edaData ? computeInitialDimensions(edaData.distributions, edaData.summary.columns) : 0
+  const initialDimensions = edaData ? computeInitialDimensions(edaData.distributions, edaData.summary.columns, selectedDataset?.id ?? '') : 0
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -642,7 +660,14 @@ export function AutoEDA() {
             )}
           </AnimatePresence>
 
-          {/* 2. Dataset Features and Dimensions (moved up, right below stats) */}
+          {/* 2. Automated Dimension Discovery banner */}
+          <AnimatePresence>
+            {dimComplete && edaData && dimData && (
+              <AutoADSPanel />
+            )}
+          </AnimatePresence>
+
+          {/* 3. Dataset Features and Dimensions */}
           <AnimatePresence>
             {dimComplete && edaData && dimData && (
               <DatasetFeaturesPanel
@@ -733,12 +758,6 @@ export function AutoEDA() {
             <TimeSeriesConfigPanel accentColor={accentColor} />
           )}
 
-          {/* 7. AutoADS banner */}
-          <AnimatePresence>
-            {dimComplete && edaData && dimData && (
-              <AutoADSPanel />
-            )}
-          </AnimatePresence>
         </div>
       </div>
 
