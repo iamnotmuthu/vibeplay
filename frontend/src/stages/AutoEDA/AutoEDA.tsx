@@ -346,6 +346,36 @@ function TimeSeriesConfigPanel({ accentColor }: { accentColor: string }) {
 // ── AutoADS panel ─────────────────────────────────────────────────────────────
 
 function AutoADSPanel({
+  accentColor,
+}: {
+  accentColor: string
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="space-y-5"
+    >
+      {/* Banner */}
+      <div
+        className="flex items-start gap-3 px-4 py-3 rounded-xl"
+        style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}
+      >
+        <Sparkles className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" />
+        <div>
+          <span className="text-sm font-bold text-violet-700">Automated Dimension Discovery: </span>
+          <span className="text-sm text-gray-600">
+            We discovered new dimensions from your existing data columns — transforming raw fields into richer signals
+            that capture patterns not visible in the original feature set, improving AI model accuracy.
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function DatasetFeaturesPanel({
   edaData,
   accentColor,
 }: {
@@ -356,15 +386,6 @@ function AutoADSPanel({
 
   const [bucketizedCols, setBucketizedCols] = useState<Set<string>>(new Set())
   const [bucketsMap, setBucketsMap] = useState<Record<string, { label: string }[]>>({})
-
-  const numericCount = edaData.summary.numericFeatures
-  const categoricalCount = edaData.summary.categoricalFeatures
-  const numericDims = distributions
-    .filter((d) => d.type === 'numeric')
-    .reduce((s, d) => s + (bucketizedCols.has(d.feature) ? (bucketsMap[d.feature]?.length ?? 2) : 1), 0)
-  const categoricalDims = distributions
-    .filter((d) => d.type === 'categorical')
-    .reduce((s, d) => s + (d.bins?.length ?? 1), 0)
 
   const toggleBucketize = (feature: string, dist: DistributionData) => {
     setBucketizedCols((prev) => {
@@ -407,77 +428,24 @@ function AutoADSPanel({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-      className="space-y-5"
+      transition={{ delay: 0.1 }}
     >
-      {/* Banner */}
-      <div
-        className="flex items-start gap-3 px-4 py-3 rounded-xl"
-        style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}
-      >
-        <Sparkles className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" />
-        <div>
-          <span className="text-sm font-bold text-violet-700">Automated Dimension Discovery: </span>
-          <span className="text-sm text-gray-600">
-            We discovered new dimensions from your existing data columns — transforming raw fields into richer signals
-            that capture patterns not visible in the original feature set, improving AI model accuracy.
-          </span>
-        </div>
-      </div>
-
-      {/* Breakdown by Type */}
-      <div>
-        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Breakdown by Type</div>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Categorical', attrs: categoricalCount, dims: categoricalDims, color: accentColor },
-            { label: 'Numerical', attrs: numericCount, dims: numericDims, color: '#4f46e5' },
-            { label: 'Multiline Text', attrs: 0, dims: 0, color: '#6b7280' },
-          ].map((t) => (
-            <div
-              key={t.label}
-              className="rounded-xl p-4"
-              style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}
-            >
-              <div className="text-xs font-semibold mb-3" style={{ color: t.color }}>{t.label}</div>
-              <div>
-                <div className="text-[10px] font-semibold mb-1" style={{ color: t.color }}>
-                  Features &nbsp;•&nbsp; Dimensions
-                </div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {t.attrs === 0 ? '—' : t.attrs}
-                  <span className="text-gray-300 mx-2 text-lg"> </span>
-                  {t.dims === 0 ? '—' : t.dims}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center justify-between px-1 mt-2 border-t pt-2" style={{ borderColor: '#e5e7eb' }}>
-          <span className="text-[10px] text-gray-500">Total dimensions</span>
-          <span className="text-[10px] font-bold" style={{ color: accentColor }}>{categoricalDims + numericDims}</span>
-        </div>
-      </div>
-
-      {/* Per-feature rows */}
-      <div>
-        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Dataset Features and Dimensions</div>
-        <div className="text-xs text-gray-400 mb-3">View and manage dimensions for each feature in your dataset</div>
-        <div className="space-y-2">
-          {distributions.map((dist) => (
-            <AttributeRow
-              key={dist.feature}
-              dist={dist}
-              bucketized={bucketizedCols.has(dist.feature)}
-              buckets={bucketsMap[dist.feature] ?? []}
-              onToggleBucketize={() => toggleBucketize(dist.feature, dist)}
-              onBucketChange={(i, label) => updateBucket(dist.feature, i, label)}
-              onBucketDelete={(i) => deleteBucket(dist.feature, i)}
-              onBucketAdd={() => addBucket(dist.feature)}
-              accentColor={accentColor}
-            />
-          ))}
-        </div>
+      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Dataset Features and Dimensions</div>
+      <div className="text-xs text-gray-400 mb-3">View and manage dimensions for each feature in your dataset</div>
+      <div className="space-y-2">
+        {distributions.map((dist) => (
+          <AttributeRow
+            key={dist.feature}
+            dist={dist}
+            bucketized={bucketizedCols.has(dist.feature)}
+            buckets={bucketsMap[dist.feature] ?? []}
+            onToggleBucketize={() => toggleBucketize(dist.feature, dist)}
+            onBucketChange={(i, label) => updateBucket(dist.feature, i, label)}
+            onBucketDelete={(i) => deleteBucket(dist.feature, i)}
+            onBucketAdd={() => addBucket(dist.feature)}
+            accentColor={accentColor}
+          />
+        ))}
       </div>
     </motion.div>
   )
@@ -638,15 +606,16 @@ export function AutoEDA() {
         {/* Right: analysis results + AutoADS */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
 
-          {/* 1. Data Summary stats (6 cards: + Total Dimensions) */}
+          {/* 1. Data Summary stats (7 cards) */}
           <AnimatePresence>
             {edaData && modules.find((m) => m.id === 'summary')?.status === 'complete' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 {[
                   { label: 'Rows', value: edaData.summary.rows },
                   { label: 'Columns', value: edaData.summary.columns },
                   { label: 'Numeric', value: edaData.summary.numericFeatures },
                   { label: 'Categorical', value: edaData.summary.categoricalFeatures },
+                  { label: 'Multiline Text', value: 0 },
                   { label: 'Duplicates', value: edaData.summary.duplicateRows },
                   { label: 'Total Dimensions', value: initialDimensions },
                 ].map((stat, i) => (
@@ -675,7 +644,17 @@ export function AutoEDA() {
             )}
           </AnimatePresence>
 
-          {/* 2. Missing Values (collapsible per feature) */}
+          {/* 2. Dataset Features and Dimensions (moved up, right below stats) */}
+          <AnimatePresence>
+            {dimComplete && edaData && dimData && (
+              <DatasetFeaturesPanel
+                edaData={edaData}
+                accentColor={accentColor}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* 3. Missing Values (collapsible per feature) */}
           {edaData && modules.find((m) => m.id === 'missing')?.status === 'complete' && (() => {
             const nonZero = edaData.missingValues.columns
               .map((col, i) => ({ col, val: edaData.missingValues.values[i] }))
@@ -756,11 +735,10 @@ export function AutoEDA() {
             <TimeSeriesConfigPanel accentColor={accentColor} />
           )}
 
-          {/* 5 & 6. AutoADS content (no heading) */}
+          {/* 7. AutoADS banner */}
           <AnimatePresence>
             {dimComplete && edaData && dimData && (
               <AutoADSPanel
-                edaData={edaData}
                 accentColor={accentColor}
               />
             )}

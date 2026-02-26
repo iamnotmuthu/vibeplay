@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Phone,
@@ -14,6 +14,7 @@ import {
     PackageCheck,
     BarChart3,
     ArrowRight,
+    ArrowLeft,
     Sparkles,
     ExternalLink,
 } from 'lucide-react'
@@ -37,6 +38,14 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; style?: 
     'bar-chart-3': BarChart3,
 }
 
+interface DomainGroup {
+    industry: string
+    scenarios: DomainScenario[]
+    color: string
+    icon: string
+    badge: string
+}
+
 interface DomainSelectorProps {
     onSelect: (domainId: string | null) => void
 }
@@ -45,6 +54,8 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
     const [hoveredId, setHoveredId] = useState<string | null>(null)
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [launching, setLaunching] = useState(false)
+    const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
+    const [hoveredDomain, setHoveredDomain] = useState<string | null>(null)
 
     const setActiveDomain = usePlaygroundStore((s) => s.setActiveDomain)
     const selectDataset = usePlaygroundStore((s) => s.selectDataset)
@@ -52,6 +63,27 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
     const setSessionId = usePlaygroundStore((s) => s.setSessionId)
     const addLog = usePlaygroundStore((s) => s.addLog)
     const setStep = usePlaygroundStore((s) => s.setStep)
+
+    const domainGroups = useMemo<DomainGroup[]>(() => {
+        const groupMap = new Map<string, DomainScenario[]>()
+        for (const s of DOMAIN_SCENARIOS) {
+            const list = groupMap.get(s.industry) ?? []
+            list.push(s)
+            groupMap.set(s.industry, list)
+        }
+        return Array.from(groupMap.entries()).map(([industry, scenarios]) => ({
+            industry,
+            scenarios,
+            color: scenarios[0].color,
+            icon: scenarios[0].icon,
+            badge: scenarios[0].badge,
+        }))
+    }, [])
+
+    const filteredScenarios = useMemo(
+        () => selectedDomain ? DOMAIN_SCENARIOS.filter((s) => s.industry === selectedDomain) : [],
+        [selectedDomain],
+    )
 
     const handleLaunch = async (scenario: DomainScenario) => {
         setSelectedId(scenario.id)
@@ -208,122 +240,256 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                 </motion.div>
             </div>
 
-            {/* Domain Grid */}
+            {/* Domain / Scenario Grid */}
             <div className="flex-1 px-6 pb-20 relative z-10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                    {DOMAIN_SCENARIOS.map((scenario, i) => {
-                        const IconComp = iconMap[scenario.icon] || Sparkles
-                        const isHovered = hoveredId === scenario.id
-                        const isSelected = selectedId === scenario.id
+                <AnimatePresence mode="wait">
+                    {selectedDomain === null ? (
+                        /* ── Domain cards ── */
+                        <motion.div
+                            key="domains"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0, x: -40 }}
+                            transition={{ duration: 0.3 }}
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+                        >
+                            {domainGroups.map((group, i) => {
+                                const IconComp = iconMap[group.icon] || Sparkles
+                                const isHovered = hoveredDomain === group.industry
+                                const totalRows = group.scenarios.reduce((sum, s) => {
+                                    const ds = PREBUILT_DATASETS.find((d) => d.id === s.datasetId)
+                                    return sum + (ds?.rows ?? 0)
+                                }, 0)
 
-                        return (
-                            <motion.div
-                                key={scenario.id}
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.4, delay: i * 0.05 }}
-                                onHoverStart={() => setHoveredId(scenario.id)}
-                                onHoverEnd={() => setHoveredId(null)}
-                                onClick={() => !launching && handleLaunch(scenario)}
-                                className="relative group cursor-pointer"
-                            >
-                                <motion.div
-                                    animate={{
-                                        scale: isSelected ? 0.98 : isHovered ? 1.02 : 1,
-                                        y: isHovered ? -4 : 0,
-                                    }}
-                                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                                    className="relative rounded-2xl p-6 h-full flex flex-col overflow-hidden"
-                                    style={{
-                                        background: '#ffffff',
-                                        border: isHovered
-                                            ? `1px solid ${scenario.color}50`
-                                            : '1px solid #e5e7eb',
-                                        boxShadow: isHovered
-                                            ? `0 12px 40px -12px ${scenario.color}20, 0 4px 12px rgba(0,0,0,0.06)`
-                                            : '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-                                    }}
-                                >
-                                    {/* Icon + Badge */}
-                                    <div className="flex items-start justify-between mb-5">
-                                        <div
-                                            className="w-12 h-12 rounded-xl flex items-center justify-center"
-                                            style={{
-                                                background: `linear-gradient(135deg, ${scenario.color}15, ${scenario.color}05)`,
-                                                border: `1px solid ${scenario.color}25`,
-                                            }}
-                                        >
-                                            <IconComp className="w-6 h-6" style={{ color: scenario.color }} />
-                                        </div>
-                                        <span
-                                            className="text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
-                                            style={{
-                                                background: '#f3f4f6',
-                                                color: '#6b7280',
-                                                border: '1px solid #e5e7eb',
-                                            }}
-                                        >
-                                            {scenario.badge}
-                                        </span>
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-gray-900 mb-2">{scenario.label}</h3>
-                                        <p className="text-sm font-medium mb-3" style={{ color: scenario.color }}>
-                                            {scenario.tagline}
-                                        </p>
-                                        <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
-                                            {scenario.heroSubtitle}
-                                        </p>
-                                    </div>
-
-                                    {/* Stats row */}
-                                    <div
-                                        className="flex items-center gap-3 mt-5 pt-4"
-                                        style={{ borderTop: '1px solid #f3f4f6' }}
+                                return (
+                                    <motion.div
+                                        key={group.industry}
+                                        initial={{ opacity: 0, y: 30 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.4, delay: i * 0.05 }}
+                                        onHoverStart={() => setHoveredDomain(group.industry)}
+                                        onHoverEnd={() => setHoveredDomain(null)}
+                                        onClick={() => setSelectedDomain(group.industry)}
+                                        className="relative group cursor-pointer"
                                     >
-                                        {(() => {
-                                            const ds = PREBUILT_DATASETS.find((d) => d.id === scenario.datasetId)
-                                            return ds ? (
-                                                <>
-                                                    <span className="text-xs text-gray-400 font-mono">{ds.rows.toLocaleString()} rows</span>
-                                                    <span className="text-gray-300">·</span>
-                                                    <span className="text-xs text-gray-400 font-mono">{ds.features} features</span>
-                                                </>
-                                            ) : null
-                                        })()}
-                                    </div>
-
-                                    {/* CTA */}
-                                    <AnimatePresence>
-                                        {(isHovered || isSelected) && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 5 }}
-                                                className="absolute bottom-6 right-6"
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold" style={{ color: scenario.color }}>
-                                                        {isSelected && launching ? 'Launching...' : 'Start'}
-                                                    </span>
-                                                    <motion.div
-                                                        animate={{ x: isSelected && launching ? 4 : 0 }}
-                                                        transition={{ repeat: isSelected && launching ? Infinity : 0, duration: 0.6, repeatType: 'reverse' }}
-                                                    >
-                                                        <ArrowRight className="w-4 h-4" style={{ color: scenario.color }} />
-                                                    </motion.div>
+                                        <motion.div
+                                            animate={{
+                                                scale: isHovered ? 1.02 : 1,
+                                                y: isHovered ? -4 : 0,
+                                            }}
+                                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                                            className="relative rounded-2xl p-6 h-full flex flex-col overflow-hidden"
+                                            style={{
+                                                background: '#ffffff',
+                                                border: isHovered
+                                                    ? `1px solid ${group.color}50`
+                                                    : '1px solid #e5e7eb',
+                                                boxShadow: isHovered
+                                                    ? `0 12px 40px -12px ${group.color}20, 0 4px 12px rgba(0,0,0,0.06)`
+                                                    : '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+                                            }}
+                                        >
+                                            {/* Icon + Count badge */}
+                                            <div className="flex items-start justify-between mb-5">
+                                                <div
+                                                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${group.color}15, ${group.color}05)`,
+                                                        border: `1px solid ${group.color}25`,
+                                                    }}
+                                                >
+                                                    <IconComp className="w-6 h-6" style={{ color: group.color }} />
                                                 </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </motion.div>
-                            </motion.div>
-                        )
-                    })}
-                </div>
+                                                <span
+                                                    className="text-xs font-bold px-2.5 py-1 rounded-full"
+                                                    style={{
+                                                        background: `${group.color}10`,
+                                                        color: group.color,
+                                                        border: `1px solid ${group.color}25`,
+                                                    }}
+                                                >
+                                                    {group.scenarios.length} {group.scenarios.length === 1 ? 'scenario' : 'scenarios'}
+                                                </span>
+                                            </div>
 
+                                            {/* Content */}
+                                            <div className="flex-1">
+                                                <h3 className="text-lg font-bold text-gray-900 mb-2">{group.industry}</h3>
+                                                <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">
+                                                    {group.scenarios.map((s) => s.tagline).join(' · ')}
+                                                </p>
+                                            </div>
+
+                                            {/* Stats row */}
+                                            <div
+                                                className="flex items-center gap-3 mt-5 pt-4"
+                                                style={{ borderTop: '1px solid #f3f4f6' }}
+                                            >
+                                                <span className="text-xs text-gray-400 font-mono">{totalRows.toLocaleString()} rows</span>
+                                                <span className="text-gray-300">·</span>
+                                                <span className="text-xs text-gray-400 font-mono">{group.scenarios.length} {group.scenarios.length === 1 ? 'dataset' : 'datasets'}</span>
+                                            </div>
+
+                                            {/* CTA */}
+                                            <AnimatePresence>
+                                                {isHovered && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: 5 }}
+                                                        className="absolute bottom-6 right-6"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-bold" style={{ color: group.color }}>
+                                                                Explore
+                                                            </span>
+                                                            <ArrowRight className="w-4 h-4" style={{ color: group.color }} />
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </motion.div>
+                                    </motion.div>
+                                )
+                            })}
+                        </motion.div>
+                    ) : (
+                        /* ── Scenario cards within selected domain ── */
+                        <motion.div
+                            key="scenarios"
+                            initial={{ opacity: 0, x: 40 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            {/* Back button */}
+                            <motion.button
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                onClick={() => { setSelectedDomain(null); setSelectedId(null); setLaunching(false) }}
+                                className="flex items-center gap-2 mb-6 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-white"
+                                style={{ color: '#6b7280' }}
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                All Industries
+                            </motion.button>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                                {filteredScenarios.map((scenario, i) => {
+                                    const IconComp = iconMap[scenario.icon] || Sparkles
+                                    const isHovered = hoveredId === scenario.id
+                                    const isSelected = selectedId === scenario.id
+
+                                    return (
+                                        <motion.div
+                                            key={scenario.id}
+                                            initial={{ opacity: 0, y: 30 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.4, delay: i * 0.05 }}
+                                            onHoverStart={() => setHoveredId(scenario.id)}
+                                            onHoverEnd={() => setHoveredId(null)}
+                                            onClick={() => !launching && handleLaunch(scenario)}
+                                            className="relative group cursor-pointer"
+                                        >
+                                            <motion.div
+                                                animate={{
+                                                    scale: isSelected ? 0.98 : isHovered ? 1.02 : 1,
+                                                    y: isHovered ? -4 : 0,
+                                                }}
+                                                transition={{ duration: 0.2, ease: 'easeOut' }}
+                                                className="relative rounded-2xl p-6 h-full flex flex-col overflow-hidden"
+                                                style={{
+                                                    background: '#ffffff',
+                                                    border: isHovered
+                                                        ? `1px solid ${scenario.color}50`
+                                                        : '1px solid #e5e7eb',
+                                                    boxShadow: isHovered
+                                                        ? `0 12px 40px -12px ${scenario.color}20, 0 4px 12px rgba(0,0,0,0.06)`
+                                                        : '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+                                                }}
+                                            >
+                                                {/* Icon + Badge */}
+                                                <div className="flex items-start justify-between mb-5">
+                                                    <div
+                                                        className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                                        style={{
+                                                            background: `linear-gradient(135deg, ${scenario.color}15, ${scenario.color}05)`,
+                                                            border: `1px solid ${scenario.color}25`,
+                                                        }}
+                                                    >
+                                                        <IconComp className="w-6 h-6" style={{ color: scenario.color }} />
+                                                    </div>
+                                                    <span
+                                                        className="text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+                                                        style={{
+                                                            background: '#f3f4f6',
+                                                            color: '#6b7280',
+                                                            border: '1px solid #e5e7eb',
+                                                        }}
+                                                    >
+                                                        {scenario.badge}
+                                                    </span>
+                                                </div>
+
+                                                {/* Content */}
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-bold text-gray-900 mb-2">{scenario.label}</h3>
+                                                    <p className="text-sm font-medium mb-3" style={{ color: scenario.color }}>
+                                                        {scenario.tagline}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
+                                                        {scenario.heroSubtitle}
+                                                    </p>
+                                                </div>
+
+                                                {/* Stats row */}
+                                                <div
+                                                    className="flex items-center gap-3 mt-5 pt-4"
+                                                    style={{ borderTop: '1px solid #f3f4f6' }}
+                                                >
+                                                    {(() => {
+                                                        const ds = PREBUILT_DATASETS.find((d) => d.id === scenario.datasetId)
+                                                        return ds ? (
+                                                            <>
+                                                                <span className="text-xs text-gray-400 font-mono">{ds.rows.toLocaleString()} rows</span>
+                                                                <span className="text-gray-300">·</span>
+                                                                <span className="text-xs text-gray-400 font-mono">{ds.features} features</span>
+                                                            </>
+                                                        ) : null
+                                                    })()}
+                                                </div>
+
+                                                {/* CTA */}
+                                                <AnimatePresence>
+                                                    {(isHovered || isSelected) && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: 5 }}
+                                                            className="absolute bottom-6 right-6"
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-bold" style={{ color: scenario.color }}>
+                                                                    {isSelected && launching ? 'Launching...' : 'Start'}
+                                                                </span>
+                                                                <motion.div
+                                                                    animate={{ x: isSelected && launching ? 4 : 0 }}
+                                                                    transition={{ repeat: isSelected && launching ? Infinity : 0, duration: 0.6, repeatType: 'reverse' }}
+                                                                >
+                                                                    <ArrowRight className="w-4 h-4" style={{ color: scenario.color }} />
+                                                                </motion.div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </motion.div>
+                                        </motion.div>
+                                    )
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Footer */}
