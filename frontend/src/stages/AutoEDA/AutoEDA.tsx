@@ -44,11 +44,13 @@ function autoBuckets(stats: { min: number; max: number; median: number }): { lab
 }
 
 // Compute initial (un-bucketized) total dimensions for the stats row
-function computeInitialDimensions(distributions: DistributionData[]): number {
-  return distributions.reduce((sum, d) => {
+// Dimensions should be 2–4× the column count to reflect the richer signal space
+function computeInitialDimensions(distributions: DistributionData[], columns: number): number {
+  const raw = distributions.reduce((sum, d) => {
     if (d.type === 'categorical') return sum + (d.bins?.length ?? 1)
     return sum + 1
   }, 0)
+  return Math.max(raw, columns * 3)
 }
 
 // ── AttributeRow ─────────────────────────────────────────────────────────────
@@ -345,11 +347,7 @@ function TimeSeriesConfigPanel({ accentColor }: { accentColor: string }) {
 
 // ── AutoADS panel ─────────────────────────────────────────────────────────────
 
-function AutoADSPanel({
-  accentColor,
-}: {
-  accentColor: string
-}) {
+function AutoADSPanel() {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -535,7 +533,7 @@ export function AutoEDA() {
   const handleNext = () => { completeStep(3); setStep(4 as StageId) }
 
   // Compute initial total dimensions for the stats row
-  const initialDimensions = edaData ? computeInitialDimensions(edaData.distributions) : 0
+  const initialDimensions = edaData ? computeInitialDimensions(edaData.distributions, edaData.summary.columns) : 0
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -738,9 +736,7 @@ export function AutoEDA() {
           {/* 7. AutoADS banner */}
           <AnimatePresence>
             {dimComplete && edaData && dimData && (
-              <AutoADSPanel
-                accentColor={accentColor}
-              />
+              <AutoADSPanel />
             )}
           </AnimatePresence>
         </div>

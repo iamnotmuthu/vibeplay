@@ -664,8 +664,8 @@ export function PatternDiscovery() {
             >
               {[
                 { label: 'Total Records', value: data.totalRecords, color: '#1e293b', accent: '#f3f4f6' },
-                { label: 'Sufficient Patterns', value: data.sufficient.length, sub: `${totalSufficient.toLocaleString()} records`, color: '#16a34a', accent: 'rgba(74,222,128,0.10)' },
-                { label: 'Need Augmentation', value: data.insufficient.length, sub: `${totalInsufficient.toLocaleString()} records`, color: '#dc2626', accent: 'rgba(248,113,113,0.10)' },
+                { label: 'Dominant Patterns', value: data.sufficient.length, sub: `Patterns with Sufficient Data · ${totalSufficient.toLocaleString()} records`, color: '#16a34a', accent: 'rgba(74,222,128,0.10)' },
+                { label: 'Non-Dominant Patterns', value: data.insufficient.length, sub: `Patterns with Insufficient Data · ${totalInsufficient.toLocaleString()} records`, color: '#dc2626', accent: 'rgba(248,113,113,0.10)' },
                 ...(hasHelpMe ? [{ label: 'Fuzzy Patterns', value: data.helpMe.length, sub: `${totalHelpMe.toLocaleString()} records`, color: '#d97706', accent: 'rgba(251,191,36,0.10)' }] : []),
               ].map((s) => (
                 <div
