@@ -5,7 +5,7 @@ export const API_BASE = '/api/v1'
 export const PREBUILT_DATASETS: DatasetConfig[] = [
   {
     id: 'telco-churn',
-    name: 'Telco Customer Churn',
+    name: 'Telecom Customer Churn',
     description: 'Predict which telecom customers will leave based on usage patterns, billing, and service details.',
     domain: 'Telecom',
     taskType: 'classification',

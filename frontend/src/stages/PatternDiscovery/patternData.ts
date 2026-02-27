@@ -170,7 +170,7 @@ const patternsMap: Record<string, PatternResults> = {
       {
         id: 4,
         label: 'High Oil-Price Demand Sensitivity',
-        description: 'Demand periods correlated with Brent crude above $90 — rare macro event with insufficient examples.',
+        description: 'Demand periods correlated with crude oil above $90 — rare macro event with insufficient examples.',
         count: 310,
         keySignals: ['dcoilwtico > 90', 'Transportation-sensitive SKUs', 'Infrequent occurrence'],
         targetValue: 'volatile',
@@ -538,7 +538,7 @@ const patternsMap: Record<string, PatternResults> = {
         label: 'Partner Reliability Clusters',
         description: 'Shipments via top-rated partners (rating > 4.0) on known routes — predictable delay patterns with strong historical signal.',
         count: 8420,
-        keySignals: ['delivery_rating > 4.0', 'delivery_partner in [FedEx, DHL]', 'package_type=documents', 'distance_km < 200'],
+        keySignals: ['delivery_rating > 4.0', 'delivery_partner in [SwiftShip, GlobalFreight]', 'package_type=documents', 'distance_km < 200'],
         targetValue: '0 (On-time)',
       },
     ],

@@ -26,7 +26,7 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         id: 'telco-churn',
         datasetId: 'telco-churn',
         defaultObjectiveId: 'churn-predict',
-        label: 'Telco Customer Churn',
+        label: 'Telecom Customer Churn',
         industry: 'Telecommunications',
         tagline: 'Stop churn before it happens',
         heroHeadline: 'Predict which customers will leave — before they do.',
