@@ -5,11 +5,10 @@ import {
   ChevronDown, ChevronRight, Trash2, Plus, ToggleLeft, ToggleRight,
 } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
-import { InsightCard } from '@/components/shared/InsightCard'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { useDomainSubtitle } from '@/lib/useDomainSubtitle'
-import type { StageId, AIInsight, EDAResults, DimensionResults, DistributionData } from '@/store/types'
+import type { StageId, EDAResults, DimensionResults, DistributionData } from '@/store/types'
 import { getPrecomputedEDA } from './edaData'
 import { getPrecomputedDimensions } from '../DimensionDiscovery/dimensionData'
 
@@ -19,11 +18,10 @@ interface EDAModuleState {
   status: 'pending' | 'running' | 'complete'
 }
 
-// Only 3 modules now: summary, missing values, quality
 const moduleList: EDAModuleState[] = [
   { id: 'summary', label: 'Data Shape & Types', status: 'pending' },
-  { id: 'missing', label: 'Missing Values Analysis', status: 'pending' },
-  { id: 'quality', label: 'Data Quality Score', status: 'pending' },
+  { id: 'features', label: 'Dataset Features & Dimensions', status: 'pending' },
+  { id: 'missing', label: 'Missing Values by Feature', status: 'pending' },
 ]
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -481,12 +479,11 @@ export function AutoEDA() {
     `The AI is autonomously analyzing ${selectedDataset?.rows.toLocaleString()} records across ${selectedDataset?.features} features`,
   )
 
-  const accentColor = selectedDataset?.color ?? '#2dd4bf'
+  const accentColor = selectedDataset?.color ?? '#8b5cf6'
 
   const [modules, setModules] = useState<EDAModuleState[]>(moduleList)
   const [_activeModule, setActiveModule] = useState<string | null>(null)
   const [edaData, setEdaData] = useState<EDAResults | null>(null)
-  const [visibleInsights, setVisibleInsights] = useState<AIInsight[]>([])
   const [analysisComplete, setAnalysisComplete] = useState(false)
 
   const [dimData, setDimData] = useState<DimensionResults | null>(null)
@@ -494,12 +491,17 @@ export function AutoEDA() {
 
   const analysisStartedRef = useRef(false)
 
+  // Section refs for scrolling
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const scrollToSection = (id: string) => {
+    sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   const runAnalysis = useCallback(async () => {
     if (!selectedDataset) return
     if (analysisStartedRef.current) return
     analysisStartedRef.current = true
 
-    setVisibleInsights([])
     const data = getPrecomputedEDA(selectedDataset.id)
     setEdaData(data)
 
@@ -511,12 +513,11 @@ export function AutoEDA() {
       await new Promise((r) => setTimeout(r, 1400 + Math.random() * 900))
       setModules((prev) => prev.map((m, idx) => idx === i ? { ...m, status: 'complete' } : m))
       addLog(`Completed: ${mod.label}`, 'success')
-      if (data.insights[i]) setVisibleInsights((prev) => [...prev, data.insights[i]])
     }
 
     setEdaResults(data)
     setAnalysisComplete(true)
-    addLog(`EDA complete — Data quality score: ${data.qualityScore}/100`, 'success')
+    addLog('EDA complete — data profiling finished', 'success')
 
     await new Promise((r) => setTimeout(r, 500))
     const dimResults = getPrecomputedDimensions(selectedDataset.id)
@@ -539,7 +540,6 @@ export function AutoEDA() {
     if (stored && storedDim) {
       setEdaData(stored)
       setModules(moduleList.map((m) => ({ ...m, status: 'complete' })))
-      setVisibleInsights(stored.insights)
       setAnalysisComplete(true)
       setDimData(storedDim)
       setDimComplete(true)
@@ -582,16 +582,18 @@ export function AutoEDA() {
           <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Analysis Modules</h3>
           <div className="space-y-1.5">
             {modules.map((mod) => (
-              <div
+              <button
                 key={mod.id}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
-                style={
-                  mod.status === 'running'
+                onClick={() => mod.status === 'complete' && scrollToSection(mod.id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+                style={{
+                  cursor: mod.status === 'complete' ? 'pointer' : 'default',
+                  ...(mod.status === 'running'
                     ? { background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }
                     : mod.status === 'complete'
                       ? { background: hexToRgba(accentColor, 0.04) }
-                      : { background: '#f9fafb' }
-                }
+                      : { background: '#f9fafb' }),
+                }}
               >
                 {mod.status === 'complete' ? (
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 10 }}>
@@ -614,7 +616,7 @@ export function AutoEDA() {
                 >
                   {mod.label}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -625,7 +627,7 @@ export function AutoEDA() {
           {/* 1. Data Summary stats (7 cards) */}
           <AnimatePresence>
             {edaData && modules.find((m) => m.id === 'summary')?.status === 'complete' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+              <motion.div ref={(el) => { sectionRefs.current.summary = el }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 {[
                   { label: 'Rows', value: edaData.summary.rows },
                   { label: 'Columns', value: edaData.summary.columns },
@@ -670,20 +672,22 @@ export function AutoEDA() {
           {/* 3. Dataset Features and Dimensions */}
           <AnimatePresence>
             {dimComplete && edaData && dimData && (
-              <DatasetFeaturesPanel
-                edaData={edaData}
-                accentColor={accentColor}
-              />
+              <div ref={(el) => { sectionRefs.current.features = el }}>
+                <DatasetFeaturesPanel
+                  edaData={edaData}
+                  accentColor={accentColor}
+                />
+              </div>
             )}
           </AnimatePresence>
 
-          {/* 3. Missing Values (collapsible per feature) */}
+          {/* 3. Missing Values by Feature */}
           {edaData && modules.find((m) => m.id === 'missing')?.status === 'complete' && (() => {
             const nonZero = edaData.missingValues.columns
               .map((col, i) => ({ col, val: edaData.missingValues.values[i] }))
               .filter((x) => x.val > 0)
             return (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-5" style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
+              <motion.div ref={(el) => { sectionRefs.current.missing = el }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-5" style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
                 <h4 className="text-sm font-semibold text-gray-900 mb-4">Missing Values by Feature</h4>
                 {nonZero.length === 0 ? (
                   <div className="flex items-center gap-2 text-sm text-emerald-600">
@@ -715,43 +719,6 @@ export function AutoEDA() {
               </motion.div>
             )
           })()}
-
-          {/* 3. Quality Score */}
-          {edaData && modules.find((m) => m.id === 'quality')?.status === 'complete' && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-6 text-center" style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
-              <h4 className="text-sm font-semibold text-gray-900 mb-4">Data Quality Score</h4>
-              <div className="relative w-36 h-36 mx-auto">
-                <svg viewBox="0 0 120 120" className="w-full h-full">
-                  <circle cx="60" cy="60" r="50" fill="none" stroke="#f3f4f6" strokeWidth="10" />
-                  <motion.circle
-                    cx="60" cy="60" r="50" fill="none"
-                    stroke={edaData.qualityScore >= 80 ? '#10b981' : edaData.qualityScore >= 60 ? '#f59e0b' : '#ef4444'}
-                    strokeWidth="10" strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 50}`}
-                    initial={{ strokeDashoffset: 2 * Math.PI * 50 }}
-                    animate={{ strokeDashoffset: 2 * Math.PI * 50 * (1 - edaData.qualityScore / 100) }}
-                    transition={{ duration: 2, ease: 'easeOut' }}
-                    transform="rotate(-90 60 60)"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div>
-                    <div className="text-3xl font-bold text-gray-900"><CountUpNumber end={edaData.qualityScore} /></div>
-                    <div className="text-xs text-gray-500">out of 100</div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* 4. EDA Insights */}
-          {visibleInsights.length > 0 && (
-            <div className="space-y-3">
-              {visibleInsights.map((insight, i) => (
-                <InsightCard key={insight.id} insight={insight} delay={i === visibleInsights.length - 1 ? 300 : 0} />
-              ))}
-            </div>
-          )}
 
           {/* Time-Series Config (only for time-series datasets) */}
           {dimComplete && selectedDataset?.taskType === 'time-series' && (

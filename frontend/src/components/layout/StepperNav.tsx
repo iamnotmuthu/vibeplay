@@ -39,10 +39,10 @@ export function StepperNav() {
                   style={
                     isCompleted
                       ? {
-                        background: 'rgba(20,184,166,0.08)',
-                        border: '2px solid rgba(20,184,166,0.5)',
-                        color: '#0d9488',
-                        boxShadow: '0 0 10px rgba(20,184,166,0.15)',
+                        background: 'rgba(139,92,246,0.08)',
+                        border: '2px solid rgba(139,92,246,0.5)',
+                        color: '#7c3aed',
+                        boxShadow: '0 0 10px rgba(139,92,246,0.15)',
                       }
                       : isCurrent
                         ? {
@@ -78,7 +78,7 @@ export function StepperNav() {
                       isCurrent
                         ? { color: '#1e293b' }
                         : isCompleted
-                          ? { color: '#0d9488' }
+                          ? { color: '#7c3aed' }
                           : { color: '#9ca3af' }
                     }
                   >
@@ -90,7 +90,7 @@ export function StepperNav() {
                     </span>
                   )}
                   {isCompleted && (
-                    <span className="text-[11px] font-semibold mt-0.5" style={{ color: '#14b8a6' }}>
+                    <span className="text-[11px] font-semibold mt-0.5" style={{ color: '#8b5cf6' }}>
                       Complete
                     </span>
                   )}

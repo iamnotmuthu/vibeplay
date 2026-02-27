@@ -101,15 +101,6 @@ const telcoChurnEDA: EDAResults = {
     outlierCount: 187,
     totalCount: 7043,
   },
-  qualityScore: 87,
-  insights: [
-    { id: 'ins-1', text: 'Found 11 missing values in TotalCharges (0.16%). These appear to be new customers with zero tenure — will impute with 0 during feature engineering.', type: 'info' },
-    { id: 'ins-2', text: 'Data is clean with no duplicate records. 18 categorical features detected — will apply encoding strategies optimized for tree-based models.', type: 'success' },
-    { id: 'ins-3', text: 'High correlation (0.83) between tenure and TotalCharges. Will monitor for multicollinearity during model training and consider feature interaction.', type: 'warning' },
-    { id: 'ins-4', text: 'tenure shows a bimodal distribution — many short-tenure and long-tenure customers, fewer in the middle. This is a strong churn signal.', type: 'info' },
-    { id: 'ins-5', text: '187 statistical outliers detected (2.7%). Most are high-value, long-tenure customers — retaining rather than removing, as they represent key business segments.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 87/100. High-quality dataset ready for autonomous AI pipeline. Minor issues with missing TotalCharges values will be handled automatically.', type: 'success' },
-  ],
 }
 
 // ── credit-fraud ──────────────────────────────────────────────────────────────
@@ -191,15 +182,6 @@ const creditFraudEDA: EDAResults = {
     outlierCount: 142,
     totalCount: 50000,
   },
-  qualityScore: 92,
-  insights: [
-    { id: 'ins-1', text: 'Highly imbalanced dataset detected: only 1.7% of transactions are fraudulent. Will apply SMOTE oversampling and optimize for Precision-Recall AUC.', type: 'warning' },
-    { id: 'ins-2', text: 'All 28 numeric features are PCA-transformed (V1-V28). No missing values detected — data is clean and ready for modeling.', type: 'success' },
-    { id: 'ins-3', text: 'Transaction Amount has heavy right-skew (skewness: 16.2). Will apply log transformation to normalize the distribution.', type: 'info' },
-    { id: 'ins-4', text: 'Time feature shows clear cyclic patterns — higher fraud rates during early morning hours. Engineering time-based features.', type: 'info' },
-    { id: 'ins-5', text: '142 outlier transactions detected with amounts >$2,500. These correlate with higher fraud probability — keeping as informative signals.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 92/100. Excellent quality. PCA preprocessing already handles feature scaling.', type: 'success' },
-  ],
 }
 
 // ── store-demand ──────────────────────────────────────────────────────────────
@@ -289,15 +271,6 @@ const storeDemandEDA: EDAResults = {
     outlierCount: 89,
     totalCount: 45000,
   },
-  qualityScore: 79,
-  insights: [
-    { id: 'ins-1', text: 'Time series data spanning 3 years across 10 stores. Detected strong weekly seasonality and annual trend patterns.', type: 'info' },
-    { id: 'ins-2', text: '340 missing oil price values (0.8%) — likely weekend/holiday gaps. Will forward-fill within each store.', type: 'warning' },
-    { id: 'ins-3', text: 'Promotions increase sales by an average of 34%. This feature will be critical for demand forecasting accuracy.', type: 'success' },
-    { id: 'ins-4', text: 'High variance in sales across stores (CV: 0.68). Will train per-store models or include store embeddings.', type: 'info' },
-    { id: 'ins-5', text: '89 extreme demand spikes detected — mostly holiday periods. Engineering holiday features for better prediction.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 79/100. Good quality with some gaps to address. Time-based features will be engineered automatically.', type: 'success' },
-  ],
 }
 
 // ── patient-readmission ───────────────────────────────────────────────────────
@@ -390,15 +363,6 @@ const patientReadmissionEDA: EDAResults = {
     outlierCount: 312,
     totalCount: 25000,
   },
-  qualityScore: 74,
-  insights: [
-    { id: 'ins-1', text: 'Moderate class imbalance: 22% readmission rate. Will use stratified sampling and optimize for AUC-ROC to handle imbalance.', type: 'warning' },
-    { id: 'ins-2', text: '1,250 missing values across 8 features (mainly lab results). Will apply KNN imputation for numeric and mode imputation for categorical.', type: 'warning' },
-    { id: 'ins-3', text: 'Diagnosis codes have 847 unique values — high cardinality. Will group into ICD categories to reduce dimensionality.', type: 'info' },
-    { id: 'ins-4', text: 'Number of procedures and days in hospital show strong positive correlation (0.72) with readmission risk.', type: 'success' },
-    { id: 'ins-5', text: '312 outlier patients with extreme hospital stays (>30 days). These represent complex cases — retaining for model training.', type: 'info' },
-    { id: 'ins-6', text: 'Data quality score: 74/100. Requires preprocessing attention. The AI will handle imputation and encoding autonomously.', type: 'success' },
-  ],
 }
 
 // ── employee-attrition ────────────────────────────────────────────────────────
@@ -490,15 +454,6 @@ const employeeAttritionEDA: EDAResults = {
     outlierCount: 98,
     totalCount: 14999,
   },
-  qualityScore: 91,
-  insights: [
-    { id: 'ins-1', text: 'Class imbalance detected: 16.2% attrition rate. Will apply class weighting and optimize for F1 Score to balance precision and recall.', type: 'warning' },
-    { id: 'ins-2', text: 'No missing values detected across all 35 features — excellent data quality for HR analytics.', type: 'success' },
-    { id: 'ins-3', text: 'MonthlyIncome shows high variance across departments (CV: 0.52). Will engineer income-to-role-average ratio as a relative compensation signal.', type: 'info' },
-    { id: 'ins-4', text: 'JobSatisfaction and WorkLifeBalance are ordinal features (1-4 scale). Will preserve ordinality during encoding.', type: 'info' },
-    { id: 'ins-5', text: 'YearsAtCompany and YearsWithCurrentManager show strong correlation (0.77). Will monitor for multicollinearity.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 91/100. High-quality HR dataset. The AI will engineer tenure ratios and satisfaction trajectory features automatically.', type: 'success' },
-  ],
 }
 
 // ── energy-consumption ────────────────────────────────────────────────────────
@@ -593,15 +548,6 @@ const energyConsumptionEDA: EDAResults = {
     outlierCount: 67,
     totalCount: 35040,
   },
-  qualityScore: 83,
-  insights: [
-    { id: 'ins-1', text: 'Hourly time series spanning 4 years. Strong daily and weekly seasonality detected — will engineer Fourier features for cyclic patterns.', type: 'info' },
-    { id: 'ins-2', text: '420 missing readings (1.2%) — likely sensor outages. Will apply linear interpolation within each zone.', type: 'warning' },
-    { id: 'ins-3', text: 'Temperature shows the strongest correlation with consumption (r=0.71). Will engineer temperature-humidity interaction terms.', type: 'success' },
-    { id: 'ins-4', text: 'Peak demand hours (8-10am, 6-8pm) show 2.3x average consumption. Engineering time-of-day categorical features.', type: 'info' },
-    { id: 'ins-5', text: '67 anomalous consumption spikes detected — likely industrial events. Flagging for anomaly detection model training.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 83/100. Good quality with minor gaps. Lag features and rolling windows will be engineered automatically.', type: 'success' },
-  ],
 }
 
 // ── insurance-claims ──────────────────────────────────────────────────────────
@@ -690,15 +636,6 @@ const insuranceClaimsEDA: EDAResults = {
     outlierCount: 234,
     totalCount: 40000,
   },
-  qualityScore: 85,
-  insights: [
-    { id: 'ins-1', text: 'Severe class imbalance: only 6.8% of claims are fraudulent. Will apply SMOTE and optimize for Precision-Recall AUC to minimize false positives.', type: 'warning' },
-    { id: 'ins-2', text: '890 missing values across 4 features (mainly witness and police report fields). Will impute with "Unknown" category.', type: 'warning' },
-    { id: 'ins-3', text: 'Claim amount distribution is heavily right-skewed (skewness: 8.4). Log transformation will normalize for linear models.', type: 'info' },
-    { id: 'ins-4', text: 'Policy tenure shows inverse correlation with fraud probability — newer policies are 3.2x more likely to be fraudulent.', type: 'success' },
-    { id: 'ins-5', text: '234 high-value claims (>$100K) detected. These warrant special attention — will engineer a high-value claim flag feature.', type: 'info' },
-    { id: 'ins-6', text: 'Data quality score: 85/100. Good quality. The AI will engineer claim velocity, provider network, and behavioral anomaly features automatically.', type: 'success' },
-  ],
 }
 
 // ── predictive-maintenance ────────────────────────────────────────────────────
@@ -787,15 +724,6 @@ const predictiveMaintenanceEDA: EDAResults = {
     outlierCount: 1240,
     totalCount: 50000,
   },
-  qualityScore: 88,
-  insights: [
-    { id: 'ins-1', text: 'Sensor time series spans 6 months at 5-minute intervals. Strong temporal autocorrelation detected — will engineer rolling-window and lag features automatically.', type: 'info' },
-    { id: 'ins-2', text: 'Class imbalance: only 17.8% of readings precede a failure event. Will apply SMOTE and class-weighted training to prevent healthy-state bias.', type: 'warning' },
-    { id: 'ins-3', text: 'Vibration and temperature show 0.84 correlation with failure events — strongest predictive signals. Rate-of-change features will be engineered for both.', type: 'success' },
-    { id: 'ins-4', text: '1,240 anomalous sensor spikes detected (likely post-maintenance warm-up). Flagging with maintenance-log events to prevent false-positive training.', type: 'warning' },
-    { id: 'ins-5', text: 'Pressure sensor shows 2.1% missing values — likely sensor outages during maintenance windows. Will impute using forward-fill within each machine.', type: 'info' },
-    { id: 'ins-6', text: 'Data quality score: 88/100. High-quality sensor dataset. Rolling degradation trends and inter-sensor ratio features will be engineered automatically.', type: 'success' },
-  ],
 }
 
 // ── logistics-delivery-delay ─────────────────────────────────────────────────
@@ -890,15 +818,6 @@ const logisticsDeliveryDelayEDA: EDAResults = {
     outlierCount: 245,
     totalCount: 25000,
   },
-  qualityScore: 89,
-  insights: [
-    { id: 'ins-1', text: 'Moderate class balance: 39% of deliveries are delayed. Will use stratified sampling and optimize for F1 Score.', type: 'info' },
-    { id: 'ins-2', text: 'No missing values detected across all 12 features — clean dataset ready for modelling.', type: 'success' },
-    { id: 'ins-3', text: 'Strong correlation (0.72) between distance and actual delivery hours — will monitor for multicollinearity and engineer speed-based features.', type: 'warning' },
-    { id: 'ins-4', text: 'Weather condition is a key categorical predictor — stormy and foggy conditions show 2.4x higher delay rates.', type: 'info' },
-    { id: 'ins-5', text: '245 outlier deliveries detected with extreme distances (>800km) or delivery times (>120h). Retaining as informative edge cases.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 89/100. High-quality logistics dataset. The AI will engineer distance-time ratios and weather severity features automatically.', type: 'success' },
-  ],
 }
 
 // ── logistics-freight-cost ──────────────────────────────────────────────────
@@ -994,15 +913,6 @@ const logisticsFreightCostEDA: EDAResults = {
     outlierCount: 178,
     totalCount: 5964,
   },
-  qualityScore: 82,
-  insights: [
-    { id: 'ins-1', text: 'Target variable (freight_cost_usd) is heavily right-skewed (skewness: 12.4). Will apply log transformation for regression modelling.', type: 'warning' },
-    { id: 'ins-2', text: '48 missing weight values (0.8%) — likely data entry gaps. Will impute using median weight per product group.', type: 'info' },
-    { id: 'ins-3', text: 'Strong correlation (0.68) between weight and freight cost — weight is the dominant cost driver across all shipment modes.', type: 'success' },
-    { id: 'ins-4', text: 'Air Charter shipments average 8.4x the cost of standard Air — will engineer shipment mode interaction features.', type: 'info' },
-    { id: 'ins-5', text: '178 outlier shipments with costs >$150K. These are bulk Air Charter shipments — retaining as valid high-value data points.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 82/100. Good quality. The AI will engineer weight-per-unit ratios and vendor term cost multipliers automatically.', type: 'success' },
-  ],
 }
 
 // ── logistics-delivery-outcome ──────────────────────────────────────────────
@@ -1094,15 +1004,6 @@ const logisticsDeliveryOutcomeEDA: EDAResults = {
     outlierCount: 1842,
     totalCount: 180519,
   },
-  qualityScore: 85,
-  insights: [
-    { id: 'ins-1', text: 'Imbalanced multi-class target: Late delivery dominates at 55%, Canceled is only 4%. Will use stratified sampling and class-weighted training.', type: 'warning' },
-    { id: 'ins-2', text: 'No missing values across 31 features — high-quality e-commerce dataset. 180,519 records provide robust statistical power.', type: 'success' },
-    { id: 'ins-3', text: 'Shipping gap (actual - scheduled days) is the strongest delivery outcome predictor. Engineering this dimension automatically.', type: 'info' },
-    { id: 'ins-4', text: 'Discount rate and profit ratio are inversely correlated (-0.42) — high discounts compress margins and correlate with cancellation risk.', type: 'info' },
-    { id: 'ins-5', text: '1,842 outlier orders detected with extreme benefit values. These are high-value B2B orders — retaining for model training.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 85/100. Large, clean dataset spanning 5 global markets. The AI will handle multi-class balancing and feature engineering automatically.', type: 'success' },
-  ],
 }
 
 // ── logistics-demand-forecast ───────────────────────────────────────────────
@@ -1199,15 +1100,6 @@ const logisticsDemandForecastEDA: EDAResults = {
     outlierCount: 34,
     totalCount: 1337,
   },
-  qualityScore: 86,
-  insights: [
-    { id: 'ins-1', text: 'Daily time series spanning 3.7 years (Jan 2021 – Aug 2024). Strong weekly seasonality and annual trend detected — will engineer Fourier features.', type: 'info' },
-    { id: 'ins-2', text: '20 missing values across 2 features (1.5%) — weather and port congestion gaps. Will apply linear interpolation for continuity.', type: 'warning' },
-    { id: 'ins-3', text: 'Shipping cost shows strong positive correlation (0.62) with demand — higher demand drives logistics costs. Will engineer cost-per-unit demand feature.', type: 'success' },
-    { id: 'ins-4', text: 'Weather severity inversely correlates with demand (-0.29) — severe weather reduces logistics activity. Engineering weather-demand interaction terms.', type: 'info' },
-    { id: 'ins-5', text: '34 demand spike outliers detected — likely holiday or disruption-driven. Flagging for special event feature engineering.', type: 'warning' },
-    { id: 'ins-6', text: 'Data quality score: 86/100. Good quality time-series data. Lag features, rolling windows, and exogenous variable interactions will be engineered automatically.', type: 'success' },
-  ],
 }
 
 // ── registry ──────────────────────────────────────────────────────────────────

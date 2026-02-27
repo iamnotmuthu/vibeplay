@@ -285,7 +285,7 @@ const dimensionDataMap: Record<string, DimensionResults> = {
     dimensions: [
       {
         name: 'Route Characteristics',
-        color: '#14b8a6',
+        color: '#8b5cf6',
         attributes: ['distance_km', 'region', 'delivery_mode', 'delivery_cost'],
         coverage: 100,
         confidence: 94,
@@ -333,7 +333,7 @@ const dimensionDataMap: Record<string, DimensionResults> = {
       },
       {
         name: 'Product & Vendor',
-        color: '#14b8a6',
+        color: '#8b5cf6',
         attributes: ['product_group', 'sub_classification', 'vendor_inco_term', 'fulfill_via'],
         coverage: 100,
         confidence: 89,

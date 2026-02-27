@@ -310,7 +310,7 @@ export const PREBUILT_DATASETS: DatasetConfig[] = [
     rows: 25000,
     features: 12,
     icon: 'truck',
-    color: '#14b8a6',
+    color: '#8b5cf6',
     objectives: [
       {
         id: 'delay-predict',

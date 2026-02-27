@@ -46,8 +46,6 @@ export interface EDAResults {
   distributions: DistributionData[]
   correlations: CorrelationData
   outliers: OutlierData
-  qualityScore: number
-  insights: AIInsight[]
 }
 
 export interface DataSummary {

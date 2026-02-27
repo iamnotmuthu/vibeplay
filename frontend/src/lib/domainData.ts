@@ -79,7 +79,7 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         heroSubtitle:
             'Watch VibeModel decompose seasonal trends, auto-discover demand cohorts, and build a forecast that cuts stockouts and reduces overstock — automatically.',
         color: '#10b981',
-        gradient: 'from-emerald-500 to-teal-500',
+        gradient: 'from-blue-500 to-violet-500',
         icon: 'trending-up',
         badge: 'Retail',
         stageSubtitles: {
@@ -218,8 +218,8 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
         heroHeadline: 'Know which shipments will be late — before they leave the warehouse.',
         heroSubtitle:
             'Watch VibeModel analyse 25,000 delivery records across 9 courier partners, 6 vehicle types, and 5 regions to predict delay risk at booking time — enabling proactive rerouting and customer alerts.',
-        color: '#14b8a6',
-        gradient: 'from-teal-500 to-emerald-500',
+        color: '#8b5cf6',
+        gradient: 'from-violet-500 to-blue-500',
         icon: 'truck',
         badge: 'Logistics',
         stageSubtitles: {

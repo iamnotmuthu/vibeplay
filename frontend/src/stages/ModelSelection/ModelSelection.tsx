@@ -15,7 +15,7 @@ import type { ModelSelectionResults, ModelComponent } from '@/store/types'
 function levelColor(level: string): string {
   switch (level.toLowerCase()) {
     case 'high':     return 'text-amber-600'
-    case 'low':      return 'text-teal-600'
+    case 'low':      return 'text-violet-600'
     case 'median':   return 'text-gray-500'
     case 'yes':      return 'text-emerald-600'
     case 'no':       return 'text-red-500'
@@ -602,7 +602,7 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
         >
           <div>
             <div className="flex items-center gap-2.5">
-              <Monitor className="w-5 h-5 text-teal-500" />
+              <Monitor className="w-5 h-5 text-violet-500" />
               <h2 className="text-base font-bold text-gray-900">{datasetName}</h2>
               <span
                 className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
@@ -617,7 +617,7 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
             <select
               value={weeksRange}
               onChange={(e) => setWeeksRange(Number(e.target.value) as 1 | 2 | 3)}
-              className="text-xs bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-gray-700 focus:outline-none focus:border-teal-500"
+              className="text-xs bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-gray-700 focus:outline-none focus:border-violet-500"
             >
               <option value={1}>Last week</option>
               <option value={2}>Last 2 weeks</option>
@@ -719,7 +719,7 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
 
           <div className="rounded-xl p-5" style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}>
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="w-4 h-4 text-teal-500" />
+              <TrendingUp className="w-4 h-4 text-violet-500" />
               <h4 className="text-sm font-semibold text-gray-900">Performance Metrics</h4>
             </div>
             <p className="text-[10px] text-gray-500 mb-3">Precision and Recall trends — last {weeksRange === 1 ? 'week' : `${weeksRange} weeks`}</p>
@@ -740,7 +740,7 @@ function MonitoringDashboardModal({ datasetId, datasetName, champion, onClose }:
               <h4 className="text-sm font-semibold text-gray-900">Request Volume</h4>
             </div>
             <p className="text-[10px] text-gray-500 mb-3">Prediction requests — last {weeksRange === 1 ? 'week' : `${weeksRange} weeks`}</p>
-            <BarChart data={slicedVolume} labels={slicedLabels} color="rgba(20,184,166,0.7)" />
+            <BarChart data={slicedVolume} labels={slicedLabels} color="rgba(139,92,246,0.7)" />
           </div>
 
           <div className="rounded-xl p-5" style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}>
@@ -825,13 +825,13 @@ export function ModelSelection() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="rounded-xl p-5 relative overflow-hidden"
-          style={{ border: '1px solid rgba(20,184,166,0.3)', background: 'rgba(240,253,250,0.8)', borderLeft: '4px solid #14b8a6' }}
+          style={{ border: '1px solid rgba(139,92,246,0.3)', background: 'rgba(245,243,255,0.8)', borderLeft: '4px solid #8b5cf6' }}
         >
           {/* Animated shimmer to draw attention */}
           <motion.div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: 'linear-gradient(105deg, transparent 40%, rgba(20,184,166,0.06) 45%, rgba(20,184,166,0.12) 50%, rgba(20,184,166,0.06) 55%, transparent 60%)',
+              background: 'linear-gradient(105deg, transparent 40%, rgba(139,92,246,0.06) 45%, rgba(139,92,246,0.12) 50%, rgba(139,92,246,0.06) 55%, transparent 60%)',
             }}
             animate={{ x: ['-100%', '200%'] }}
             transition={{ duration: 2.5, ease: 'easeInOut', delay: 0.8, repeat: 2, repeatDelay: 1 }}
@@ -841,10 +841,10 @@ export function ModelSelection() {
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, ease: 'easeInOut', delay: 0.5, repeat: 2, repeatDelay: 1.5 }}
             >
-              <Info className="w-4 h-4 text-teal-500 mt-0.5 shrink-0" />
+              <Info className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
             </motion.div>
             <div>
-              <div className="text-sm font-semibold text-teal-700 mb-1">Model Composition — Not Selection</div>
+              <div className="text-sm font-semibold text-violet-700 mb-1">Model Composition — Not Selection</div>
               <p className="text-sm text-gray-600 leading-relaxed">
                 VibeModel doesn't pick from a menu — it composes a model from scratch. Every component below was chosen based on your data profile, pattern distribution, and business objective.
               </p>
@@ -937,10 +937,10 @@ export function ModelSelection() {
         >
           <div
             className="rounded-xl p-5 flex flex-col"
-            style={{ background: 'rgba(240,253,250,0.8)', border: '1px solid rgba(20,184,166,0.25)' }}
+            style={{ background: 'rgba(245,243,255,0.8)', border: '1px solid rgba(139,92,246,0.25)' }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Download className="w-4 h-4 text-teal-500" />
+              <Download className="w-4 h-4 text-violet-500" />
               <span className="text-sm font-semibold text-gray-900">Preview Deployment Guide</span>
             </div>
             <p className="text-xs text-gray-600 leading-relaxed mb-4 flex-1">
@@ -949,7 +949,7 @@ export function ModelSelection() {
             <button
               onClick={handleDownload}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #0d9488, #14b8a6)' }}
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
             >
               <Download className="w-4 h-4" />
               Download Model Deployment Guide
