@@ -8,15 +8,12 @@ import {
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
+import { MLTooltip } from '@/components/shared/MLTooltip'
+import { StageExplainer } from '@/components/shared/StageExplainer'
 import { getPrecomputedPatterns } from './patternData'
 import type { StageId, PatternResults, SufficiencyPatternItem, DistributionData } from '@/store/types'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-function deriveCondition(p: SufficiencyPatternItem): string {
-  if (p.condition) return p.condition
-  return p.keySignals.slice(0, 2).join(' AND ')
-}
 
 function deriveConfidence(p: SufficiencyPatternItem, status: string): 'high' | 'low' {
   return p.confidence ?? (status === 'sufficient' ? 'high' : 'low')
@@ -111,19 +108,26 @@ function getFeatureValues(dist: DistributionData): string[] {
 
 // ── PatternCard ───────────────────────────────────────────────────────────────
 
+function getStandardizedPatternLabel(status: 'sufficient' | 'insufficient' | 'helpMe', index: number): string {
+  if (status === 'sufficient') return `Dominant Pattern ${index + 1}`
+  if (status === 'insufficient') return `Non-Dominant Pattern ${index + 1}`
+  return `Fuzzy Pattern ${index + 1}`
+}
+
 function PatternCard({
-  pattern, status, delay, targetColumn,
+  pattern, status, delay, targetColumn, patternIndex, showConfidenceTooltip,
 }: {
   pattern: SufficiencyPatternItem
   status: 'sufficient' | 'insufficient' | 'helpMe'
   delay: number
   targetColumn: string
+  patternIndex: number
+  showConfidenceTooltip?: boolean
 }) {
   const [ignored, setIgnored] = useState(false)
   const [action, setAction] = useState<'none' | 'augment' | 'low-confidence'>('none')
   const [showIncluded, setShowIncluded] = useState(false)
 
-  const condition = deriveCondition(pattern)
   const confidence = deriveConfidence(pattern, status)
   const pct = derivePct(pattern, status)
   const targetInd = deriveTargetInd(pattern)
@@ -179,21 +183,37 @@ function PatternCard({
 
       {/* Main body */}
       <div className="p-4">
-        {/* Title + confidence */}
-        <div className="flex items-center gap-2 flex-wrap mb-2">
-          <span className="text-sm font-semibold text-gray-900">{condition}</span>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-400 ml-auto shrink-0" />
+        {/* Standardized label + confidence */}
+        <div className="flex items-center gap-2 flex-wrap mb-1">
           <span
-            className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+            className="text-xs font-bold px-2 py-0.5 rounded-full"
             style={
-              confidence === 'high'
-                ? { background: 'rgba(34,197,94,0.12)', color: '#16a34a' }
-                : { background: 'rgba(239,68,68,0.10)', color: '#dc2626' }
+              status === 'sufficient'
+                ? { background: 'rgba(16,185,129,0.10)', color: '#059669' }
+                : status === 'insufficient'
+                  ? { background: 'rgba(239,68,68,0.08)', color: '#dc2626' }
+                  : { background: 'rgba(245,158,11,0.10)', color: '#d97706' }
             }
           >
-            {confidence === 'high' ? 'High Confidence' : 'Low Confidence'}
+            {getStandardizedPatternLabel(status, patternIndex)}
           </span>
+          <ChevronRight className="w-3.5 h-3.5 text-gray-400 ml-auto shrink-0" />
+          <div className="flex items-center gap-1 shrink-0">
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={
+                confidence === 'high'
+                  ? { background: 'rgba(34,197,94,0.12)', color: '#16a34a' }
+                  : { background: 'rgba(239,68,68,0.10)', color: '#dc2626' }
+              }
+            >
+              {confidence === 'high' ? 'High Confidence' : 'Low Confidence'}
+            </span>
+            {showConfidenceTooltip && <MLTooltip term="confidence" />}
+          </div>
         </div>
+        {/* Descriptive title */}
+        <div className="text-sm font-semibold text-gray-900 mb-2">{pattern.label}</div>
 
         {/* Stats */}
         <p className="text-sm mb-0.5">
@@ -533,7 +553,7 @@ function AddPatternForm({
 // ── Section header ────────────────────────────────────────────────────────────
 
 function SectionHeader({
-  icon, label, count, color, collapsed, onToggle,
+  icon, label, count, color, collapsed, onToggle, tooltip,
 }: {
   icon: React.ReactNode
   label: string
@@ -541,6 +561,7 @@ function SectionHeader({
   color: string
   collapsed: boolean
   onToggle: () => void
+  tooltip?: React.ReactNode
 }) {
   return (
     <button
@@ -551,6 +572,7 @@ function SectionHeader({
       <div className="flex items-center gap-2">
         {icon}
         <span className="text-sm font-semibold" style={{ color }}>{label}</span>
+        {tooltip}
       </div>
       <div className="flex items-center gap-2">
         <span
@@ -705,6 +727,9 @@ export function PatternDiscovery() {
         {/* Right: analysis results */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
 
+        {/* Stage explainer */}
+        <StageExplainer stageId={4} />
+
         {/* Stats row */}
         <AnimatePresence>
           {data && phase !== 'loading' && (
@@ -760,6 +785,7 @@ export function PatternDiscovery() {
                 color="#16a34a"
                 collapsed={!!collapsed['sufficient']}
                 onToggle={() => toggleCollapse('sufficient')}
+                tooltip={<MLTooltip term="dominant-patterns" />}
               />
               <AnimatePresence>
                 {!collapsed['sufficient'] && (
@@ -776,10 +802,10 @@ export function PatternDiscovery() {
                     </div>
                     <div className="space-y-3">
                       {data.sufficient.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
+                        <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} />
                       ))}
                       {userPatterns.filter(u => u.status === 'sufficient').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.sufficient.length + i} />
                       ))}
                     </div>
                   </motion.div>
@@ -800,6 +826,7 @@ export function PatternDiscovery() {
                 color="#dc2626"
                 collapsed={!!collapsed['insufficient']}
                 onToggle={() => toggleCollapse('insufficient')}
+                tooltip={<MLTooltip term="non-dominant-patterns" />}
               />
               <AnimatePresence>
                 {!collapsed['insufficient'] && (
@@ -812,10 +839,10 @@ export function PatternDiscovery() {
                   >
                     <div className="space-y-3">
                       {data.insufficient.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
+                        <PatternCard key={p.id} pattern={p} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} />
                       ))}
                       {userPatterns.filter(u => u.status === 'insufficient').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.insufficient.length + i} />
                       ))}
                     </div>
                   </motion.div>
@@ -836,6 +863,7 @@ export function PatternDiscovery() {
                 color="#d97706"
                 collapsed={!!collapsed['helpMe']}
                 onToggle={() => toggleCollapse('helpMe')}
+                tooltip={<MLTooltip term="fuzzy-patterns" />}
               />
               <AnimatePresence>
                 {!collapsed['helpMe'] && (
@@ -848,10 +876,10 @@ export function PatternDiscovery() {
                   >
                     <div className="space-y-3">
                       {data.helpMe.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
+                        <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} />
                       ))}
                       {userPatterns.filter(u => u.status === 'helpMe').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} />
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.helpMe.length + i} />
                       ))}
                     </div>
                   </motion.div>

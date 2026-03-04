@@ -206,39 +206,43 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
             </header>
 
             {/* Hero */}
-            <div className="text-center pt-20 pb-12 px-6 relative z-10">
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                >
-                    <div
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-6"
-                        style={{
-                            background: 'rgba(59,130,246,0.06)',
-                            border: '1px solid rgba(59,130,246,0.15)',
-                            color: '#475569',
-                        }}
+            <AnimatePresence>
+                {!selectedDomain && (
+                    <motion.div
+                        className="text-center pt-20 pb-12 px-6 relative z-10"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10, height: 0, paddingTop: 0, paddingBottom: 0, overflow: 'hidden' }}
+                        transition={{ duration: 0.4 }}
                     >
-                        <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                        <span style={{ background: 'linear-gradient(to right, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                            Autonomous AI Lifecycle
-                        </span>
-                        <span className="text-gray-300">·</span>
-                        <span>End-to-End in Minutes</span>
-                    </div>
+                        <div
+                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-6"
+                            style={{
+                                background: 'rgba(59,130,246,0.06)',
+                                border: '1px solid rgba(59,130,246,0.15)',
+                                color: '#475569',
+                            }}
+                        >
+                            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                            <span style={{ background: 'linear-gradient(to right, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                                Autonomous AI Lifecycle
+                            </span>
+                            <span className="text-gray-300">·</span>
+                            <span>End-to-End in Minutes</span>
+                        </div>
 
-                    <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight tracking-tight" style={{ color: '#0f172a' }}>
-                        Choose your industry.<br />
-                        <span style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                            Watch AI build your model.
-                        </span>
-                    </h1>
-                    <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">
-                        Pick an industry, define your goal, and watch VibeModel build a production-ready model — end-to-end in under 3 minutes.
-                    </p>
-                </motion.div>
-            </div>
+                        <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight tracking-tight" style={{ color: '#0f172a' }}>
+                            Choose your industry.<br />
+                            <span style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                                Watch AI build your model.
+                            </span>
+                        </h1>
+                        <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">
+                            Pick an industry, define your goal, and watch VibeModel build a production-ready model — end-to-end in under 3 minutes.
+                        </p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Domain / Scenario Grid */}
             <div className="flex-1 px-6 pb-20 relative z-10">
@@ -316,7 +320,7 @@ export function DomainSelector({ onSelect }: DomainSelectorProps) {
                                             <div className="flex-1">
                                                 <h3 className="text-lg font-bold text-gray-900 mb-2">{group.industry}</h3>
                                                 <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">
-                                                    {group.scenarios.map((s) => s.tagline).join(' · ')}
+                                                    {group.scenarios.slice(0, 2).map((s) => s.tagline).join(' · ')}{group.scenarios.length > 2 ? ` · +${group.scenarios.length - 2} more` : ''}
                                                 </p>
                                             </div>
 

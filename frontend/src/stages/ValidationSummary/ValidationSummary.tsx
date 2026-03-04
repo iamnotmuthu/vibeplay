@@ -4,6 +4,8 @@ import { ShieldCheck, Database } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
+import { MLTooltip } from '@/components/shared/MLTooltip'
+import { StageExplainer } from '@/components/shared/StageExplainer'
 import { getPrecomputedValidation, getBacktestConfig } from './validationSummaryData'
 import type { BacktestConfig } from './validationSummaryData'
 import { BacktestSummary } from './BacktestChart'
@@ -18,6 +20,7 @@ const CATEGORIES: {
   borderColor: string
   textColor: string
   bgColor: string
+  tooltipTerm?: string
 }[] = [
   {
     key: 'sufficient',
@@ -26,6 +29,7 @@ const CATEGORIES: {
     borderColor: 'border-emerald-500',
     textColor: 'text-emerald-600',
     bgColor: 'bg-emerald-500',
+    tooltipTerm: 'dominant-patterns',
   },
   {
     key: 'insufficient',
@@ -34,6 +38,7 @@ const CATEGORIES: {
     borderColor: 'border-red-500',
     textColor: 'text-red-600',
     bgColor: 'bg-red-500',
+    tooltipTerm: 'non-dominant-patterns',
   },
   {
     key: 'helpMe',
@@ -42,6 +47,7 @@ const CATEGORIES: {
     borderColor: 'border-amber-500',
     textColor: 'text-amber-600',
     bgColor: 'bg-amber-500',
+    tooltipTerm: 'fuzzy-patterns',
   },
   {
     key: 'augmented',
@@ -63,6 +69,8 @@ function CategoryCard({
   bgColor,
   isActive,
   onClick,
+  totalValidationSamples,
+  tooltip,
 }: {
   label: string
   data: ValidationCategory
@@ -72,8 +80,12 @@ function CategoryCard({
   bgColor: string
   isActive: boolean
   onClick: () => void
+  totalValidationSamples: number
+  tooltip?: React.ReactNode
 }) {
-  const barFill = Math.min(data.percentage, 100)
+  const validationCount = data.cohorts.reduce((sum, c) => sum + c.validationSamples, 0)
+  const validationPct = totalValidationSamples > 0 ? (validationCount / totalValidationSamples * 100) : 0
+  const barFill = Math.min(validationPct, 100)
   return (
     <motion.button
       onClick={onClick}
@@ -82,11 +94,11 @@ function CategoryCard({
       className={`text-left p-5 rounded-xl transition-all w-full ${isActive ? `border-l-4 ${borderColor}` : 'border border-gray-200'}`}
       style={{ background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
     >
-      <div className={`text-xs font-semibold mb-2 ${textColor}`}>{label}</div>
+      <div className={`text-xs font-semibold mb-2 flex items-center gap-1 ${textColor}`}>{label}{tooltip}</div>
       <div className="text-3xl font-bold text-gray-900 mb-1">
-        <CountUpNumber end={data.count} />
+        <CountUpNumber end={validationCount} />
       </div>
-      <div className={`text-sm font-medium mb-3 ${textColor}`}>{data.percentage.toFixed(1)}%</div>
+      <div className={`text-sm font-medium mb-3 ${textColor}`}>{validationPct.toFixed(1)}%</div>
       <div className="h-1.5 rounded-full overflow-hidden mb-2" style={{ background: '#e5e7eb' }}>
         <motion.div
           initial={{ width: 0 }}
@@ -136,7 +148,7 @@ function BreakdownTable({
           {categoryLabel} — Detailed Breakdown
         </h4>
         <span className="text-xs text-gray-500">
-          {data.cohorts.length} cohorts · {data.count} validation samples
+          {data.cohorts.length} cohorts · {data.cohorts.reduce((sum, c) => sum + c.validationSamples, 0).toLocaleString()} validation samples
         </span>
       </div>
 
@@ -146,30 +158,44 @@ function BreakdownTable({
       >
         {/* Table header — 4 proper columns */}
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-          <div>Cohort Name</div>
+          <div>Pattern</div>
           <div className="text-right">Total Count</div>
           <div className="text-right">Validation Samples</div>
           <div className="text-right">Sampling %</div>
         </div>
 
         {/* Rows */}
-        {visible.map((cohort, i) => (
-          <motion.div
-            key={cohort.name}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="grid grid-cols-[2fr_1fr_1fr_1fr] px-4 py-3 last:border-0 transition-colors hover:bg-gray-100"
-            style={{ borderBottom: '1px solid #f3f4f6' }}
-          >
-            <div className="text-sm text-gray-800 font-mono truncate pr-4">{cohort.name}</div>
-            <div className="text-right text-sm text-gray-600 font-mono">{cohort.totalCount.toLocaleString()}</div>
-            <div className="text-right text-sm font-mono text-gray-600">{cohort.validationSamples}</div>
-            <div className={`text-right text-xs font-semibold font-mono ${textColor}`}>
-              {cohort.samplingPct === 0 ? '—' : `${cohort.samplingPct}%`}
-            </div>
-          </motion.div>
-        ))}
+        {visible.map((cohort, i) => {
+          const displayName = categoryKey === 'sufficient'
+            ? `Dominant Pattern ${i + 1}`
+            : categoryKey === 'insufficient'
+              ? `Non-Dominant Pattern ${i + 1}`
+              : categoryKey === 'helpMe'
+                ? `Fuzzy Pattern ${i + 1}`
+                : cohort.name
+          return (
+            <motion.div
+              key={cohort.name}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="grid grid-cols-[2fr_1fr_1fr_1fr] px-4 py-3 last:border-0 transition-colors hover:bg-gray-100"
+              style={{ borderBottom: '1px solid #f3f4f6' }}
+            >
+              <div className="flex flex-col gap-0.5 pr-4">
+                <span className={`text-xs font-bold font-mono ${textColor}`}>{displayName}</span>
+                {categoryKey !== 'augmented' && (
+                  <span className="text-[11px] text-gray-400 truncate">{cohort.name}</span>
+                )}
+              </div>
+              <div className="text-right text-sm text-gray-600 font-mono">{cohort.totalCount.toLocaleString()}</div>
+              <div className="text-right text-sm font-mono text-gray-600">{cohort.validationSamples}</div>
+              <div className={`text-right text-xs font-semibold font-mono ${textColor}`}>
+                {cohort.samplingPct === 0 ? '—' : `${cohort.samplingPct}%`}
+              </div>
+            </motion.div>
+          )
+        })}
 
         {/* Load more / show less */}
         {!showAll && remaining > 0 && (
@@ -273,6 +299,10 @@ export function ValidationSummary() {
 
   const activeConfig = CATEGORIES.find((c) => c.key === activeCategory)!
   const activeCategoryData = data[activeCategory]
+  const totalValidationSamples = CATEGORIES.reduce(
+    (sum, cat) => sum + data[cat.key].cohorts.reduce((s, c) => s + c.validationSamples, 0),
+    0,
+  )
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -281,6 +311,7 @@ export function ValidationSummary() {
         <div className="flex items-center gap-3">
           <ShieldCheck className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold text-gray-900">Validation Data Set Summary</h2>
+          <MLTooltip term="validation" />
         </div>
         <p className="text-sm text-gray-500 mt-1">
           Comprehensive validation dataset combining valid cohorts, confusing edge cases, and augmented variations to provide complete coverage of real-world data distributions.
@@ -288,6 +319,7 @@ export function ValidationSummary() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
+        <StageExplainer stageId={5} />
         {/* Total validation banner */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -302,8 +334,12 @@ export function ValidationSummary() {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-gray-500 mb-1">Distribution Overview</div>
+            <div className="text-xs text-gray-500 mb-1">Cohort Composition</div>
             <div className="text-sm font-semibold text-gray-600">{data.totalCohorts} cohorts total</div>
+            <div className="text-xs text-gray-400 mt-0.5">
+              {data.sufficient.cohorts.length + data.insufficient.cohorts.length + data.helpMe.cohorts.length} discovered
+              {data.augmented.cohorts.length > 0 && ` + ${data.augmented.cohorts.length} augmented`}
+            </div>
           </div>
         </motion.div>
 
@@ -318,23 +354,27 @@ export function ValidationSummary() {
         {/* 4 Category cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {CATEGORIES.map((cat, i) => (
-            <motion.div
-              key={cat.key}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06 }}
-            >
-              <CategoryCard
-                label={cat.label}
-                data={data[cat.key]}
-                color={cat.color}
-                borderColor={cat.borderColor}
-                textColor={cat.textColor}
-                bgColor={cat.bgColor}
-                isActive={activeCategory === cat.key}
-                onClick={() => setActiveCategory(cat.key)}
-              />
-            </motion.div>
+            cat.key === 'augmented' && data.augmented.count === 0 ? null : (
+              <motion.div
+                key={cat.key}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.06 }}
+              >
+                <CategoryCard
+                  label={cat.label}
+                  data={data[cat.key]}
+                  color={cat.color}
+                  borderColor={cat.borderColor}
+                  textColor={cat.textColor}
+                  bgColor={cat.bgColor}
+                  isActive={activeCategory === cat.key}
+                  onClick={() => setActiveCategory(cat.key)}
+                  totalValidationSamples={totalValidationSamples}
+                  tooltip={cat.tooltipTerm ? <MLTooltip term={cat.tooltipTerm} /> : undefined}
+                />
+              </motion.div>
+            )
           ))}
         </div>
 

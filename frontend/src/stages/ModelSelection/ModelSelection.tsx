@@ -2,15 +2,41 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Cpu, Eye, Info, Download, X, Activity, AlertTriangle, Sparkles,
-  TrendingUp, BarChart3, Monitor,
+  TrendingUp, BarChart3, Monitor, Lightbulb,
 } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CompletionModal } from '@/components/shared/CompletionModal'
 import { getPrecomputedModelSelection } from './modelSelectionData'
 import { generateDeploymentPDF } from '@/lib/generateDeploymentPDF'
+import { MLTooltip } from '@/components/shared/MLTooltip'
+import { StageExplainer } from '@/components/shared/StageExplainer'
 import type { ModelSelectionResults, ModelComponent } from '@/store/types'
 
+
+function getModelTermKey(champion: string): string {
+  const n = champion.toLowerCase()
+  if (n.includes('logistic')) return 'logistic-regression'
+  if (n.includes('xgboost')) return 'xgboost'
+  if (n.includes('random forest')) return 'random-forest'
+  return n.replace(/\s+/g, '-')
+}
+
+function getMetricTooltipTerm(metric: string): string | null {
+  if (metric === 'Recall') return 'recall'
+  if (metric === 'Precision') return 'precision'
+  return null
+}
+
+function getComponentTooltipTerm(subtypeLabel: string): string | null {
+  const map: Record<string, string> = {
+    'Preprocessor': 'preprocessor',
+    'Loss Function': 'loss-function',
+    'Regularization': 'regularization',
+    'Optimization Algorithm': 'optimization-algorithm',
+  }
+  return map[subtypeLabel] ?? null
+}
 
 function levelColor(level: string): string {
   switch (level.toLowerCase()) {
@@ -393,8 +419,11 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
           className="rounded-xl p-4"
           style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}
         >
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-            {data.primaryMetric}
+          <div className="flex items-center gap-1.5 mb-1">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{data.primaryMetric}</div>
+            {getMetricTooltipTerm(data.primaryMetric) && (
+              <MLTooltip term={getMetricTooltipTerm(data.primaryMetric)!} />
+            )}
           </div>
           <div className="text-[10px] text-emerald-600 font-semibold mb-4">Primary Metric</div>
           <div className="space-y-3">
@@ -416,8 +445,11 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
           className="rounded-xl p-4"
           style={{ background: '#fafafa', border: '1px solid #e5e7eb' }}
         >
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-            {data.secondaryMetric}
+          <div className="flex items-center gap-1.5 mb-1">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{data.secondaryMetric}</div>
+            {getMetricTooltipTerm(data.secondaryMetric) && (
+              <MLTooltip term={getMetricTooltipTerm(data.secondaryMetric)!} />
+            )}
           </div>
           <div className="text-[10px] text-gray-500 font-semibold mb-4">Secondary Metric</div>
           <div className="space-y-3">
@@ -462,7 +494,12 @@ function ComponentCard({ comp, delay }: { comp: ModelComponent; delay: number })
       {/* Name */}
       <div className="text-sm font-bold text-primary mb-0.5 font-mono">{comp.name}</div>
       {/* Subtype label */}
-      <div className="text-xs text-gray-500 mb-3">{comp.subtypeLabel}</div>
+      <div className="flex items-center gap-1.5 mb-3">
+        <div className="text-xs text-gray-500">{comp.subtypeLabel}</div>
+        {getComponentTooltipTerm(comp.subtypeLabel) && (
+          <MLTooltip term={getComponentTooltipTerm(comp.subtypeLabel)!} />
+        )}
+      </div>
 
       {/* Data characteristic factors */}
       <div className="space-y-1">
@@ -819,6 +856,7 @@ export function ModelSelection() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
+        <StageExplainer stageId={6} />
 
         {/* Info banner — model composition messaging */}
         <motion.div
@@ -896,6 +934,7 @@ export function ModelSelection() {
             >
               {data.champion}
             </span>
+            <MLTooltip term={getModelTermKey(data.champion)} />
             <span className="text-xs text-gray-500 ml-auto">{data.modelType}</span>
           </div>
 
@@ -919,13 +958,17 @@ export function ModelSelection() {
           </div>
 
           {/* 5. Why this model? */}
-          <div className="px-5 py-5">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Why this composition?</div>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              <span className="text-gray-800 font-medium">This isn't model selection — it's model composition. </span>
-              {data.whyThisModel}
-            </p>
-          </div>
+          {data.whyThisModel && (
+            <div className="px-5 py-4" style={{ borderBottom: '1px solid #e5e7eb' }}>
+              <div className="rounded-xl p-4 flex items-start gap-3 border border-blue-200 bg-blue-50">
+                <Lightbulb className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                <div>
+                  <div className="text-xs font-semibold text-blue-700 mb-1">Why This Composition</div>
+                  <p className="text-sm text-blue-800 leading-relaxed">{data.whyThisModel}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </motion.div>
 
         {/* Deployment actions */}
@@ -1019,6 +1062,15 @@ export function ModelSelection() {
           setShowModal(false)
           setShouldGoHome(true)
         }}
+        summary={data ? {
+          modelName: data.champion,
+          modelType: data.modelType,
+          datasetName: selectedDataset?.name ?? '',
+          primaryMetric: data.primaryMetric,
+          primaryValue: data.overallRecall,
+          secondaryMetric: data.secondaryMetric,
+          secondaryValue: data.overallPrecision,
+        } : undefined}
       />
     </div>
   )

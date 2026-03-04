@@ -1,12 +1,23 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, CalendarCheck, Zap } from 'lucide-react'
 
+interface ModelSummary {
+  modelName: string
+  modelType: string
+  datasetName: string
+  primaryMetric: string
+  primaryValue: number
+  secondaryMetric: string
+  secondaryValue: number
+}
+
 interface CompletionModalProps {
   isOpen: boolean
   onStartOver: () => void
+  summary?: ModelSummary
 }
 
-export function CompletionModal({ isOpen, onStartOver }: CompletionModalProps) {
+export function CompletionModal({ isOpen, onStartOver, summary }: CompletionModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -64,6 +75,43 @@ export function CompletionModal({ isOpen, onStartOver }: CompletionModalProps) {
                 You've completed the full VibeModel AI pipeline — from raw data
                 to a production-ready model. Ready to build your own?
               </motion.p>
+
+              {/* Model summary */}
+              {summary && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.22 }}
+                  className="rounded-xl p-4 mb-6 text-left"
+                  style={{ background: '#f8fafc', border: '1px solid #e5e7eb' }}
+                >
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">What was built</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Model</span>
+                      <span className="text-xs font-semibold text-gray-800">{summary.modelName}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Type</span>
+                      <span className="text-xs font-semibold text-gray-800">{summary.modelType}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Dataset</span>
+                      <span className="text-xs font-semibold text-gray-800 truncate max-w-[160px] text-right">{summary.datasetName}</span>
+                    </div>
+                    <div className="pt-2 mt-2 flex gap-3" style={{ borderTop: '1px solid #f3f4f6' }}>
+                      <div className="flex-1 rounded-lg p-2.5 text-center" style={{ background: '#ecfdf5', border: '1px solid #d1fae5' }}>
+                        <div className="text-base font-bold text-emerald-700">{summary.primaryValue}%</div>
+                        <div className="text-[10px] text-emerald-600 font-medium">{summary.primaryMetric}</div>
+                      </div>
+                      <div className="flex-1 rounded-lg p-2.5 text-center" style={{ background: '#eff6ff', border: '1px solid #dbeafe' }}>
+                        <div className="text-base font-bold text-blue-700">{summary.secondaryValue}%</div>
+                        <div className="text-[10px] text-blue-600 font-medium">{summary.secondaryMetric}</div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* CTA buttons */}
               <motion.div

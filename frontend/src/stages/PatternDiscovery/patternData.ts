@@ -54,12 +54,12 @@ const patternsMap: Record<string, PatternResults> = {
         label: 'Mid-Tenure Switchers',
         description: 'Customers with 12–24 months tenure showing mixed signals — some upgrading, some preparing to leave. Cohort behaviour is inconsistent.',
         count: 312,
-        keySignals: ['tenure in [12,24]', 'Contract changed recently', 'Mixed PaymentMethod', 'MonthlyCharges fluctuating'],
+        keySignals: ['tenure in [12,24]', 'ContractAge < 6mo', 'PaymentMethod=mixed', 'MonthlyCharges variance > 20%'],
         targetValue: 'Mixed',
       },
     ],
     insights: [
-      { id: 'pat-1', text: '"Month-to-Month Churners" (3,875 records) has 73% churn rate and sufficient data for high-confidence modelling. This is the primary retention campaign target.', type: 'warning' },
+      { id: 'pat-1', text: '"Month-to-Month Churners" (2,987 records) has 73% churn rate and sufficient data for high-confidence modelling. This is the primary retention campaign target.', type: 'warning' },
       { id: 'pat-2', text: '"Loyal Long-Term Customers" have only 5% churn — protecting this segment should be the retention priority. 2,105 records give strong confidence.', type: 'success' },
       { id: 'pat-3', text: 'Two insufficient and one ambiguous pattern flagged. Limited and mixed samples will reduce model confidence for these cohorts without additional data.', type: 'info' },
     ],
@@ -124,7 +124,7 @@ const patternsMap: Record<string, PatternResults> = {
     ],
     insights: [
       { id: 'pat-1', text: '"Fraud Ring Signatures" pattern (850 records) has 68% fraud precision and sufficient data for detection. Key signal: V14 < -8 with off-hours timing.', type: 'warning' },
-      { id: 'pat-2', text: '"Standard Low-Value Transactions" (38,500 records) can be fast-tracked in fraud screening with 99.3% legitimate confidence — reducing processing latency.', type: 'success' },
+      { id: 'pat-2', text: '"Standard Low-Value Transactions" (37,773 records) can be fast-tracked in fraud screening with 99.3% legitimate confidence — reducing processing latency.', type: 'success' },
       { id: 'pat-3', text: 'Two ultra-rare patterns flagged for augmentation. One ambiguous mid-value pattern needs additional labelled data to achieve reliable scoring.', type: 'info' },
     ],
   },
@@ -187,7 +187,7 @@ const patternsMap: Record<string, PatternResults> = {
       },
     ],
     insights: [
-      { id: 'pat-1', text: '"Weekday Standard Demand" (32,175 records) provides robust baseline. Separating weekday vs. weekend models will reduce MAPE by an estimated 12%.', type: 'info' },
+      { id: 'pat-1', text: '"Weekday Standard Demand" (25,105 records) provides robust baseline. Separating weekday vs. weekend models will reduce MAPE by an estimated 12%.', type: 'info' },
       { id: 'pat-2', text: '"Promotional Sales Spikes" pattern has a confirmed 2-day lag effect. Engineering lag features for this segment will significantly improve forecast accuracy.', type: 'success' },
       { id: 'pat-3', text: 'Remote region stores and high oil-price periods flagged for augmentation. Transferred holiday days are ambiguous — additional labelling is needed for reliable forecasting.', type: 'warning' },
     ],
@@ -252,7 +252,7 @@ const patternsMap: Record<string, PatternResults> = {
     ],
     insights: [
       { id: 'pat-1', text: '"Chronic Condition Patients" (7,200 records) has 58% readmission rate — the highest across all groups. Targeted post-discharge care plans can reduce this significantly.', type: 'warning' },
-      { id: 'pat-2', text: '"Standard Recovery Path" (9,800 records) has only 8% readmission rate. Streamlining their discharge process could free resources for higher-risk groups.', type: 'success' },
+      { id: 'pat-2', text: '"Standard Recovery Path" (11,584 records) has only 8% readmission rate. Streamlining their discharge process could free resources for higher-risk groups.', type: 'success' },
       { id: 'pat-3', text: 'Centenarian and polypharmacy patterns need augmentation. Rare mixed-diagnosis cluster is ambiguous — contradictory feature interactions require additional clinical annotation.', type: 'info' },
     ],
   },
@@ -315,7 +315,7 @@ const patternsMap: Record<string, PatternResults> = {
       },
     ],
     insights: [
-      { id: 'pat-1', text: '"Overtime Burnout Segment" (5,269 records) has 71% attrition rate — primary intervention target. Overtime reduction and compensation review are the highest-impact levers.', type: 'warning' },
+      { id: 'pat-1', text: '"Overtime Burnout Segment" (4,444 records) has 71% attrition rate — primary intervention target. Overtime reduction and compensation review are the highest-impact levers.', type: 'warning' },
       { id: 'pat-2', text: '"Stable High-Satisfaction" employees (5,800 records) have only 4% attrition. Protecting this segment should be the HR retention priority.', type: 'success' },
       { id: 'pat-3', text: 'Two niche HR patterns flagged for augmentation. The promoted-but-dissatisfied segment shows contradictory signals — additional engagement survey data would resolve the ambiguity.', type: 'info' },
     ],
@@ -380,7 +380,7 @@ const patternsMap: Record<string, PatternResults> = {
     ],
     insights: [
       { id: 'pat-1', text: 'Three peak patterns identified with 30,660 combined records — strong foundation for dual-peak forecasting. Weekend demand shifts 2 hours later vs. weekdays.', type: 'info' },
-      { id: 'pat-2', text: '"Off-Peak Baseline" (13,140 records) is the most predictable pattern — a simple autoregressive model achieves < 2% MAPE for overnight hours.', type: 'success' },
+      { id: 'pat-2', text: '"Off-Peak Baseline" (14,880 records) is the most predictable pattern — a simple autoregressive model achieves < 2% MAPE for overnight hours.', type: 'success' },
       { id: 'pat-3', text: 'Extreme weather and demand-response events flagged for augmentation. Transitional shoulder-season hours are ambiguous — inconsistent building responses require additional sub-metering data.', type: 'warning' },
     ],
   },
@@ -444,7 +444,7 @@ const patternsMap: Record<string, PatternResults> = {
     ],
     insights: [
       { id: 'pat-1', text: '"Suspicious New Policy Claims" (2,200 records) has 84% fraud rate — the highest-precision fraud target. Shared repair networks are the strongest detection signal.', type: 'warning' },
-      { id: 'pat-2', text: '"Standard Verified Claims" (28,000 records) can be auto-approved at 97% confidence — significantly reducing investigation backlog.', type: 'success' },
+      { id: 'pat-2', text: '"Standard Verified Claims" (28,154 records) can be auto-approved at 97% confidence — significantly reducing investigation backlog.', type: 'success' },
       { id: 'pat-3', text: 'Parked vehicle and multi-injury patterns need augmentation. Hobby-related anomalies show contradictory fraud signals — additional investigator annotations required.', type: 'info' },
     ],
   },
@@ -508,7 +508,7 @@ const patternsMap: Record<string, PatternResults> = {
     ],
     insights: [
       { id: 'pat-1', text: '"Pre-Failure Degradation Cluster" (8,200 records) shows consistent 48-hour warning window — enabling proactive maintenance scheduling before failure occurs.', type: 'warning' },
-      { id: 'pat-2', text: '"Normal Operating State" (34,500 records) provides a strong healthy baseline — machines can be cleared for continued operation with high confidence.', type: 'success' },
+      { id: 'pat-2', text: '"Normal Operating State" (34,610 records) provides a strong healthy baseline — machines can be cleared for continued operation with high confidence.', type: 'success' },
       { id: 'pat-3', text: 'Catastrophic failures and environmental events flagged for augmentation. Intermittent fault oscillators need additional time-series labelling to determine true failure risk.', type: 'info' },
     ],
   },
@@ -571,7 +571,7 @@ const patternsMap: Record<string, PatternResults> = {
       },
     ],
     insights: [
-      { id: 'pat-1', text: '"Weather-Impacted Long Routes" (4,820 records) has 78% delay rate — primary operational alert target. Proactive rerouting could reduce delays by 35%.', type: 'warning' },
+      { id: 'pat-1', text: '"Weather-Impacted Long Routes" (6,980 records) has 78% delay rate — primary operational alert target. Proactive rerouting could reduce delays by 35%.', type: 'warning' },
       { id: 'pat-2', text: '"Express Urban Deliveries" (6,240 records) achieve 92% on-time rate — this segment can be prioritised for SLA guarantees.', type: 'success' },
       { id: 'pat-3', text: 'EV fleet and fragile cargo patterns need augmentation. Mid-distance rainy deliveries are ambiguous — regional partner data would resolve the signal.', type: 'info' },
     ],
@@ -635,7 +635,7 @@ const patternsMap: Record<string, PatternResults> = {
       },
     ],
     insights: [
-      { id: 'pat-1', text: '"Standard Air Shipments" (2,840 records) have predictable cost-per-kg rates. Weight is the strongest predictor (r=0.68) — enabling accurate instant quoting.', type: 'success' },
+      { id: 'pat-1', text: '"Standard Air Shipments" (2,518 records) have predictable cost-per-kg rates. Weight is the strongest predictor (r=0.68) — enabling accurate instant quoting.', type: 'success' },
       { id: 'pat-2', text: 'Air Charter shipments (224 records) have negotiated custom pricing — cost prediction is unreliable without contract-level data augmentation.', type: 'warning' },
       { id: 'pat-3', text: 'Mixed-mode shipments are ambiguous — handoff cost variance between truck and air legs makes accurate prediction difficult without segment-specific models.', type: 'info' },
     ],
@@ -699,7 +699,7 @@ const patternsMap: Record<string, PatternResults> = {
       },
     ],
     insights: [
-      { id: 'pat-1', text: '"Standard Class Late Deliveries" (82,400 records) dominate the dataset. The shipping gap (actual - scheduled) is the single strongest predictor.', type: 'warning' },
+      { id: 'pat-1', text: '"Standard Class Late Deliveries" (98,999 records) dominate the dataset. The shipping gap (actual - scheduled) is the single strongest predictor.', type: 'warning' },
       { id: 'pat-2', text: '"Same Day Advance Shipping" (38,420 records) shows consistent early delivery — segment can be targeted for premium SLA guarantees.', type: 'success' },
       { id: 'pat-3', text: 'African cancellations and high-discount patterns need augmentation. LATAM borderline cases are ambiguous — per-country analysis would improve accuracy.', type: 'info' },
     ],
@@ -763,7 +763,7 @@ const patternsMap: Record<string, PatternResults> = {
       },
     ],
     insights: [
-      { id: 'pat-1', text: '"Weekday Baseline Demand" (720 days) provides robust foundation — strong day-of-week autocorrelation enables accurate short-term forecasting.', type: 'success' },
+      { id: 'pat-1', text: '"Weekday Baseline Demand" (639 days) provides robust foundation — strong day-of-week autocorrelation enables accurate short-term forecasting.', type: 'success' },
       { id: 'pat-2', text: '"Seasonal Peak Demand" shows consistent Q4 surge. Lag-4-week and year-over-year features will capture this pattern effectively.', type: 'info' },
       { id: 'pat-3', text: 'Port crisis and dual-shock events are too rare for reliable modelling. Weekend transitions are ambiguous — additional operational context needed.', type: 'warning' },
     ],

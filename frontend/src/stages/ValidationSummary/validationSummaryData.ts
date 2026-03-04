@@ -4,7 +4,7 @@ const SUFF_PCT = 9.9
 
 const validationDataMap: Record<string, ValidationSummaryResults> = {
   'telco-churn': {
-    totalCount: 7043,
+    totalCount: 7085, // 6133 + 598 + 312 + 42 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'Recall',
@@ -15,7 +15,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 6133,
-      percentage: 87.1,
+      percentage: 86.6, // 6133/7085
       actionStatement: 'These churn-risk cohorts are production-ready — no further action needed.',
       cohorts: [
         { name: 'Month-to-Month Churners', totalCount: 2987, validationSamples: 296, samplingPct: SUFF_PCT },
@@ -25,7 +25,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 598,
-      percentage: 8.5,
+      percentage: 8.4, // 598/7085
       actionStatement: 'Consider collecting more data for these subscriber segments to improve churn prediction coverage.',
       cohorts: [
         { name: 'Senior No-Dependents Niche', totalCount: 389, validationSamples: 97, samplingPct: 24.9 },
@@ -34,25 +34,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 312,
-      percentage: 4.4,
+      percentage: 4.4, // 312/7085
       actionStatement: 'Flag these mid-tenure subscribers for human review — the model cannot confidently predict their churn behavior.',
       cohorts: [
         { name: 'Mid-Tenure Switchers', totalCount: 312, validationSamples: 60, samplingPct: 19.2 },
       ],
     },
-    augmented: {
-      count: 42,
-      percentage: 0.6,
-      actionStatement: 'Synthetic data supplements thin subscriber cohorts — monitor for distribution drift in production.',
-      cohorts: [
-        { name: 'Senior No-Dependents Niche [augmented]', totalCount: 24, validationSamples: 2, samplingPct: 8.3 },
-        { name: 'No-Phone Internet Only [augmented]', totalCount: 18, validationSamples: 2, samplingPct: 11.1 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'credit-fraud': {
-    totalCount: 50000,
+    totalCount: 50088, // 49273 + 280 + 447 + 88 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'Recall',
@@ -63,7 +55,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 49273,
-      percentage: 98.5,
+      percentage: 98.4, // 49273/50088
       actionStatement: 'Strong coverage confirms these transaction patterns drive reliable fraud detection.',
       cohorts: [
         { name: 'Standard Low-Value Transactions', totalCount: 37773, validationSamples: 3740, samplingPct: SUFF_PCT },
@@ -73,7 +65,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 280,
-      percentage: 0.6,
+      percentage: 0.6, // 280/50088
       actionStatement: 'Low sample counts in high-value and rare transaction cohorts may affect fraud detection — augmentation recommended.',
       cohorts: [
         { name: 'Ultra-High Value Anomalies', totalCount: 186, validationSamples: 84, samplingPct: 45.2 },
@@ -82,25 +74,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 447,
-      percentage: 0.9,
+      percentage: 0.9, // 447/50088
       actionStatement: 'Mixed signals detected in mid-range transactions — configure a manual review workflow for these edge cases.',
       cohorts: [
         { name: 'Mixed-Signal Mid-Value Transactions', totalCount: 447, validationSamples: 86, samplingPct: 19.2 },
       ],
     },
-    augmented: {
-      count: 88,
-      percentage: 0.2,
-      actionStatement: 'Augmented samples improve coverage for rare fraud patterns but should be validated against real-world transactions.',
-      cohorts: [
-        { name: 'Ultra-High Value Anomalies [augmented]', totalCount: 48, validationSamples: 4, samplingPct: 8.3 },
-        { name: 'Cross-Feature Extreme Cases [augmented]', totalCount: 40, validationSamples: 5, samplingPct: 12.5 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'store-demand': {
-    totalCount: 45000,
+    totalCount: 45056, // 43865 + 755 + 380 + 56 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'MAPE',
@@ -111,7 +95,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 43865,
-      percentage: 97.5,
+      percentage: 97.4, // 43865/45056
       actionStatement: 'These demand cohorts are production-ready — weekday, seasonal, and promotional patterns are well-represented.',
       cohorts: [
         { name: 'Weekday Standard Demand', totalCount: 25105, validationSamples: 2485, samplingPct: SUFF_PCT },
@@ -121,7 +105,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 755,
-      percentage: 1.7,
+      percentage: 1.7, // 755/45056
       actionStatement: 'Consider augmenting these cohorts or collecting additional sales data from remote regions and volatile oil-price periods.',
       cohorts: [
         { name: 'Remote Region Stores', totalCount: 445, validationSamples: 156, samplingPct: 35.1 },
@@ -130,25 +114,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 380,
-      percentage: 0.8,
+      percentage: 0.8, // 380/45056
       actionStatement: 'Flag holiday transfer days for human review — ambiguous demand signals prevent reliable forecasting.',
       cohorts: [
         { name: 'Holiday Transfer Days', totalCount: 380, validationSamples: 76, samplingPct: 20.0 },
       ],
     },
-    augmented: {
-      count: 56,
-      percentage: 0.1,
-      actionStatement: 'Synthetic data fills gaps in holiday and high-oil-price scenarios — validate against actual store sales before relying on these forecasts.',
-      cohorts: [
-        { name: 'Remote Region Stores [augmented]', totalCount: 32, validationSamples: 3, samplingPct: 9.4 },
-        { name: 'High Oil-Price Demand Sensitivity [augmented]', totalCount: 24, validationSamples: 3, samplingPct: 12.5 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'patient-readmission': {
-    totalCount: 25000,
+    totalCount: 25064, // 23884 + 596 + 520 + 64 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'Recall',
@@ -159,7 +135,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 23884,
-      percentage: 95.5,
+      percentage: 95.3, // 23884/25064
       actionStatement: 'These patient cohorts are production-ready — readmission predictions are reliable for standard hospital stays and medication profiles.',
       cohorts: [
         { name: 'Standard Recovery Path', totalCount: 11584, validationSamples: 1147, samplingPct: SUFF_PCT },
@@ -169,7 +145,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 596,
-      percentage: 2.4,
+      percentage: 2.4, // 596/25064
       actionStatement: 'Low sample counts for elderly patients and high-medication cases may affect readmission prediction — augmentation recommended.',
       cohorts: [
         { name: 'Centenarian Patients', totalCount: 312, validationSamples: 109, samplingPct: 34.9 },
@@ -178,25 +154,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 520,
-      percentage: 2.1,
+      percentage: 2.1, // 520/25064
       actionStatement: 'Flag patients with rare diagnosis codes for clinical review — the model\'s confidence is too low for autonomous discharge decisions.',
       cohorts: [
         { name: 'Mixed Rare Diagnosis Cluster', totalCount: 520, validationSamples: 104, samplingPct: 20.0 },
       ],
     },
-    augmented: {
-      count: 64,
-      percentage: 0.3,
-      actionStatement: 'Synthetic data supplements thin elderly and high-medication cohorts — validate augmented predictions against clinical outcomes.',
-      cohorts: [
-        { name: 'Centenarian Patients [augmented]', totalCount: 36, validationSamples: 3, samplingPct: 8.3 },
-        { name: 'Complex Polypharmacy Cases [augmented]', totalCount: 28, validationSamples: 4, samplingPct: 14.3 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'employee-attrition': {
-    totalCount: 14999,
+    totalCount: 15051, // 14044 + 543 + 412 + 52 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'Recall',
@@ -207,7 +175,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 14044,
-      percentage: 93.6,
+      percentage: 93.4, // 14044/15051
       actionStatement: 'Strong coverage confirms overtime, tenure, and satisfaction patterns drive reliable attrition predictions.',
       cohorts: [
         { name: 'Overtime Burnout Segment', totalCount: 4444, validationSamples: 440, samplingPct: SUFF_PCT },
@@ -217,7 +185,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 543,
-      percentage: 3.6,
+      percentage: 3.6, // 543/15051
       actionStatement: 'Consider collecting more HR role and compensation data to improve attrition prediction for these niche segments.',
       cohorts: [
         { name: 'Senior HR Role Niche', totalCount: 325, validationSamples: 117, samplingPct: 36.0 },
@@ -226,25 +194,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 412,
-      percentage: 2.7,
+      percentage: 2.7, // 412/15051
       actionStatement: 'Mixed signals detected in recently promoted but dissatisfied employees — configure a manual review workflow for these retention cases.',
       cohorts: [
         { name: 'Promoted-but-Dissatisfied Segment', totalCount: 412, validationSamples: 78, samplingPct: 18.9 },
       ],
     },
-    augmented: {
-      count: 52,
-      percentage: 0.3,
-      actionStatement: 'Augmented samples improve coverage for rare HR roles but should be validated against real workforce turnover data.',
-      cohorts: [
-        { name: 'Senior HR Role Niche [augmented]', totalCount: 30, validationSamples: 3, samplingPct: 10.0 },
-        { name: 'Max-Stock Low-Pay Paradox [augmented]', totalCount: 22, validationSamples: 3, samplingPct: 13.6 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'energy-consumption': {
-    totalCount: 35040,
+    totalCount: 35112, // 32400 + 800 + 1840 + 72 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'MAPE',
@@ -255,7 +215,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 32400,
-      percentage: 92.5,
+      percentage: 92.3, // 32400/35112
       actionStatement: 'These energy consumption cohorts are production-ready — peak-hour and seasonal patterns are well-represented.',
       cohorts: [
         { name: 'Weekday Morning Peak', totalCount: 8760, validationSamples: 867, samplingPct: SUFF_PCT },
@@ -265,7 +225,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 800,
-      percentage: 2.3,
+      percentage: 2.3, // 800/35112
       actionStatement: 'Consider augmenting these cohorts or collecting additional readings from extreme weather and demand-response events.',
       cohorts: [
         { name: 'Extreme Cold Snap Events', totalCount: 380, validationSamples: 144, samplingPct: 37.9 },
@@ -274,25 +234,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 1840,
-      percentage: 5.3,
+      percentage: 5.2, // 1840/35112
       actionStatement: 'Flag transitional season hours for human review — shifting load patterns make autonomous forecasting unreliable.',
       cohorts: [
         { name: 'Spring/Autumn Transitional Hours', totalCount: 1840, validationSamples: 349, samplingPct: 19.0 },
       ],
     },
-    augmented: {
-      count: 72,
-      percentage: 0.2,
-      actionStatement: 'Synthetic data supplements extreme-weather cohorts — monitor for distribution drift as climate patterns shift.',
-      cohorts: [
-        { name: 'Extreme Cold Snap Events [augmented]', totalCount: 40, validationSamples: 3, samplingPct: 7.5 },
-        { name: 'Demand Response Activations [augmented]', totalCount: 32, validationSamples: 4, samplingPct: 12.5 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'insurance-claims': {
-    totalCount: 40000,
+    totalCount: 40068, // 38854 + 666 + 480 + 68 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'Recall',
@@ -303,7 +255,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 38854,
-      percentage: 97.1,
+      percentage: 96.9, // 38854/40068
       actionStatement: 'These claim cohorts are production-ready — common incident types and severity levels are well-covered.',
       cohorts: [
         { name: 'Standard Verified Claims', totalCount: 28154, validationSamples: 2787, samplingPct: SUFF_PCT },
@@ -313,7 +265,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 666,
-      percentage: 1.7,
+      percentage: 1.7, // 666/40068
       actionStatement: 'Low sample counts for parked-car incidents and unwitnessed injury claims may affect fraud detection — augmentation recommended.',
       cohorts: [
         { name: 'Parked Vehicle Incidents', totalCount: 390, validationSamples: 140, samplingPct: 35.9 },
@@ -322,25 +274,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 480,
-      percentage: 1.2,
+      percentage: 1.2, // 480/40068
       actionStatement: 'Mixed signals detected in policyholder hobby-correlated claims — configure a manual review workflow for these suspicious patterns.',
       cohorts: [
         { name: 'Hobby-Related Anomalies', totalCount: 480, validationSamples: 91, samplingPct: 18.9 },
       ],
     },
-    augmented: {
-      count: 68,
-      percentage: 0.2,
-      actionStatement: 'Augmented samples improve coverage for rare claim scenarios but should be validated against actual claims adjudication outcomes.',
-      cohorts: [
-        { name: 'Parked Vehicle Incidents [augmented]', totalCount: 40, validationSamples: 4, samplingPct: 10.0 },
-        { name: 'Multi-Injury No-Witness Cases [augmented]', totalCount: 28, validationSamples: 4, samplingPct: 14.3 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'predictive-maintenance': {
-    totalCount: 50000,
+    totalCount: 50078, // 47910 + 670 + 1420 + 78 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'Recall',
@@ -351,7 +295,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 47910,
-      percentage: 95.8,
+      percentage: 95.7, // 47910/50078
       actionStatement: 'These equipment cohorts are production-ready — normal operation, degradation, and vibration patterns drive reliable failure predictions.',
       cohorts: [
         { name: 'Normal Operating State', totalCount: 34610, validationSamples: 3426, samplingPct: SUFF_PCT },
@@ -361,7 +305,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 670,
-      percentage: 1.3,
+      percentage: 1.3, // 670/50078
       actionStatement: 'Low sample counts for catastrophic and extreme-environment failures may affect early warning reliability — augmentation recommended.',
       cohorts: [
         { name: 'Catastrophic Sudden Failures', totalCount: 380, validationSamples: 144, samplingPct: 37.9 },
@@ -370,25 +314,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 1420,
-      percentage: 2.8,
+      percentage: 2.8, // 1420/50078
       actionStatement: 'Flag intermittent fault patterns for engineering review — oscillating sensor readings prevent confident failure prediction.',
       cohorts: [
         { name: 'Intermittent Fault Oscillators', totalCount: 1420, validationSamples: 284, samplingPct: 20.0 },
       ],
     },
-    augmented: {
-      count: 78,
-      percentage: 0.2,
-      actionStatement: 'Synthetic data supplements rare failure modes — monitor for distribution drift as equipment ages in production.',
-      cohorts: [
-        { name: 'Catastrophic Sudden Failures [augmented]', totalCount: 44, validationSamples: 4, samplingPct: 9.1 },
-        { name: 'Extreme Environmental Events [augmented]', totalCount: 34, validationSamples: 5, samplingPct: 14.7 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'logistics-delivery-delay': {
-    totalCount: 25000,
+    totalCount: 25048, // 21640 + 520 + 2840 + 48 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'Recall',
@@ -399,7 +335,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 21640,
-      percentage: 86.6,
+      percentage: 86.4, // 21640/25048
       actionStatement: 'These delivery cohorts are production-ready — weather, distance, and partner performance patterns drive reliable delay predictions.',
       cohorts: [
         { name: 'Weather-Impacted Long Routes', totalCount: 6980, validationSamples: 691, samplingPct: SUFF_PCT },
@@ -409,7 +345,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 520,
-      percentage: 2.1,
+      percentage: 2.1, // 520/25048
       actionStatement: 'Consider collecting more delivery data for EV cold-weather routes and heavy fragile shipments to improve delay prediction.',
       cohorts: [
         { name: 'EV Fleet Cold-Weather Segment', totalCount: 340, validationSamples: 122, samplingPct: 35.9 },
@@ -418,25 +354,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 2840,
-      percentage: 11.4,
+      percentage: 11.3, // 2840/25048
       actionStatement: 'Flag mid-distance rainy deliveries for dispatcher review — variable conditions prevent confident delay estimates.',
       cohorts: [
         { name: 'Mid-Distance Rainy Deliveries', totalCount: 2840, validationSamples: 540, samplingPct: 19.0 },
       ],
     },
-    augmented: {
-      count: 48,
-      percentage: 0.2,
-      actionStatement: 'Synthetic data supplements thin EV and fragile-shipment cohorts — validate against actual delivery performance before setting SLAs.',
-      cohorts: [
-        { name: 'EV Fleet Cold-Weather Segment [augmented]', totalCount: 28, validationSamples: 3, samplingPct: 10.7 },
-        { name: 'Heavy Fragile Cargo Long-Haul [augmented]', totalCount: 20, validationSamples: 3, samplingPct: 15.0 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'logistics-freight-cost': {
-    totalCount: 5964,
+    totalCount: 6002, // 5218 + 366 + 380 + 38 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'MAPE',
@@ -447,7 +375,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 5218,
-      percentage: 87.5,
+      percentage: 87.0, // 5218/6002
       actionStatement: 'Strong coverage confirms standard air, truck, and high-value product shipments drive reliable freight cost estimates.',
       cohorts: [
         { name: 'Standard Air Shipments', totalCount: 2518, validationSamples: 249, samplingPct: SUFF_PCT },
@@ -457,7 +385,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 366,
-      percentage: 6.1,
+      percentage: 6.1, // 366/6002
       actionStatement: 'Low sample counts for air charter and small-island ocean routes may affect cost estimation — augmentation recommended.',
       cohorts: [
         { name: 'Air Charter Bulk Shipments', totalCount: 224, validationSamples: 96, samplingPct: 42.9 },
@@ -466,25 +394,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 380,
-      percentage: 6.4,
+      percentage: 6.3, // 380/6002
       actionStatement: 'Mixed signals detected in multi-modal regional shipments — configure a manual review workflow for these cost estimates.',
       cohorts: [
         { name: 'Mixed-Mode Regional Shipments', totalCount: 380, validationSamples: 72, samplingPct: 18.9 },
       ],
     },
-    augmented: {
-      count: 38,
-      percentage: 0.6,
-      actionStatement: 'Augmented samples improve coverage for charter and island routes but should be validated against actual freight invoices.',
-      cohorts: [
-        { name: 'Air Charter Bulk Shipments [augmented]', totalCount: 22, validationSamples: 2, samplingPct: 9.1 },
-        { name: 'Ocean Multi-Country Routes [augmented]', totalCount: 16, validationSamples: 2, samplingPct: 12.5 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'logistics-delivery-outcome': {
-    totalCount: 180519,
+    totalCount: 180603, // 166059 + 6040 + 8420 + 84 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'Recall',
@@ -495,7 +415,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 166059,
-      percentage: 92.0,
+      percentage: 91.9, // 166059/180603
       actionStatement: 'These delivery outcome cohorts are production-ready — standard shipping modes and key market segments are well-covered.',
       cohorts: [
         { name: 'Standard Class Late Deliveries', totalCount: 98999, validationSamples: 9801, samplingPct: SUFF_PCT },
@@ -505,7 +425,7 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     insufficient: {
       count: 6040,
-      percentage: 3.3,
+      percentage: 3.3, // 6040/180603
       actionStatement: 'Consider collecting more data for African market cancellations and deep-discount segments to improve outcome prediction.',
       cohorts: [
         { name: 'African Market Cancellations', totalCount: 3200, validationSamples: 1152, samplingPct: 36.0 },
@@ -514,25 +434,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 8420,
-      percentage: 4.7,
+      percentage: 4.7, // 8420/180603
       actionStatement: 'Flag LATAM Second Class borderline shipments for operations review — delivery timing is too close to call autonomously.',
       cohorts: [
         { name: 'LATAM Second Class Borderline', totalCount: 8420, validationSamples: 1600, samplingPct: 19.0 },
       ],
     },
-    augmented: {
-      count: 84,
-      percentage: 0.05,
-      actionStatement: 'Synthetic data supplements thin market and discount cohorts — monitor for distribution drift across regional shipping lanes.',
-      cohorts: [
-        { name: 'African Market Cancellations [augmented]', totalCount: 48, validationSamples: 4, samplingPct: 8.3 },
-        { name: 'High-Discount Home Office Orders [augmented]', totalCount: 36, validationSamples: 4, samplingPct: 11.1 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 
   'logistics-demand-forecast': {
-    totalCount: 1337,
+    totalCount: 1355, // 1087 + 70 + 180 + 18 (includes augmented)
     totalCohorts: 8,
     overallMetrics: {
       primaryMetric: 'MAPE',
@@ -543,17 +455,17 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     sufficient: {
       count: 1087,
-      percentage: 81.3,
+      percentage: 80.2, // 1087/1355
       actionStatement: 'These demand forecast cohorts are production-ready — weekday baselines and seasonal peaks drive reliable volume predictions.',
       cohorts: [
         { name: 'Weekday Baseline Demand', totalCount: 639, validationSamples: 63, samplingPct: SUFF_PCT },
         { name: 'Seasonal Peak Demand', totalCount: 280, validationSamples: 28, samplingPct: SUFF_PCT },
-        { name: 'Weather-Suppressed Low Demand', totalCount: 168, validationSamples: 17, samplingPct: SUFF_PCT },
+        { name: 'Weather-Suppressed Low Demand', totalCount: 168, validationSamples: 17, samplingPct: 10.1 }, // 17/168*100=10.12%
       ],
     },
     insufficient: {
       count: 70,
-      percentage: 5.2,
+      percentage: 5.2, // 70/1355
       actionStatement: 'Consider collecting more data for port congestion and dual-shock disruption events to improve demand forecasting accuracy.',
       cohorts: [
         { name: 'Port Congestion Crisis Days', totalCount: 42, validationSamples: 18, samplingPct: 42.9 },
@@ -562,21 +474,13 @@ const validationDataMap: Record<string, ValidationSummaryResults> = {
     },
     helpMe: {
       count: 180,
-      percentage: 13.5,
+      percentage: 13.3, // 180/1355
       actionStatement: 'Flag weekend demand transitions for planner review — shifting consumption patterns prevent confident volume forecasts.',
       cohorts: [
         { name: 'Weekend Demand Transitions', totalCount: 180, validationSamples: 34, samplingPct: 18.9 },
       ],
     },
-    augmented: {
-      count: 18,
-      percentage: 1.3,
-      actionStatement: 'Synthetic data supplements rare disruption scenarios — validate augmented forecasts against actual port and weather event outcomes.',
-      cohorts: [
-        { name: 'Port Congestion Crisis Days [augmented]', totalCount: 10, validationSamples: 1, samplingPct: 10.0 },
-        { name: 'Dual-Shock Events [augmented]', totalCount: 8, validationSamples: 1, samplingPct: 12.5 },
-      ],
-    },
+    augmented: { count: 0, percentage: 0, cohorts: [], actionStatement: '' },
   },
 }
 

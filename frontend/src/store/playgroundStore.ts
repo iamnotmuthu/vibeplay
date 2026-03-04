@@ -18,6 +18,8 @@ interface PlaygroundState {
   currentStep: StageId
   completedSteps: Set<StageId>
   sidebarOpen: boolean
+  glossaryOpen: boolean
+  glossaryHighlightTerm: string | null
 
   // Session
   sessionId: string | null
@@ -46,6 +48,9 @@ interface PlaygroundState {
   setStep: (step: StageId) => void
   completeStep: (step: StageId) => void
   toggleSidebar: () => void
+  setGlossaryOpen: (open: boolean) => void
+  toggleGlossary: () => void
+  setGlossaryHighlightTerm: (term: string | null) => void
   setSessionId: (id: string) => void
   addLog: (message: string, type: LogEntry['type']) => void
   setDatasets: (datasets: DatasetConfig[]) => void
@@ -73,6 +78,8 @@ const initialState = {
   currentStep: 1 as StageId,
   completedSteps: new Set<StageId>(),
   sidebarOpen: false,
+  glossaryOpen: false,
+  glossaryHighlightTerm: null as string | null,
   sessionId: null,
   sessionLog: [],
   datasets: [],
@@ -103,7 +110,25 @@ export const usePlaygroundStore = create<PlaygroundState>((set) => ({
       return { completedSteps: next }
     }),
 
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  toggleSidebar: () =>
+    set((state) => ({
+      sidebarOpen: !state.sidebarOpen,
+      glossaryOpen: !state.sidebarOpen ? false : state.glossaryOpen,
+    })),
+
+  setGlossaryOpen: (open) =>
+    set((state) => ({
+      glossaryOpen: open,
+      sidebarOpen: open ? false : state.sidebarOpen,
+    })),
+
+  toggleGlossary: () =>
+    set((state) => ({
+      glossaryOpen: !state.glossaryOpen,
+      sidebarOpen: !state.glossaryOpen ? false : state.sidebarOpen,
+    })),
+
+  setGlossaryHighlightTerm: (term) => set({ glossaryHighlightTerm: term }),
 
   setSessionId: (id) => set({ sessionId: id }),
 

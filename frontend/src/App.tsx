@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ExternalLink, LayoutGrid, Target } from 'lucide-react'
+import { ExternalLink, LayoutGrid, Target, Loader2, BookOpen } from 'lucide-react'
 import { StepperNav } from '@/components/layout/StepperNav'
 import { DomainSelector } from '@/components/DomainSelector'
 import { usePlaygroundStore } from '@/store/playgroundStore'
@@ -10,6 +10,7 @@ import { AutoEDA } from '@/stages/AutoEDA/AutoEDA'
 import { PatternDiscovery } from '@/stages/PatternDiscovery/PatternDiscovery'
 import { ValidationSummary } from '@/stages/ValidationSummary/ValidationSummary'
 import { ModelSelection } from '@/stages/ModelSelection/ModelSelection'
+import { GlossaryPanel } from '@/components/shared/GlossaryPanel'
 
 const stageComponents = {
   1: BusinessSetup,
@@ -22,6 +23,8 @@ const stageComponents = {
 
 function BrandHeader() {
   const currentStep = usePlaygroundStore((s) => s.currentStep)
+  const toggleGlossary = usePlaygroundStore((s) => s.toggleGlossary)
+  const glossaryOpen = usePlaygroundStore((s) => s.glossaryOpen)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const handleBackToHome = () => {
@@ -86,6 +89,32 @@ function BrandHeader() {
       </div>
 
       <div className="flex items-center gap-3">
+        <button
+          onClick={toggleGlossary}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          style={{
+            color: glossaryOpen ? '#8b5cf6' : '#6b7280',
+            border: glossaryOpen ? '1px solid #c4b5fd' : '1px solid #e5e7eb',
+            background: glossaryOpen ? 'rgba(139,92,246,0.06)' : 'transparent',
+          }}
+          onMouseEnter={(e) => {
+            if (!glossaryOpen) {
+              e.currentTarget.style.color = '#111827'
+              e.currentTarget.style.borderColor = '#9ca3af'
+              e.currentTarget.style.background = '#f3f4f6'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!glossaryOpen) {
+              e.currentTarget.style.color = '#6b7280'
+              e.currentTarget.style.borderColor = '#e5e7eb'
+              e.currentTarget.style.background = 'transparent'
+            }
+          }}
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Glossary</span>
+        </button>
         <a
           href="https://vibemodel.ai/#beta-signup"
           target="_blank"
@@ -182,17 +211,38 @@ function BrandHeader() {
   )
 }
 
+const STEP_TRANSITION_MESSAGES: Record<number, string> = {
+  2: 'Loading dataset catalogue...',
+  3: 'Initialising data profiling...',
+  4: 'Running pattern discovery...',
+  5: 'Preparing validation summary...',
+  6: 'Evaluating model candidates...',
+}
+
 export default function App() {
   const [domainChosen, setDomainChosen] = useState(false)
+  const [transitioning, setTransitioning] = useState(false)
   const currentStep = usePlaygroundStore((s) => s.currentStep)
   const businessGoal = usePlaygroundStore((s) => s.businessGoal)
   const reset = usePlaygroundStore((s) => s.reset)
   const shouldGoHome = usePlaygroundStore((s) => s.shouldGoHome)
   const StageComponent = stageComponents[currentStep]
+  const prevStepRef = useRef(currentStep)
 
   const handleDomainSelect = (_domainId: string | null) => {
     setDomainChosen(true)
   }
+
+  // Show brief transition overlay on step change (forward navigation)
+  useEffect(() => {
+    if (domainChosen && prevStepRef.current !== currentStep && currentStep > prevStepRef.current) {
+      setTransitioning(true)
+      const timer = setTimeout(() => setTransitioning(false), 1200)
+      prevStepRef.current = currentStep
+      return () => clearTimeout(timer)
+    }
+    prevStepRef.current = currentStep
+  }, [currentStep, domainChosen])
 
   // Navigate home when ModelSelection "Complete & Finish" is clicked
   useEffect(() => {
@@ -243,8 +293,9 @@ export default function App() {
           </div>
         )}
         <StepperNav />
+        <GlossaryPanel />
 
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden relative">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -256,6 +307,41 @@ export default function App() {
             >
               <StageComponent />
             </motion.div>
+          </AnimatePresence>
+
+          {/* Step transition overlay */}
+          <AnimatePresence>
+            {transitioning && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3"
+                style={{ background: 'rgba(250,250,250,0.92)', backdropFilter: 'blur(4px)' }}
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
+                >
+                  <Loader2 className="w-8 h-8" style={{ color: '#8b5cf6' }} />
+                </motion.div>
+                <div className="text-sm font-semibold text-gray-700">
+                  {STEP_TRANSITION_MESSAGES[currentStep] ?? 'Processing...'}
+                </div>
+                <div className="flex gap-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ background: '#8b5cf6' }}
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2, ease: 'easeInOut' }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </main>
 

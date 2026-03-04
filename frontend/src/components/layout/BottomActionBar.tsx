@@ -59,14 +59,6 @@ export function BottomActionBar({
         )}
       </div>
 
-      {/* Step counter */}
-      <span
-        className="text-[11px] hidden sm:block tracking-wide font-mono"
-        style={{ color: '#9ca3af' }}
-      >
-        {currentStep} / {Object.keys(STAGE_LABELS).length}
-      </span>
-
       {/* Next CTA */}
       <div className="relative">
         {canGoForward && onNext && (

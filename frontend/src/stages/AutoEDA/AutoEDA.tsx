@@ -7,6 +7,8 @@ import {
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
+import { MLTooltip } from '@/components/shared/MLTooltip'
+import { StageExplainer } from '@/components/shared/StageExplainer'
 import { useDomainSubtitle } from '@/lib/useDomainSubtitle'
 import type { StageId, EDAResults, DimensionResults, DistributionData } from '@/store/types'
 import { getPrecomputedEDA } from './edaData'
@@ -41,32 +43,13 @@ function autoBuckets(stats: { min: number; max: number; median: number }): { lab
   ]
 }
 
-// Per-dataset dimension multipliers (2×–4× column count) so each scenario
-// shows a distinct, realistic dimension count instead of a flat constant.
-const DIMENSION_MULTIPLIERS: Record<string, number> = {
-  'telco-churn':              2.3,
-  'credit-fraud':             3.2,
-  'store-demand':             2.8,
-  'patient-readmission':      2.5,
-  'employee-attrition':       3.6,
-  'energy-consumption':       2.1,
-  'insurance-claims':         3.4,
-  'predictive-maintenance':   2.7,
-  'logistics-delivery-delay': 3.8,
-  'logistics-freight-cost':   2.4,
-  'logistics-delivery-outcome': 3.1,
-  'logistics-demand-forecast':  2.6,
-}
-
 // Compute initial (un-bucketized) total dimensions for the stats row
 // Dimensions should be 2–4× the column count to reflect the richer signal space
-function computeInitialDimensions(distributions: DistributionData[], columns: number, datasetId: string): number {
-  const raw = distributions.reduce((sum, d) => {
+function computeInitialDimensions(distributions: DistributionData[]): number {
+  return distributions.reduce((sum, d) => {
     if (d.type === 'categorical') return sum + (d.bins?.length ?? 1)
     return sum + 1
   }, 0)
-  const multiplier = DIMENSION_MULTIPLIERS[datasetId] ?? 3
-  return Math.max(raw, Math.round(columns * multiplier))
 }
 
 // ── AttributeRow ─────────────────────────────────────────────────────────────
@@ -129,7 +112,8 @@ function AttributeRow({
             className="flex items-center gap-1.5 ml-3"
             onClick={(e) => { e.stopPropagation(); onToggleBucketize() }}
           >
-            <span className="text-[10px] text-gray-500">Bucketize</span>
+            <span className="text-[10px] text-gray-500">Define Bands</span>
+            <MLTooltip term="define-bands" />
             {bucketized
               ? <ToggleRight className="w-5 h-5" style={{ color: accentColor }} />
               : <ToggleLeft className="w-5 h-5 text-gray-400" />}
@@ -444,8 +428,20 @@ function DatasetFeaturesPanel({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
     >
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Dataset Features and Dimensions</div>
-      <div className="text-xs text-gray-400 mb-3">View and manage dimensions for each feature in your dataset</div>
+      <div className="mb-1">
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dataset Features and Dimensions</div>
+      </div>
+      <div className="text-xs text-gray-400 mb-2">View and manage dimensions for each feature in your dataset</div>
+      <div className="flex items-center gap-4 mb-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.08)', color: '#4f46e5' }}>numerical</span>
+          <MLTooltip term="numerical" align="start" />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(107,114,128,0.08)', color: '#6b7280' }}>categorical</span>
+          <MLTooltip term="categorical" align="start" />
+        </div>
+      </div>
       <div className="space-y-2">
         {distributions.map((dist) => (
           <AttributeRow
@@ -551,7 +547,7 @@ export function AutoEDA() {
   const handleNext = () => { completeStep(3); setStep(4 as StageId) }
 
   // Compute initial total dimensions for the stats row
-  const initialDimensions = edaData ? computeInitialDimensions(edaData.distributions, edaData.summary.columns, selectedDataset?.id ?? '') : 0
+  const initialDimensions = edaData ? computeInitialDimensions(edaData.distributions) : 0
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -624,6 +620,9 @@ export function AutoEDA() {
         {/* Right: analysis results + AutoADS */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
 
+          {/* Stage explainer */}
+          <StageExplainer stageId={3} />
+
           {/* 1. Data Summary stats (7 cards) */}
           <AnimatePresence>
             {edaData && modules.find((m) => m.id === 'summary')?.status === 'complete' && (
@@ -633,10 +632,9 @@ export function AutoEDA() {
                   { label: 'Columns', value: edaData.summary.columns },
                   { label: 'Numeric', value: edaData.summary.numericFeatures },
                   { label: 'Categorical', value: edaData.summary.categoricalFeatures },
-                  { label: 'Multiline Text', value: 0 },
                   { label: 'Duplicates', value: edaData.summary.duplicateRows },
-                  { label: 'Total Dimensions', value: initialDimensions },
-                ].map((stat, i) => (
+                  { label: 'Total Dimensions', value: initialDimensions, tooltipTerm: 'dimensions' },
+                ].filter((stat) => (stat.value as number) > 0 || !['Duplicates'].includes(stat.label)).map((stat, i) => (
                   <motion.div
                     key={stat.label}
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -655,7 +653,10 @@ export function AutoEDA() {
                     >
                       <CountUpNumber end={stat.value as number} />
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">{stat.label}</div>
+                    <div className="text-xs text-gray-500 mt-1 flex items-center justify-center gap-1">
+                      {stat.label}
+                      {'tooltipTerm' in stat && stat.tooltipTerm && <MLTooltip term={stat.tooltipTerm as string} />}
+                    </div>
                   </motion.div>
                 ))}
               </motion.div>

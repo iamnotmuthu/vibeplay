@@ -196,12 +196,14 @@ export function BusinessSetup() {
                             border: '2px solid #60a5fa',
                             color: '#3b82f6',
                             boxShadow: '0 8px 20px -6px rgba(59,130,246,0.18)',
+                            cursor: 'pointer',
                           }
                         : {
                             background: '#ffffff',
                             border: '1.5px solid #e5e7eb',
                             color: '#475569',
                             boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+                            cursor: 'pointer',
                           }
                     }
                     onMouseEnter={(e) => {
@@ -362,7 +364,7 @@ export function BusinessSetup() {
       </div>
 
       <BottomActionBar
-        onNext={canContinue ? handleNext : undefined}
+        onNext={handleNext}
         nextDisabled={!canContinue}
         nextLabel="Continue to Dataset"
       />
