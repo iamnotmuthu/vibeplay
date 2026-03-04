@@ -22,7 +22,7 @@ interface EDAModuleState {
 
 const moduleList: EDAModuleState[] = [
   { id: 'summary', label: 'Data Shape & Types', status: 'pending' },
-  { id: 'features', label: 'Dataset Features & Dimensions', status: 'pending' },
+  { id: 'features', label: 'Features & Dimensions', status: 'pending' },
   { id: 'missing', label: 'Missing Values by Feature', status: 'pending' },
 ]
 
@@ -438,7 +438,7 @@ function DatasetFeaturesPanel({
           <MLTooltip term="numerical" align="start" />
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(107,114,128,0.08)', color: '#6b7280' }}>categorical</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: hexToRgba(accentColor, 0.08), color: accentColor }}>categorical</span>
           <MLTooltip term="categorical" align="start" />
         </div>
       </div>
@@ -672,7 +672,9 @@ export function AutoEDA() {
                   { label: 'Numeric', value: edaData.summary.numericFeatures },
                   { label: 'Categorical', value: edaData.summary.categoricalFeatures },
                   { label: 'Duplicates', value: edaData.summary.duplicateRows },
-                  { label: 'Total Dimensions', value: initialDimensions, tooltipTerm: 'dimensions' },
+                  viewMode === 'business' && dimData
+                    ? { label: 'Key Dimensions', value: dimData.dimensions.length, tooltipTerm: 'dimensions' }
+                    : { label: 'Total Dimensions', value: initialDimensions, tooltipTerm: 'dimensions' },
                 ].filter((stat) => (stat.value as number) > 0 || !['Duplicates'].includes(stat.label)).map((stat, i) => (
                   <motion.div
                     key={stat.label}
@@ -681,14 +683,14 @@ export function AutoEDA() {
                     transition={{ delay: i * 0.07 }}
                     className="rounded-xl p-4 text-center"
                     style={
-                      stat.label === 'Total Dimensions'
+                      (stat.label === 'Total Dimensions' || stat.label === 'Key Dimensions')
                         ? { background: hexToRgba(accentColor, 0.06), border: `1px solid ${hexToRgba(accentColor, 0.2)}` }
                         : { background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }
                     }
                   >
                     <div
                       className="text-2xl font-bold"
-                      style={{ color: stat.label === 'Total Dimensions' ? accentColor : '#1e293b' }}
+                      style={{ color: (stat.label === 'Total Dimensions' || stat.label === 'Key Dimensions') ? accentColor : '#1e293b' }}
                     >
                       <CountUpNumber end={stat.value as number} />
                     </div>
