@@ -465,14 +465,13 @@ function DatasetFeaturesPanel({
 
 function DataSummaryBusinessCard({
   edaData,
-  dimData,
   accentColor,
 }: {
   edaData: EDAResults
-  dimData: DimensionResults
   accentColor: string
 }) {
   const { rows, columns, numericFeatures, categoricalFeatures } = edaData.summary
+  const totalDimensions = computeInitialDimensions(edaData.distributions)
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -490,9 +489,21 @@ function DataSummaryBusinessCard({
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor }} />
           <span><span className="font-semibold text-gray-900">{numericFeatures}</span> continuous and <span className="font-semibold text-gray-900">{categoricalFeatures}</span> categorical features</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor }} />
-          <span><span className="font-semibold text-gray-900">{dimData.dimensions.length}</span> meaningful dimensions discovered: {dimData.dimensions.map((d) => d.name).join(', ')}</span>
+        <div className="flex items-start gap-2 text-sm text-gray-600">
+          <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ background: accentColor }} />
+          <div>
+            <span><span className="font-semibold text-gray-900">{totalDimensions}</span> meaningful dimensions discovered:</span>
+            <div className="mt-1 space-y-0.5">
+              {edaData.distributions.map((dist) => (
+                <div key={dist.feature} className="text-xs text-gray-500 pl-1">
+                  <span className="font-medium text-gray-700">{dist.feature}</span>
+                  {dist.type === 'categorical' && dist.bins && dist.bins.length > 0 && (
+                    <span className="text-gray-400"> ({dist.bins.length} categories)</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -672,9 +683,7 @@ export function AutoEDA() {
                   { label: 'Continuous', value: edaData.summary.numericFeatures },
                   { label: 'Categorical', value: edaData.summary.categoricalFeatures },
                   { label: 'Duplicates', value: edaData.summary.duplicateRows },
-                  viewMode === 'business' && dimData
-                    ? { label: 'Key Dimensions', value: dimData.dimensions.length, tooltipTerm: 'dimensions' }
-                    : { label: 'Total Dimensions', value: initialDimensions, tooltipTerm: 'dimensions' },
+                  { label: 'Dimensions', value: initialDimensions, tooltipTerm: 'dimensions' },
                 ].filter((stat) => (stat.value as number) > 0 || !['Duplicates'].includes(stat.label)).map((stat, i) => (
                   <motion.div
                     key={stat.label}
@@ -683,14 +692,14 @@ export function AutoEDA() {
                     transition={{ delay: i * 0.07 }}
                     className="rounded-xl p-4 text-center"
                     style={
-                      (stat.label === 'Total Dimensions' || stat.label === 'Key Dimensions')
+                      stat.label === 'Dimensions'
                         ? { background: hexToRgba(accentColor, 0.06), border: `1px solid ${hexToRgba(accentColor, 0.2)}` }
                         : { background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }
                     }
                   >
                     <div
                       className="text-2xl font-bold"
-                      style={{ color: (stat.label === 'Total Dimensions' || stat.label === 'Key Dimensions') ? accentColor : '#1e293b' }}
+                      style={{ color: stat.label === 'Dimensions' ? accentColor : '#1e293b' }}
                     >
                       <CountUpNumber end={stat.value as number} />
                     </div>
@@ -724,7 +733,6 @@ export function AutoEDA() {
                 >
                   <DataSummaryBusinessCard
                     edaData={edaData}
-                    dimData={dimData}
                     accentColor={accentColor}
                   />
                 </motion.div>
