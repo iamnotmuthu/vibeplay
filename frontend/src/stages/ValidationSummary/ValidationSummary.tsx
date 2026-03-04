@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShieldCheck, Database } from 'lucide-react'
+import { ShieldCheck, Database, Lightbulb } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
@@ -242,17 +242,14 @@ function BreakdownTable({
       )}
 
       {categoryKey === 'helpMe' && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-xs text-gray-600 leading-relaxed mb-3">
-            This pattern has ambiguous boundaries. Predictions in this zone are tagged for manual review.
-          </p>
-          <button
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-100"
-            style={{ border: '1px solid rgba(245,158,11,0.3)' }}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Configure Review Workflow
-          </button>
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+          <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <div className="text-xs font-semibold text-amber-700 mb-1">Domain Expert Opportunity</div>
+            <p className="text-xs text-amber-600 leading-relaxed">
+              Consider whether an additional parameter — a behavioral signal, external data source, or derived feature — could separate these records into clearer outcome buckets. A single well-chosen parameter can often convert Fuzzy Patterns into Dominant or Non-Dominant ones.
+            </p>
+          </div>
         </div>
       )}
 
@@ -272,7 +269,7 @@ function BreakdownTable({
 const CATEGORY_BUSINESS_STATEMENTS: Record<string, (count: number) => string> = {
   sufficient: (count) => `These ${count.toLocaleString()} records represent your most reliable training patterns — the model will perform best on these.`,
   insufficient: (count) => `These ${count.toLocaleString()} records come from patterns with limited historical data — predictions here carry more uncertainty.`,
-  helpMe: (count) => `These ${count.toLocaleString()} records have mixed signals — the model will flag predictions in this zone for human review.`,
+  helpMe: (count) => `These ${count.toLocaleString()} records come from segments where the model cannot reliably predict the outcome. Their features produce similar signals across different outcomes — a real-world differentiating parameter may not yet be in your dataset.`,
   augmented: (count) => `These ${count.toLocaleString()} records are synthetic samples generated to strengthen model coverage.`,
 }
 

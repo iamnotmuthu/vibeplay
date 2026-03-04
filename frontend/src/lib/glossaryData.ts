@@ -108,9 +108,9 @@ export const glossaryEntries: GlossaryEntry[] = [
   {
     term: 'fuzzy-patterns',
     displayName: 'Fuzzy Patterns',
-    shortDefinition: 'Segments where the model finds a real signal but cannot confidently decide which outcome to predict — the data genuinely falls between two outcomes.',
-    fullDefinition: 'Fuzzy patterns represent genuine ambiguity in the data — customers in these segments don\'t consistently do one thing or another. The pattern is real (these customers are distinct from others) but the outcome is mixed. Forcing a binary prediction here would produce unreliable results, so VibeModel flags them for manual review rather than making automated decisions.',
-    whyItMatters: 'Fuzzy patterns identify where your business process is genuinely uncertain. They are not model failures — they are signals that these cases need human judgement or additional data collection.',
+    shortDefinition: 'Patterns where the model detects a real segment but cannot reliably predict the outcome — the available features produce similar signals across different outcomes, suggesting a key differentiating parameter may be missing from the dataset.',
+    fullDefinition: 'Fuzzy patterns occur when VibeModel identifies a distinct group of records but finds that their feature values look nearly identical across different outcome buckets. The model can see who these records are, but cannot confidently separate what will happen to them. This is not a model failure — it is a signal that the current dataset may be missing a real-world parameter that differentiates these records in ways the model cannot yet see.',
+    whyItMatters: 'These segments are the highest-value opportunity for a domain expert. Adding one well-chosen parameter — a behavioral signal, an external data source, or a derived feature — can often convert Fuzzy Patterns into Dominant or Non-Dominant ones, directly improving prediction accuracy.',
     category: 'pattern',
     relatedTerms: ['dominant-patterns', 'non-dominant-patterns', 'confidence'],
     stages: [4, 5],
@@ -333,8 +333,8 @@ export const stageExplainers: StageExplainer[] = [
   {
     stageId: 4,
     headline: 'Finding Customer Segments',
-    businessExplanation: 'We\'ve grouped your data into segments that behave similarly. Some have strong, reliable signals (Dominant), some have clear signals but too few examples to trust yet (Non-Dominant), and some are genuinely ambiguous (Fuzzy).',
-    analogy: 'Like sorting mail: some clearly go to one address, some are clear but the writing is tiny (need more samples), and some could go either way.',
+    businessExplanation: 'We\'ve grouped your data into segments that behave similarly. Some have strong, reliable signals (Dominant), some have clear signals but too few examples to trust yet (Non-Dominant), and some are ambiguous — the model sees similar signals across different outcomes, likely because a differentiating real-world parameter isn\'t captured in the dataset yet (Fuzzy).',
+    analogy: 'Like sorting mail: some clearly go to one address, some are clear but the writing is tiny (need more samples), and some look identical on the outside — you\'d need to open them to know where they belong.',
   },
   {
     stageId: 5,

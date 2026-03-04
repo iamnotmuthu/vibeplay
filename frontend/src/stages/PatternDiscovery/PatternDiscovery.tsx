@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Loader2, CheckCircle2, AlertCircle, HelpCircle,
   X, Plus, Database, TriangleAlert, ChevronDown, ChevronRight, Users,
-  Check, Circle, BarChart3,
+  Check, Circle, BarChart3, Lightbulb,
 } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { BottomActionBar } from '@/components/layout/BottomActionBar'
@@ -180,7 +180,7 @@ function PatternCard({
           style={{ background: 'rgba(234,179,8,0.05)', borderBottom: '1px solid rgba(234,179,8,0.15)' }}
         >
           <HelpCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-600">Cohorts with mixed patterns requiring human review</div>
+          <div className="text-xs text-amber-600">The model sees similar signals across different outcomes for this segment — a key differentiating parameter may be missing from the dataset.</div>
         </div>
       )}
 
@@ -892,6 +892,13 @@ export function PatternDiscovery() {
                     transition={{ duration: 0.25 }}
                     style={{ overflow: 'hidden' }}
                   >
+                    <div className="rounded-xl flex items-start gap-3 px-4 py-3 mb-3" style={{ background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                      <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-xs font-semibold text-amber-700 mb-0.5">Domain Expert Opportunity</div>
+                        <p className="text-xs text-amber-600 leading-relaxed">Review these segments and consider whether an additional parameter — a behavioral signal, external data source, or derived feature — could separate them into clearer outcome buckets. A single well-chosen parameter can often convert these into Dominant or Non-Dominant patterns.</p>
+                      </div>
+                    </div>
                     <div className="space-y-3">
                       {data.helpMe.map((p, i) => (
                         <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
