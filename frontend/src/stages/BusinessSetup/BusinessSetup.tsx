@@ -183,7 +183,11 @@ export function BusinessSetup() {
                 return (
                   <motion.button
                     key={goal}
-                    onClick={() => setLocalGoal(goal)}
+                    onClick={() => {
+                      setLocalGoal(goal)
+                      const h = getHint(goal)
+                      if (h) setLocalMode(h.mode)
+                    }}
                     whileHover={!isSelected ? { y: -3, scale: 1.02 } : {}}
                     whileTap={{ scale: 0.97 }}
                     animate={isSelected ? { y: -2 } : { y: 0 }}

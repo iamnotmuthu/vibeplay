@@ -11,6 +11,7 @@ import { PatternDiscovery } from '@/stages/PatternDiscovery/PatternDiscovery'
 import { ValidationSummary } from '@/stages/ValidationSummary/ValidationSummary'
 import { ModelSelection } from '@/stages/ModelSelection/ModelSelection'
 import { GlossaryPanel } from '@/components/shared/GlossaryPanel'
+import { ViewModeToggle } from '@/components/shared/ViewModeToggle'
 
 const stageComponents = {
   1: BusinessSetup,
@@ -89,6 +90,7 @@ function BrandHeader() {
       </div>
 
       <div className="flex items-center gap-3">
+        <ViewModeToggle />
         <button
           onClick={toggleGlossary}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"

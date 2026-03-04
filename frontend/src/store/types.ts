@@ -186,6 +186,7 @@ export interface LogEntry {
 }
 
 export type DeploymentMode = 'realtime' | 'batch'
+export type ViewMode = 'business' | 'technical'
 
 export interface DimensionResults {
   dimensions: {

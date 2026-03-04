@@ -20,6 +20,7 @@ interface PlaygroundState {
   sidebarOpen: boolean
   glossaryOpen: boolean
   glossaryHighlightTerm: string | null
+  viewMode: 'business' | 'technical'
 
   // Session
   sessionId: string | null
@@ -51,6 +52,8 @@ interface PlaygroundState {
   setGlossaryOpen: (open: boolean) => void
   toggleGlossary: () => void
   setGlossaryHighlightTerm: (term: string | null) => void
+  setViewMode: (mode: 'business' | 'technical') => void
+  toggleViewMode: () => void
   setSessionId: (id: string) => void
   addLog: (message: string, type: LogEntry['type']) => void
   setDatasets: (datasets: DatasetConfig[]) => void
@@ -80,6 +83,7 @@ const initialState = {
   sidebarOpen: false,
   glossaryOpen: false,
   glossaryHighlightTerm: null as string | null,
+  viewMode: 'business' as 'business' | 'technical',
   sessionId: null,
   sessionLog: [],
   datasets: [],
@@ -129,6 +133,10 @@ export const usePlaygroundStore = create<PlaygroundState>((set) => ({
     })),
 
   setGlossaryHighlightTerm: (term) => set({ glossaryHighlightTerm: term }),
+
+  setViewMode: (mode) => set({ viewMode: mode }),
+  toggleViewMode: () =>
+    set((state) => ({ viewMode: state.viewMode === 'business' ? 'technical' : 'business' })),
 
   setSessionId: (id) => set({ sessionId: id }),
 

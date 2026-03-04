@@ -269,12 +269,20 @@ function BreakdownTable({
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
+const CATEGORY_BUSINESS_STATEMENTS: Record<string, (count: number) => string> = {
+  sufficient: (count) => `These ${count.toLocaleString()} records represent your most reliable training patterns — the model will perform best on these.`,
+  insufficient: (count) => `These ${count.toLocaleString()} records come from patterns with limited historical data — predictions here carry more uncertainty.`,
+  helpMe: (count) => `These ${count.toLocaleString()} records have mixed signals — the model will flag predictions in this zone for human review.`,
+  augmented: (count) => `These ${count.toLocaleString()} records are synthetic samples generated to strengthen model coverage.`,
+}
+
 export function ValidationSummary() {
   const selectedDataset = usePlaygroundStore((s) => s.selectedDataset)
   const setValidationSummaryResults = usePlaygroundStore((s) => s.setValidationSummaryResults)
   const completeStep = usePlaygroundStore((s) => s.completeStep)
   const setStep = usePlaygroundStore((s) => s.setStep)
   const addLog = usePlaygroundStore((s) => s.addLog)
+  const viewMode = usePlaygroundStore((s) => s.viewMode)
 
   const [data, setData] = useState<ValidationSummaryResults | null>(null)
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('sufficient')
@@ -378,23 +386,56 @@ export function ValidationSummary() {
           ))}
         </div>
 
-        {/* Detailed breakdown for selected category */}
+        {/* Business View: per-category statement cards */}
         <AnimatePresence mode="wait">
-          <motion.div
-            key={activeCategory}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.2 }}
-          >
-            <BreakdownTable
-              categoryLabel={activeConfig.label}
-              categoryKey={activeCategory}
-              textColor={activeConfig.textColor}
-              borderColor={activeConfig.borderColor}
-              data={activeCategoryData}
-            />
-          </motion.div>
+          {viewMode === 'business' && (
+            <motion.div
+              key="business-statements"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-3"
+            >
+              {CATEGORIES.filter((cat) => !(cat.key === 'augmented' && data.augmented.count === 0)).map((cat) => {
+                const validationCount = data[cat.key].cohorts.reduce((sum, c) => sum + c.validationSamples, 0)
+                if (validationCount === 0) return null
+                return (
+                  <div
+                    key={cat.key}
+                    className={`rounded-xl p-4 border-l-4 ${cat.borderColor}`}
+                    style={{ background: '#ffffff', border: '1px solid #e5e7eb' }}
+                  >
+                    <div className={`text-xs font-semibold mb-1 ${cat.textColor}`}>{cat.label}</div>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {CATEGORY_BUSINESS_STATEMENTS[cat.key]?.(validationCount) ?? ''}
+                    </p>
+                  </div>
+                )
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Detailed breakdown for selected category — technical view only */}
+        <AnimatePresence mode="wait">
+          {viewMode === 'technical' && (
+            <motion.div
+              key={activeCategory}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
+              <BreakdownTable
+                categoryLabel={activeConfig.label}
+                categoryKey={activeCategory}
+                textColor={activeConfig.textColor}
+                borderColor={activeConfig.borderColor}
+                data={activeCategoryData}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 

@@ -461,6 +461,44 @@ function DatasetFeaturesPanel({
   )
 }
 
+// ── Business View data summary card ──────────────────────────────────────────
+
+function DataSummaryBusinessCard({
+  edaData,
+  dimData,
+  accentColor,
+}: {
+  edaData: EDAResults
+  dimData: DimensionResults
+  accentColor: string
+}) {
+  const { rows, columns, numericFeatures, categoricalFeatures } = edaData.summary
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl p-5 space-y-3"
+      style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
+    >
+      <div className="text-sm font-semibold text-gray-700">What your data looks like</div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor }} />
+          <span><span className="font-semibold text-gray-900">{rows.toLocaleString()}</span> records profiled across <span className="font-semibold text-gray-900">{columns}</span> data columns</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor }} />
+          <span><span className="font-semibold text-gray-900">{numericFeatures}</span> numeric and <span className="font-semibold text-gray-900">{categoricalFeatures}</span> categorical features</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor }} />
+          <span><span className="font-semibold text-gray-900">{dimData.dimensions.length}</span> meaningful dimensions discovered: {dimData.dimensions.map((d) => d.name).join(', ')}</span>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 // ── Main AutoEDA ──────────────────────────────────────────────────────────────
 
 export function AutoEDA() {
@@ -470,6 +508,7 @@ export function AutoEDA() {
   const addLog = usePlaygroundStore((s) => s.addLog)
   const completeStep = usePlaygroundStore((s) => s.completeStep)
   const setStep = usePlaygroundStore((s) => s.setStep)
+  const viewMode = usePlaygroundStore((s) => s.viewMode)
   const subtitle = useDomainSubtitle(
     'profiling',
     `The AI is autonomously analyzing ${selectedDataset?.rows.toLocaleString()} records across ${selectedDataset?.features} features`,
@@ -670,15 +709,38 @@ export function AutoEDA() {
             )}
           </AnimatePresence>
 
-          {/* 3. Dataset Features and Dimensions */}
-          <AnimatePresence>
+          {/* 3. Dataset Features and Dimensions (Technical) / Summary Card (Business) */}
+          <AnimatePresence mode="wait">
             {dimComplete && edaData && dimData && (
-              <div ref={(el) => { sectionRefs.current.features = el }}>
-                <DatasetFeaturesPanel
-                  edaData={edaData}
-                  accentColor={accentColor}
-                />
-              </div>
+              viewMode === 'business' ? (
+                <motion.div
+                  key="business-summary"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <DataSummaryBusinessCard
+                    edaData={edaData}
+                    dimData={dimData}
+                    accentColor={accentColor}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="technical-features"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  ref={(el) => { sectionRefs.current.features = el }}
+                >
+                  <DatasetFeaturesPanel
+                    edaData={edaData}
+                    accentColor={accentColor}
+                  />
+                </motion.div>
+              )
             )}
           </AnimatePresence>
 

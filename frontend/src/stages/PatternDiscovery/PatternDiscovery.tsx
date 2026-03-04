@@ -11,6 +11,7 @@ import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import { MLTooltip } from '@/components/shared/MLTooltip'
 import { StageExplainer } from '@/components/shared/StageExplainer'
 import { getPrecomputedPatterns } from './patternData'
+import { keySignalsToBusinessLanguage } from '@/lib/businessViewHelpers'
 import type { StageId, PatternResults, SufficiencyPatternItem, DistributionData } from '@/store/types'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -115,7 +116,7 @@ function getStandardizedPatternLabel(status: 'sufficient' | 'insufficient' | 'he
 }
 
 function PatternCard({
-  pattern, status, delay, targetColumn, patternIndex, showConfidenceTooltip,
+  pattern, status, delay, targetColumn, patternIndex, showConfidenceTooltip, viewMode,
 }: {
   pattern: SufficiencyPatternItem
   status: 'sufficient' | 'insufficient' | 'helpMe'
@@ -123,6 +124,7 @@ function PatternCard({
   targetColumn: string
   patternIndex: number
   showConfidenceTooltip?: boolean
+  viewMode: 'business' | 'technical'
 }) {
   const [ignored, setIgnored] = useState(false)
   const [action, setAction] = useState<'none' | 'augment' | 'low-confidence'>('none')
@@ -136,6 +138,7 @@ function PatternCard({
 
   const isInsufficient = status === 'insufficient'
   const isHelpMe = status === 'helpMe'
+  const isBusiness = viewMode === 'business'
 
   if (ignored) return null
 
@@ -227,132 +230,146 @@ function PatternCard({
           Records in cohort: <span className="text-gray-700 font-semibold">{pattern.count.toLocaleString()}</span>
         </p>
 
-        {/* Defining Attributes table */}
-        <div className="text-xs font-medium text-gray-500 mb-1.5">Defining Attributes:</div>
-        <div className="rounded-lg overflow-hidden mb-3" style={{ border: '1px solid #e5e7eb' }}>
-          {attrs.map((attr, i) => (
-            <div
-              key={i}
-              className="flex items-center px-3 py-2.5"
-              style={{
-                borderBottom: i < attrs.length - 1 ? '1px solid #e5e7eb' : 'none',
-                background: i % 2 === 0 ? '#f9fafb' : '#ffffff',
-              }}
-            >
-              <span className="text-xs text-gray-500 flex-1">{attr.name}</span>
-              <span className="text-xs text-gray-700 font-mono">{attr.value}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Included Cohorts toggle */}
-        {includedCohorts.length > 0 && (
-          <div className="mb-3">
-            <button
-              onClick={() => setShowIncluded((v) => !v)}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:bg-gray-50"
-              style={{ color: '#7c3aed', border: '1px solid rgba(124,58,237,0.25)' }}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Included Cohorts
-              {showIncluded
-                ? <ChevronDown className="w-3 h-3 ml-0.5" />
-                : <ChevronRight className="w-3 h-3 ml-0.5" />}
-            </button>
-
-            <AnimatePresence>
-              {showIncluded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.22 }}
-                  style={{ overflow: 'hidden' }}
+        {/* Defining Attributes — business: plain English; technical: table */}
+        {isBusiness ? (
+          <div className="space-y-1.5 mb-3">
+            <div className="text-xs font-medium text-gray-500 mb-1">Key signals for this group:</div>
+            {keySignalsToBusinessLanguage(pattern.keySignals.slice(0, 3)).map((sig, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs text-gray-700">
+                <span className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 shrink-0" />
+                {sig}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="text-xs font-medium text-gray-500 mb-1.5">Defining Attributes:</div>
+            <div className="rounded-lg overflow-hidden mb-3" style={{ border: '1px solid #e5e7eb' }}>
+              {attrs.map((attr, i) => (
+                <div
+                  key={i}
+                  className="flex items-center px-3 py-2.5"
+                  style={{
+                    borderBottom: i < attrs.length - 1 ? '1px solid #e5e7eb' : 'none',
+                    background: i % 2 === 0 ? '#f9fafb' : '#ffffff',
+                  }}
                 >
-                  <div className="mt-2 space-y-2">
-                    {includedCohorts.map((cohort, ci) => (
-                      <div
-                        key={ci}
-                        className="rounded-lg px-3 py-2.5"
-                        style={{ background: 'rgba(124,58,237,0.04)', border: '1px solid rgba(124,58,237,0.15)' }}
-                      >
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          {cohort.features.map((f, fi) => (
-                            <span key={fi} className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(124,58,237,0.08)', color: '#7c3aed' }}>
-                              {f.name}={f.value}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-3 text-[10px] text-gray-500">
-                          <span>{cohort.count.toLocaleString()} records</span>
-                        </div>
+                  <span className="text-xs text-gray-500 flex-1">{attr.name}</span>
+                  <span className="text-xs text-gray-700 font-mono">{attr.value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Included Cohorts toggle — technical only */}
+            {includedCohorts.length > 0 && (
+              <div className="mb-3">
+                <button
+                  onClick={() => setShowIncluded((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:bg-gray-50"
+                  style={{ color: '#7c3aed', border: '1px solid rgba(124,58,237,0.25)' }}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  Included Cohorts
+                  {showIncluded
+                    ? <ChevronDown className="w-3 h-3 ml-0.5" />
+                    : <ChevronRight className="w-3 h-3 ml-0.5" />}
+                </button>
+
+                <AnimatePresence>
+                  {showIncluded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22 }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div className="mt-2 space-y-2">
+                        {includedCohorts.map((cohort, ci) => (
+                          <div
+                            key={ci}
+                            className="rounded-lg px-3 py-2.5"
+                            style={{ background: 'rgba(124,58,237,0.04)', border: '1px solid rgba(124,58,237,0.15)' }}
+                          >
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              {cohort.features.map((f, fi) => (
+                                <span key={fi} className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(124,58,237,0.08)', color: '#7c3aed' }}>
+                                  {f.name}={f.value}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-3 text-[10px] text-gray-500">
+                              <span>{cohort.count.toLocaleString()} records</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
 
-        {/* Action buttons — insufficient */}
-        {isInsufficient && action === 'none' && (
-          <div className="flex items-center gap-2 mt-1">
-            <button
-              onClick={() => setAction('augment')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
-              style={{ background: '#7c3aed', color: '#fff' }}
-            >
-              <Database className="w-3 h-3" /> Augment Data
-            </button>
-            <button
-              onClick={() => setIgnored(true)}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
-              style={{ border: '1px solid #e5e7eb' }}
-            >
-              Ignore
-            </button>
-          </div>
-        )}
-        {isInsufficient && action === 'augment' && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-3 px-3 py-2.5 rounded-lg text-xs text-violet-700"
-            style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}
-          >
-            ✓ Augmentation queued — synthetic samples will be generated during validation.
-          </motion.div>
-        )}
+            {/* Action buttons — insufficient */}
+            {isInsufficient && action === 'none' && (
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  onClick={() => setAction('augment')}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
+                  style={{ background: '#7c3aed', color: '#fff' }}
+                >
+                  <Database className="w-3 h-3" /> Augment Data
+                </button>
+                <button
+                  onClick={() => setIgnored(true)}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                  style={{ border: '1px solid #e5e7eb' }}
+                >
+                  Ignore
+                </button>
+              </div>
+            )}
+            {isInsufficient && action === 'augment' && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 px-3 py-2.5 rounded-lg text-xs text-violet-700"
+                style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}
+              >
+                ✓ Augmentation queued — synthetic samples will be generated during validation.
+              </motion.div>
+            )}
 
-        {/* Action buttons — helpMe */}
-        {isHelpMe && action === 'none' && (
-          <div className="flex items-center gap-2 mt-1">
-            <button
-              onClick={() => setAction('low-confidence')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
-              style={{ background: '#d97706', color: '#fff' }}
-            >
-              <TriangleAlert className="w-3 h-3" /> Low Confidence Prediction
-            </button>
-            <button
-              onClick={() => setIgnored(true)}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
-              style={{ border: '1px solid #e5e7eb' }}
-            >
-              Ignore
-            </button>
-          </div>
-        )}
-        {isHelpMe && action === 'low-confidence' && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-3 px-3 py-2.5 rounded-lg text-xs text-amber-700"
-            style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}
-          >
-            ⚠ Low confidence prediction scheduled — model will flag these cohorts for human review.
-          </motion.div>
+            {/* Action buttons — helpMe */}
+            {isHelpMe && action === 'none' && (
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  onClick={() => setAction('low-confidence')}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
+                  style={{ background: '#d97706', color: '#fff' }}
+                >
+                  <TriangleAlert className="w-3 h-3" /> Low Confidence Prediction
+                </button>
+                <button
+                  onClick={() => setIgnored(true)}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                  style={{ border: '1px solid #e5e7eb' }}
+                >
+                  Ignore
+                </button>
+              </div>
+            )}
+            {isHelpMe && action === 'low-confidence' && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 px-3 py-2.5 rounded-lg text-xs text-amber-700"
+                style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}
+              >
+                ⚠ Low confidence prediction scheduled — model will flag these cohorts for human review.
+              </motion.div>
+            )}
+          </>
         )}
       </div>
     </motion.div>
@@ -597,6 +614,7 @@ export function PatternDiscovery() {
   const completeStep = usePlaygroundStore((s) => s.completeStep)
   const setStep = usePlaygroundStore((s) => s.setStep)
   const addLog = usePlaygroundStore((s) => s.addLog)
+  const viewMode = usePlaygroundStore((s) => s.viewMode)
 
   const [data, setData] = useState<PatternResults | null>(null)
   const [phase, setPhase] = useState<'loading' | 'sufficient' | 'insufficient' | 'helpMe' | 'complete'>('loading')
@@ -802,10 +820,10 @@ export function PatternDiscovery() {
                     </div>
                     <div className="space-y-3">
                       {data.sufficient.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} />
+                        <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
                       ))}
                       {userPatterns.filter(u => u.status === 'sufficient').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.sufficient.length + i} />
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.sufficient.length + i} viewMode={viewMode} />
                       ))}
                     </div>
                   </motion.div>
@@ -839,10 +857,10 @@ export function PatternDiscovery() {
                   >
                     <div className="space-y-3">
                       {data.insufficient.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} />
+                        <PatternCard key={p.id} pattern={p} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
                       ))}
                       {userPatterns.filter(u => u.status === 'insufficient').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.insufficient.length + i} />
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.insufficient.length + i} viewMode={viewMode} />
                       ))}
                     </div>
                   </motion.div>
@@ -876,10 +894,10 @@ export function PatternDiscovery() {
                   >
                     <div className="space-y-3">
                       {data.helpMe.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} />
+                        <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
                       ))}
                       {userPatterns.filter(u => u.status === 'helpMe').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.helpMe.length + i} />
+                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.helpMe.length + i} viewMode={viewMode} />
                       ))}
                     </div>
                   </motion.div>
@@ -889,8 +907,8 @@ export function PatternDiscovery() {
           )}
         </AnimatePresence>
 
-        {/* Add pattern */}
-        {phase === 'complete' && (
+        {/* Add pattern — technical view only */}
+        {phase === 'complete' && viewMode === 'technical' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
             {addingNew ? (
               <AddPatternForm

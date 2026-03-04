@@ -11,6 +11,7 @@ import { getPrecomputedModelSelection } from './modelSelectionData'
 import { generateDeploymentPDF } from '@/lib/generateDeploymentPDF'
 import { MLTooltip } from '@/components/shared/MLTooltip'
 import { StageExplainer } from '@/components/shared/StageExplainer'
+import { businessSubtypeLabels, componentToBusinessSummary, metricToBusinessStatement } from '@/lib/businessViewHelpers'
 import type { ModelSelectionResults, ModelComponent } from '@/store/types'
 
 
@@ -381,6 +382,7 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
   const isRegression = data.primaryMetric === 'MAPE' || data.primaryMetric === 'RMSE'
   const perf = data.performance
   const businessGoal = usePlaygroundStore((s) => s.businessGoal)
+  const viewMode = usePlaygroundStore((s) => s.viewMode)
 
   // Build ordered value arrays: [overall, dominant, non-dominant, fuzzy]
   const suff = perf.find((r) => r.category === 'sufficient')
@@ -412,6 +414,17 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
           <p className="text-[10px] text-gray-500 leading-relaxed italic">{data.metricStatement}</p>
         </div>
       </div>
+
+      {viewMode === 'business' && (
+        <div className="mb-4 space-y-2">
+          <p className="text-sm text-gray-700 leading-relaxed">
+            {metricToBusinessStatement(data.primaryMetric, data.overallRecall)}
+          </p>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {metricToBusinessStatement(data.secondaryMetric, data.overallPrecision)}
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Primary metric */}
@@ -482,7 +495,7 @@ function OverallPerformanceSection({ data }: { data: ModelSelectionResults }) {
 
 // ── Component Card ────────────────────────────────────────────────────────────
 
-function ComponentCard({ comp, delay }: { comp: ModelComponent; delay: number }) {
+function ComponentCard({ comp, delay, viewMode }: { comp: ModelComponent; delay: number; viewMode: 'business' | 'technical' }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -495,33 +508,41 @@ function ComponentCard({ comp, delay }: { comp: ModelComponent; delay: number })
       <div className="text-sm font-bold text-primary mb-0.5 font-mono">{comp.name}</div>
       {/* Subtype label */}
       <div className="flex items-center gap-1.5 mb-3">
-        <div className="text-xs text-gray-500">{comp.subtypeLabel}</div>
-        {getComponentTooltipTerm(comp.subtypeLabel) && (
+        <div className="text-xs text-gray-500">
+          {viewMode === 'business' ? (businessSubtypeLabels[comp.subtypeLabel] ?? comp.subtypeLabel) : comp.subtypeLabel}
+        </div>
+        {viewMode === 'technical' && getComponentTooltipTerm(comp.subtypeLabel) && (
           <MLTooltip term={getComponentTooltipTerm(comp.subtypeLabel)!} />
         )}
       </div>
 
-      {/* Data characteristic factors */}
-      <div className="space-y-1">
-        {comp.factors.map((f) => (
-          <div key={f.name} className="flex items-baseline gap-1.5 text-xs">
-            <span className="text-gray-400 shrink-0">·</span>
-            <span className="text-gray-600">{f.name}</span>
-            <span className={`font-semibold ${levelColor(f.level)}`}>({f.level})</span>
+      {viewMode === 'business' ? (
+        <p className="text-xs text-gray-600 leading-relaxed">{componentToBusinessSummary(comp)}</p>
+      ) : (
+        <>
+          {/* Data characteristic factors */}
+          <div className="space-y-1">
+            {comp.factors.map((f) => (
+              <div key={f.name} className="flex items-baseline gap-1.5 text-xs">
+                <span className="text-gray-400 shrink-0">·</span>
+                <span className="text-gray-600">{f.name}</span>
+                <span className={`font-semibold ${levelColor(f.level)}`}>({f.level})</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* Technical params */}
-      {comp.params.length > 0 && (
-        <div className="mt-3 pt-3 space-y-1.5" style={{ borderTop: '1px solid #e5e7eb' }}>
-          {comp.params.map((p) => (
-            <div key={p.name} className="flex items-start gap-2 text-xs">
-              <span className="text-gray-500 shrink-0 min-w-[110px]">{p.name}</span>
-              <span className="text-gray-700 font-mono">{p.value}</span>
+          {/* Technical params */}
+          {comp.params.length > 0 && (
+            <div className="mt-3 pt-3 space-y-1.5" style={{ borderTop: '1px solid #e5e7eb' }}>
+              {comp.params.map((p) => (
+                <div key={p.name} className="flex items-start gap-2 text-xs">
+                  <span className="text-gray-500 shrink-0 min-w-[110px]">{p.name}</span>
+                  <span className="text-gray-700 font-mono">{p.value}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </motion.div>
   )
@@ -805,6 +826,7 @@ export function ModelSelection() {
   const completeStep       = usePlaygroundStore((s) => s.completeStep)
   const addLog             = usePlaygroundStore((s) => s.addLog)
   const setShouldGoHome    = usePlaygroundStore((s) => s.setShouldGoHome)
+  const viewMode           = usePlaygroundStore((s) => s.viewMode)
 
   const [data, setData] = useState<ModelSelectionResults | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -952,7 +974,7 @@ export function ModelSelection() {
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Model Components</div>
             <div className="grid sm:grid-cols-2 gap-3">
               {data.components.map((comp, i) => (
-                <ComponentCard key={comp.name} comp={comp} delay={i * 0.07} />
+                <ComponentCard key={comp.name} comp={comp} delay={i * 0.07} viewMode={viewMode} />
               ))}
             </div>
           </div>
