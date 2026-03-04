@@ -620,8 +620,9 @@ export function PatternDiscovery() {
   const [phase, setPhase] = useState<'loading' | 'sufficient' | 'insufficient' | 'helpMe' | 'complete'>('loading')
   const [userPatterns, setUserPatterns] = useState<{ pattern: SufficiencyPatternItem; status: 'sufficient' | 'insufficient' | 'helpMe' }[]>([])
   const [addingNew, setAddingNew] = useState(false)
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
-  const toggleCollapse = (key: string) => setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }))
+  const [activeSection, setActiveSection] = useState<'sufficient' | 'insufficient' | 'helpMe' | null>(null)
+  const toggleSection = (key: 'sufficient' | 'insufficient' | 'helpMe') =>
+    setActiveSection((prev) => (prev === key ? null : key))
 
   // Section refs for sidebar navigation
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -638,15 +639,18 @@ export function PatternDiscovery() {
     await new Promise((r) => setTimeout(r, 1800))
 
     setPhase('sufficient')
+    setActiveSection('sufficient')
     addLog(`Found ${results.sufficient.length} patterns with sufficient training data`, 'success')
     await new Promise((r) => setTimeout(r, 1500))
 
     setPhase('insufficient')
+    setActiveSection('insufficient')
     addLog(`Identified ${results.insufficient.length} patterns with insufficient data — flagged for augmentation`, 'warning')
     await new Promise((r) => setTimeout(r, 1400))
 
     if (results.helpMe.length > 0) {
       setPhase('helpMe')
+      setActiveSection('helpMe')
       addLog(`Detected ${results.helpMe.length} ambiguous pattern${results.helpMe.length !== 1 ? 's' : ''} — fuzzy cohorts`, 'info')
       await new Promise((r) => setTimeout(r, 1300))
     }
@@ -661,6 +665,7 @@ export function PatternDiscovery() {
     if (stored) {
       setData(stored)
       setPhase('complete')
+      setActiveSection('sufficient')
       return
     }
     runDiscovery()
@@ -715,7 +720,7 @@ export function PatternDiscovery() {
             ].map((mod) => (
               <button
                 key={mod.id}
-                onClick={() => mod.visible && scrollToSection(mod.id)}
+                onClick={() => { if (!mod.visible) return; if (mod.id !== 'stats') setActiveSection(mod.id as 'sufficient' | 'insufficient' | 'helpMe'); scrollToSection(mod.id) }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
                 style={{
                   cursor: mod.visible ? 'pointer' : 'default',
@@ -801,17 +806,17 @@ export function PatternDiscovery() {
                 label="Dominant Patterns: Pattern with Sufficient Data"
                 count={data.sufficient.length + userPatterns.filter(u => u.status === 'sufficient').length}
                 color="#16a34a"
-                collapsed={!!collapsed['sufficient']}
-                onToggle={() => toggleCollapse('sufficient')}
+                collapsed={activeSection !== 'sufficient'}
+                onToggle={() => toggleSection('sufficient')}
                 tooltip={<MLTooltip term="dominant-patterns" />}
               />
               <AnimatePresence>
-                {!collapsed['sufficient'] && (
+                {activeSection === 'sufficient' && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
+                    transition={{ duration: 0.2 }}
                     style={{ overflow: 'hidden' }}
                   >
                     <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.15)' }}>
@@ -842,17 +847,17 @@ export function PatternDiscovery() {
                 label="Non-Dominant Patterns: Impactful Patterns with Insufficient Data"
                 count={data.insufficient.length + userPatterns.filter(u => u.status === 'insufficient').length}
                 color="#dc2626"
-                collapsed={!!collapsed['insufficient']}
-                onToggle={() => toggleCollapse('insufficient')}
+                collapsed={activeSection !== 'insufficient'}
+                onToggle={() => toggleSection('insufficient')}
                 tooltip={<MLTooltip term="non-dominant-patterns" />}
               />
               <AnimatePresence>
-                {!collapsed['insufficient'] && (
+                {activeSection === 'insufficient' && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
+                    transition={{ duration: 0.2 }}
                     style={{ overflow: 'hidden' }}
                   >
                     <div className="space-y-3">
@@ -879,17 +884,17 @@ export function PatternDiscovery() {
                 label="Fuzzy Patterns"
                 count={data.helpMe.length + userPatterns.filter(u => u.status === 'helpMe').length}
                 color="#d97706"
-                collapsed={!!collapsed['helpMe']}
-                onToggle={() => toggleCollapse('helpMe')}
+                collapsed={activeSection !== 'helpMe'}
+                onToggle={() => toggleSection('helpMe')}
                 tooltip={<MLTooltip term="fuzzy-patterns" />}
               />
               <AnimatePresence>
-                {!collapsed['helpMe'] && (
+                {activeSection === 'helpMe' && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
+                    transition={{ duration: 0.2 }}
                     style={{ overflow: 'hidden' }}
                   >
                     <div className="rounded-xl flex items-start gap-3 px-4 py-3 mb-3" style={{ background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.2)' }}>
