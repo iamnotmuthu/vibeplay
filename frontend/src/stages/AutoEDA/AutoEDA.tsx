@@ -101,7 +101,7 @@ function AttributeRow({
               : { background: hexToRgba(accentColor, 0.08), color: accentColor }
           }
         >
-          {isNumeric ? 'numerical' : 'categorical'}
+          {isNumeric ? 'continuous' : 'categorical'}
         </span>
         <span className="text-xs text-gray-500 ml-2">
           {dimCount} dimension{dimCount !== 1 ? 's' : ''}
@@ -434,8 +434,8 @@ function DatasetFeaturesPanel({
       <div className="text-xs text-gray-400 mb-2">View and manage dimensions for each feature in your dataset</div>
       <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.08)', color: '#4f46e5' }}>numerical</span>
-          <MLTooltip term="numerical" align="start" />
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.08)', color: '#4f46e5' }}>continuous</span>
+          <MLTooltip term="continuous" align="start" />
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: hexToRgba(accentColor, 0.08), color: accentColor }}>categorical</span>
@@ -488,7 +488,7 @@ function DataSummaryBusinessCard({
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor }} />
-          <span><span className="font-semibold text-gray-900">{numericFeatures}</span> numeric and <span className="font-semibold text-gray-900">{categoricalFeatures}</span> categorical features</span>
+          <span><span className="font-semibold text-gray-900">{numericFeatures}</span> continuous and <span className="font-semibold text-gray-900">{categoricalFeatures}</span> categorical features</span>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accentColor }} />
@@ -669,7 +669,7 @@ export function AutoEDA() {
                 {[
                   { label: 'Rows', value: edaData.summary.rows },
                   { label: 'Columns', value: edaData.summary.columns },
-                  { label: 'Numeric', value: edaData.summary.numericFeatures },
+                  { label: 'Continuous', value: edaData.summary.numericFeatures },
                   { label: 'Categorical', value: edaData.summary.categoricalFeatures },
                   { label: 'Duplicates', value: edaData.summary.duplicateRows },
                   viewMode === 'business' && dimData

@@ -24,7 +24,7 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
         params: [
           { name: 'Encoding', value: 'OneHotEncoder (sparse=False)' },
           { name: 'Scaling', value: 'StandardScaler (μ=0, σ=1)' },
-          { name: 'Imputation', value: 'Median numerical, mode categorical' },
+          { name: 'Imputation', value: 'Median continuous, mode categorical' },
         ],
       },
       {
@@ -123,7 +123,7 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
         factors: [
           { name: 'High-cardinality categorical features', level: 'Median' },
           { name: 'Cyclical time features', level: 'High' },
-          { name: 'Skewed numerical distributions', level: 'High' },
+          { name: 'Skewed continuous distributions', level: 'High' },
         ],
         params: [
           { name: 'Time encoding', value: 'Cyclical sin/cos for hour-of-day' },
@@ -438,7 +438,7 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
         ],
       },
     ],
-    whyThisModel: 'Random Forest is robust to the heterogeneous mix of sparse categorical (diagnosis codes) and dense numerical (lab values) features typical of clinical data. Unlike linear models, it captures non-linear interactions between comorbidities and social determinants without requiring extensive feature engineering. Its ensemble nature also provides natural variance estimates that clinicians can use to assess prediction confidence.',
+    whyThisModel: 'Random Forest is robust to the heterogeneous mix of sparse categorical (diagnosis codes) and dense continuous (lab values) features typical of clinical data. Unlike linear models, it captures non-linear interactions between comorbidities and social determinants without requiring extensive feature engineering. Its ensemble nature also provides natural variance estimates that clinicians can use to assess prediction confidence.',
     performance: [
       { category: 'sufficient', label: 'Dominant Patterns', recall: 88, precision: 84 },
       { category: 'insufficient', label: 'Non-Dominant Patterns', recall: 63, precision: 56 },
@@ -659,7 +659,7 @@ const modelDataMap: Record<string, ModelSelectionResults> = {
         subtypeLabel: 'Preprocessor',
         name: 'policy_feature_encoder',
         factors: [
-          { name: 'Skewed numerical distributions', level: 'High' },
+          { name: 'Skewed continuous distributions', level: 'High' },
           { name: 'Ordinal risk-tier categories', level: 'High' },
           { name: 'Log-normal claim amounts', level: 'High' },
         ],

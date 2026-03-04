@@ -172,7 +172,7 @@ export function DimensionDiscovery() {
                                     onClick={() => handleToggle(dim.name, attr)}
                                     className="ml-1 transition-colors"
                                     style={{ color: dim.color }}
-                                    title={isCategorical ? 'Switch to numerical' : 'Treat as categorical'}
+                                    title={isCategorical ? 'Switch to continuous' : 'Treat as categorical'}
                                   >
                                     {isCategorical
                                       ? <ToggleRight className="w-3.5 h-3.5" />
@@ -185,7 +185,7 @@ export function DimensionDiscovery() {
                         </div>
                         {dim.categoricalToggles.length > 0 && (
                           <p className="text-[11px] text-gray-400 mt-3">
-                            Toggle icon on numerical attributes to treat them as categorical.
+                            Toggle icon on continuous attributes to treat them as categorical.
                           </p>
                         )}
                       </div>
