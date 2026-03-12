@@ -19,6 +19,10 @@ export interface DomainScenario {
         evaluation: string
         drift: string
     }
+    // ── Phase 5: Problem-first card fields ──
+    problemHeadline: string
+    whatVibeModelDoes: string
+    outcomeMetric: string
 }
 
 export const DOMAIN_SCENARIOS: DomainScenario[] = [
@@ -44,6 +48,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: 'Running the 360° Quality Gate — bias checks, threshold calibration, and white-box explainability for every prediction',
             drift: 'Continuous Monitoring for silent model drift — detecting seasonal churn spikes and plan-change distribution shifts',
         },
+        problemHeadline: 'Losing 23% of customers every quarter?',
+        whatVibeModelDoes: 'Identifies at-risk customer cohorts from usage and billing patterns, composes a retention model, and continuously monitors for churn signal drift — giving you months to intervene.',
+        outcomeMetric: 'Predict 60+ days before departure (accuracy 76%)',
     },
     {
         id: 'credit-fraud',
@@ -67,6 +74,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — bias checks, threshold calibration, and white-box visibility into every fraud signal',
             drift: 'Continuous Monitoring for silent model drift — detecting new fraud patterns and triggering automatic retraining',
         },
+        problemHeadline: 'Fraudsters cost you 0.06% of every transaction.',
+        whatVibeModelDoes: 'Discovers fraud cohorts hidden in transaction patterns, composes a precision-first model that catches attacks without blocking legitimate customers, and auto-detects new fraud schemes.',
+        outcomeMetric: 'Reduce false declines by 40% while maintaining 99.2% fraud detection',
     },
     {
         id: 'retail-demand',
@@ -90,6 +100,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating forecast accuracy across peak and off-peak periods with full white-box visibility',
             drift: 'Continuous Monitoring for silent model drift — detecting demand shifts from new competitors or supply disruptions',
         },
+        problemHeadline: "You're either overstock or out of stock — not in between.",
+        whatVibeModelDoes: 'Decomposes seasonal demand patterns and store-specific cohorts, composes a forecast model that captures both trends and local variations, and monitors for demand regime shifts.',
+        outcomeMetric: 'Reduce stockouts by 35% while cutting excess inventory by 28%',
     },
     {
         id: 'patient-readmission',
@@ -113,6 +126,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating model fairness across age, diagnosis, and demographic cohorts with white-box explainability',
             drift: 'Continuous Monitoring for silent model drift — detecting seasonal admission shifts and protocol change drift',
         },
+        problemHeadline: 'Preventable readmissions cost $27B annually in the US.',
+        whatVibeModelDoes: 'Identifies high-risk patient cohorts from clinical records and comorbidity patterns, composes an explainable model that care teams trust, and continuously monitors for protocol drift.',
+        outcomeMetric: 'Flag 70%+ of high-risk patients before discharge (AUC-ROC 0.84)',
     },
     {
         id: 'employee-attrition',
@@ -136,6 +152,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating model fairness and white-box explainability for HR decision-making',
             drift: 'Continuous Monitoring for silent model drift — detecting attrition spikes from org changes or market salary shifts',
         },
+        problemHeadline: 'Your top 5% leave without warning. Every time.',
+        whatVibeModelDoes: 'Discovers flight-risk cohorts in compensation, tenure, and satisfaction data, composes a retention model, and shows exactly which employees need intervention and why — months before they leave.',
+        outcomeMetric: 'Predict departures 90+ days early (accuracy 72%)',
     },
     {
         id: 'energy-consumption',
@@ -159,6 +178,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating forecast accuracy across peak, shoulder, and off-peak periods with white-box visibility',
             drift: 'Continuous Monitoring for silent model drift — detecting demand shifts from new industrial loads or extreme weather events',
         },
+        problemHeadline: 'Peak demand surprises wreck your grid economics.',
+        whatVibeModelDoes: 'Decomposes weather-driven and time-of-use consumption patterns, composes a multi-factor forecast model that captures spikes and drops, and monitors for demand anomalies from new industrial loads.',
+        outcomeMetric: 'Forecast 24 hours ahead with ±8% MAPE (vs. ±18% baseline)',
     },
     {
         id: 'insurance-claims',
@@ -182,6 +204,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating model performance against SLA thresholds with white-box visibility into every fraud signal',
             drift: 'Continuous Monitoring for silent model drift — detecting emerging fraud schemes and seasonal claim pattern shifts',
         },
+        problemHeadline: '1 in 30 insurance claims contains fraud signals.',
+        whatVibeModelDoes: 'Discovers staged-accident clusters and inflated-repair patterns in claims data, composes a claims-fraud model, and identifies which claims to manually review — prioritizing high-value fraud at low false-alert cost.',
+        outcomeMetric: 'Catch 85%+ of fraudulent claims while reviewing <3% of all claims',
     },
     {
         id: 'predictive-maintenance',
@@ -205,6 +230,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating model fairness across machine types and operating conditions with white-box explainability',
             drift: 'Continuous Monitoring for silent model drift — detecting sensor calibration drift and new failure modes from updated equipment',
         },
+        problemHeadline: 'Unplanned equipment downtime stops your line for 4+ hours.',
+        whatVibeModelDoes: 'Identifies failure-precursor patterns in sensor streams (vibration, temperature, pressure), composes a predictive model that separates wear-state cohorts, and monitors for sensor drift and new failure modes.',
+        outcomeMetric: 'Predict failures 5–15 days ahead (recall 88% at 95% precision)',
     },
 
     // ── Logistics & Supply Chain ──────────────────────────────────────────────
@@ -230,6 +258,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating model fairness across regions, couriers, and weather conditions with white-box explainability',
             drift: 'Continuous Monitoring for silent model drift — detecting seasonal route changes and new courier performance shifts',
         },
+        problemHeadline: 'Late deliveries erode customer trust — and your margin.',
+        whatVibeModelDoes: 'Discovers delay-risk cohorts across couriers, routes, and weather conditions, composes a delay predictor at booking time, and enables proactive rerouting or customer communication.',
+        outcomeMetric: 'Identify at-risk shipments at booking (accuracy 74% across 9 couriers)',
     },
     {
         id: 'logistics-freight-cost',
@@ -253,6 +284,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating forecast accuracy across shipment modes, countries, and cargo types with full white-box visibility',
             drift: 'Continuous Monitoring for silent model drift — detecting fuel surcharge changes, new trade routes, and vendor pricing shifts',
         },
+        problemHeadline: 'Freight quotes that miss reality by 15–25%.',
+        whatVibeModelDoes: 'Discovers premium-route clusters and vendor-specific pricing anomalies across 43 countries and 4 transport modes, composes a cost model, and delivers accurate freight predictions at quote time.',
+        outcomeMetric: 'Predict freight costs ±12% RMSE (vs. ±28% manual lookup)',
     },
     {
         id: 'logistics-delivery-outcome',
@@ -276,6 +310,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating per-class precision and recall across all 4 delivery outcomes with confusion matrix analysis',
             drift: 'Continuous Monitoring for silent model drift — detecting seasonal delivery pattern shifts and new market behaviour changes',
         },
+        problemHeadline: "You don't know if shipments will be late, on-time, advanced, or canceled.",
+        whatVibeModelDoes: 'Discovers outcome-specific cohorts across 5 global markets and 23 regions, composes a 4-way classifier for late/on-time/advance/canceled outcomes, and enables outcome-specific automation at shipment level.',
+        outcomeMetric: 'Classify delivery outcomes at booking (macro F1 0.71 across 4 classes)',
     },
     {
         id: 'logistics-demand-forecast',
@@ -299,6 +336,9 @@ export const DOMAIN_SCENARIOS: DomainScenario[] = [
             evaluation: '360° Quality Gate — validating forecast accuracy across peak, off-peak, and disruption periods with full white-box visibility',
             drift: 'Continuous Monitoring for silent model drift — detecting demand regime changes from new customers, seasonal shifts, or supply chain disruptions',
         },
+        problemHeadline: 'Logistics demand spikes and drops wreck your fleet utilization.',
+        whatVibeModelDoes: 'Decomposes weather-driven, traffic-correlated, and seasonal demand spikes in logistics data, composes a forecast model with exogenous variables (weather, port delays, supplier reliability), and monitors for demand regime shifts.',
+        outcomeMetric: 'Forecast 30 days ahead with ±9% MAPE (capturing seasonal and disruptive spikes)',
     },
 ]
 

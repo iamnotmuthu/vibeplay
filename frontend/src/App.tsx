@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ExternalLink, LayoutGrid, Target, Loader2, BookOpen } from 'lucide-react'
 import { StepperNav } from '@/components/layout/StepperNav'
-import { DomainSelector } from '@/components/DomainSelector'
+import { FullSpectrumLanding } from '@/components/FullSpectrumLanding'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { DatasetSelection } from '@/stages/DatasetSelection/DatasetSelection'
 import { BusinessSetup } from '@/stages/BusinessSetup/BusinessSetup'
@@ -265,7 +265,7 @@ export default function App() {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <DomainSelector onSelect={handleDomainSelect} />
+          <FullSpectrumLanding onSelect={handleDomainSelect} />
         </motion.div>
       </AnimatePresence>
     )

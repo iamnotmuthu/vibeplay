@@ -1,11 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Info } from 'lucide-react'
-import { getGlossaryEntry } from '@/lib/glossaryData'
-import { usePlaygroundStore } from '@/store/playgroundStore'
+import { X } from 'lucide-react'
 
-const TOOLTIP_WIDTH = 256
+const TOOLTIP_WIDTH = 280
 const TOOLTIP_GAP = 8
 const VIEWPORT_MARGIN = 8
 // Rough estimate used only for the flip decision — actual height varies by content
@@ -15,6 +13,7 @@ function resolvePosition(
   rect: DOMRect,
   preferredPosition: 'top' | 'bottom',
   align: 'center' | 'start',
+  tooltipWidth: number,
 ) {
   // Flip vertically if preferred side lacks space
   let resolvedPosition = preferredPosition
@@ -36,68 +35,113 @@ function resolvePosition(
   const rawLeft =
     align === 'start'
       ? rect.left
-      : rect.left + rect.width / 2 - TOOLTIP_WIDTH / 2
+      : rect.left + rect.width / 2 - tooltipWidth / 2
 
   // Clamp so the card never bleeds off either viewport edge
   const clampedLeft = Math.max(
     VIEWPORT_MARGIN,
-    Math.min(rawLeft, window.innerWidth - TOOLTIP_WIDTH - VIEWPORT_MARGIN),
+    Math.min(rawLeft, window.innerWidth - tooltipWidth - VIEWPORT_MARGIN),
   )
 
-  // Arrow points at icon centre regardless of clamping
-  const iconCenterX = rect.left + rect.width / 2
-  const arrowLeftPx = Math.max(8, Math.min(iconCenterX - clampedLeft, TOOLTIP_WIDTH - 8))
+  // Arrow points at trigger centre regardless of clamping
+  const triggerCenterX = rect.left + rect.width / 2
+  const arrowLeftPx = Math.max(8, Math.min(triggerCenterX - clampedLeft, tooltipWidth - 8))
 
   return { resolvedPosition, top, left: clampedLeft, arrowLeftPx }
 }
 
-export function MLTooltip({
-  term,
-  position = 'top',
-  align = 'center',
-}: {
-  term: string
+interface AgentTooltipProps {
+  title: string
+  content: string
+  trigger?: 'hover' | 'click'
   position?: 'top' | 'bottom'
   align?: 'center' | 'start'
-}) {
+  children: React.ReactNode
+}
+
+export function AgentTooltip({
+  title,
+  content,
+  trigger = 'hover',
+  position = 'top',
+  align = 'center',
+  children,
+}: AgentTooltipProps) {
   const [visible, setVisible] = useState(false)
   const [rect, setRect] = useState<DOMRect | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const entry = getGlossaryEntry(term)
-  const setGlossaryOpen = usePlaygroundStore((s) => s.setGlossaryOpen)
-  const setGlossaryHighlightTerm = usePlaygroundStore((s) => s.setGlossaryHighlightTerm)
-
-  if (!entry) return null
 
   const handleMouseEnter = () => {
+    if (effectiveTrigger.current !== 'hover') return
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
     if (containerRef.current) setRect(containerRef.current.getBoundingClientRect())
     setVisible(true)
   }
 
   const handleMouseLeave = () => {
+    if (effectiveTrigger.current !== 'hover') return
     hideTimerRef.current = setTimeout(() => setVisible(false), 150)
+  }
+
+  const handleClick = () => {
+    if (effectiveTrigger.current !== 'click') return
+    if (containerRef.current) setRect(containerRef.current.getBoundingClientRect())
+    setVisible(!visible)
   }
 
   const cancelHide = () => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
   }
 
-  const handleLearnMore = () => {
+  const closeTooltip = () => {
     setVisible(false)
-    setGlossaryHighlightTerm(term)
-    setGlossaryOpen(true)
+  }
+
+  // Handle outside clicks and Escape key for click trigger mode
+  useEffect(() => {
+    if (effectiveTrigger.current !== 'click' || !visible) return
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setVisible(false)
+      }
+    }
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setVisible(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [trigger, visible])
+
+  // Detect touch device — switch hover tooltips to click-based on touch
+  const effectiveTrigger = useRef(trigger)
+  useEffect(() => {
+    if (trigger === 'hover' && 'ontouchstart' in window) {
+      effectiveTrigger.current = 'click'
+    } else {
+      effectiveTrigger.current = trigger
+    }
+  }, [trigger])
+
+  // On touch devices, hover tooltips become click-based, so we need both handlers
+  const wrapperProps = {
+    onMouseEnter: handleMouseEnter,
+    onMouseLeave: handleMouseLeave,
+    onClick: handleClick,
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="relative inline-flex shrink-0"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <Info className="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-600 transition-colors" />
+    <div ref={containerRef} className="relative inline-flex shrink-0" {...wrapperProps}>
+      {children}
       {createPortal(
         <AnimatePresence>
           {visible && rect && (() => {
@@ -105,10 +149,11 @@ export function MLTooltip({
               rect,
               position,
               align,
+              TOOLTIP_WIDTH,
             )
             return (
               <motion.div
-                key="ml-tooltip"
+                key="agent-tooltip"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -127,24 +172,26 @@ export function MLTooltip({
                   padding: 12,
                 }}
                 onMouseEnter={cancelHide}
-                onMouseLeave={() => setVisible(false)}
+                onMouseLeave={effectiveTrigger.current === 'hover' ? () => setVisible(false) : undefined}
               >
-                <p className="text-[11px] font-semibold text-gray-700 mb-1">
-                  {entry.displayName}
-                </p>
-                <p className="text-[11px] leading-relaxed" style={{ color: '#475569' }}>
-                  {entry.shortDefinition}
-                </p>
-                <button
-                  onClick={handleLearnMore}
-                  className="mt-2 text-[10px] font-semibold transition-colors block"
-                  style={{ color: '#3b82f6' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#2563eb')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '#3b82f6')}
-                >
-                  Learn more →
-                </button>
-                {/* Arrow — always points at the icon centre */}
+                {/* Header with title and close button */}
+                <div className="flex items-start justify-between mb-2">
+                  <p className="text-[12px] font-semibold text-gray-900">{title}</p>
+                  {effectiveTrigger.current === 'click' && (
+                    <button
+                      onClick={closeTooltip}
+                      className="ml-2 p-0.5 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                      aria-label="Close tooltip"
+                    >
+                      <X className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Content */}
+                <p className="text-[12px] leading-relaxed text-gray-700">{content}</p>
+
+                {/* Arrow — always points at the trigger centre */}
                 <div
                   style={{
                     position: 'absolute',

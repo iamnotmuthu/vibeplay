@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Loader2, CheckCircle2, AlertCircle, HelpCircle,
@@ -567,45 +567,6 @@ function AddPatternForm({
   )
 }
 
-// ── Section header ────────────────────────────────────────────────────────────
-
-function SectionHeader({
-  icon, label, count, color, collapsed, onToggle, tooltip,
-}: {
-  icon: React.ReactNode
-  label: string
-  count: number
-  color: string
-  collapsed: boolean
-  onToggle: () => void
-  tooltip?: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl mb-3 hover:bg-gray-50 transition-colors"
-      style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}
-    >
-      <div className="flex items-center gap-2">
-        {icon}
-        <span className="text-sm font-semibold" style={{ color }}>{label}</span>
-        {tooltip}
-      </div>
-      <div className="flex items-center gap-2">
-        <span
-          className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-          style={{ background: `${color}18`, color }}
-        >
-          {count} cohort{count !== 1 ? 's' : ''}
-        </span>
-        {collapsed
-          ? <ChevronRight className="w-4 h-4 text-gray-400" />
-          : <ChevronDown className="w-4 h-4 text-gray-400" />}
-      </div>
-    </button>
-  )
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function PatternDiscovery() {
@@ -623,12 +584,6 @@ export function PatternDiscovery() {
   const [activeSection, setActiveSection] = useState<'sufficient' | 'insufficient' | 'helpMe' | null>(null)
   const toggleSection = (key: 'sufficient' | 'insufficient' | 'helpMe') =>
     setActiveSection((prev) => (prev === key ? null : key))
-
-  // Section refs for sidebar navigation
-  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  const scrollToSection = (id: string) => {
-    sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
 
   const runDiscovery = useCallback(async () => {
     if (!selectedDataset) return
@@ -720,7 +675,7 @@ export function PatternDiscovery() {
             ].map((mod) => (
               <button
                 key={mod.id}
-                onClick={() => { if (!mod.visible) return; if (mod.id !== 'stats') setActiveSection(mod.id as 'sufficient' | 'insufficient' | 'helpMe'); scrollToSection(mod.id) }}
+                onClick={() => { if (!mod.visible) return; if (mod.id !== 'stats') setActiveSection(mod.id as 'sufficient' | 'insufficient' | 'helpMe') }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
                 style={{
                   cursor: mod.visible ? 'pointer' : 'default',
@@ -753,37 +708,6 @@ export function PatternDiscovery() {
         {/* Stage explainer */}
         <StageExplainer stageId={4} />
 
-        {/* Stats row */}
-        <AnimatePresence>
-          {data && phase !== 'loading' && (
-            <motion.div
-              ref={(el) => { sectionRefs.current.stats = el }}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`grid gap-3 ${hasHelpMe ? 'grid-cols-4' : 'grid-cols-3'}`}
-            >
-              {[
-                { label: 'Total Records', value: data.totalRecords, color: '#1e293b', accent: '#f3f4f6' },
-                { label: 'Dominant Patterns', value: data.sufficient.length, sub: `Patterns with Sufficient Data · ${totalSufficient.toLocaleString()} records`, color: '#16a34a', accent: 'rgba(74,222,128,0.10)' },
-                { label: 'Non-Dominant Patterns', value: data.insufficient.length, sub: `Patterns with Insufficient Data · ${totalInsufficient.toLocaleString()} records`, color: '#dc2626', accent: 'rgba(248,113,113,0.10)' },
-                ...(hasHelpMe ? [{ label: 'Fuzzy Patterns', value: data.helpMe.length, sub: `${totalHelpMe.toLocaleString()} records`, color: '#d97706', accent: 'rgba(251,191,36,0.10)' }] : []),
-              ].map((s) => (
-                <div
-                  key={s.label}
-                  className="rounded-xl p-4 text-center"
-                  style={{ background: s.accent, border: `1px solid ${s.color}22`, boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}
-                >
-                  <div className="text-2xl font-bold" style={{ color: s.color }}>
-                    <CountUpNumber end={s.value} />
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">{s.label}</div>
-                  {s.sub && <div className="text-[10px] font-mono mt-0.5" style={{ color: `${s.color}99` }}>{s.sub}</div>}
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Loading placeholder */}
         {phase === 'loading' && (
           <motion.div
@@ -797,124 +721,144 @@ export function PatternDiscovery() {
           </motion.div>
         )}
 
-        {/* Dominant Patterns: Sufficient */}
-        <AnimatePresence>
-          {data && phase !== 'loading' && (
-            <motion.div ref={(el) => { sectionRefs.current.sufficient = el }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <SectionHeader
-                icon={<CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                label="Dominant Patterns: Pattern with Sufficient Data"
-                count={data.sufficient.length + userPatterns.filter(u => u.status === 'sufficient').length}
-                color="#16a34a"
-                collapsed={activeSection !== 'sufficient'}
-                onToggle={() => toggleSection('sufficient')}
-                tooltip={<MLTooltip term="dominant-patterns" />}
-              />
-              <AnimatePresence>
-                {activeSection === 'sufficient' && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.15)' }}>
+        {/* Pattern tab tiles */}
+        {data && phase !== 'loading' && (
+          <div className="flex gap-3">
+            {/* Dominant */}
+            <motion.button
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => toggleSection('sufficient')}
+              className="flex-1 rounded-xl p-4 text-center transition-all"
+              style={{
+                background: activeSection === 'sufficient' ? '#dcfce7' : '#f0fdf4',
+                border: '1px solid #16a34a33',
+                borderBottom: activeSection === 'sufficient' ? '4px solid #16a34a' : '1px solid #16a34a33',
+                cursor: 'pointer',
+              }}
+            >
+              <div className="text-2xl font-bold" style={{ color: '#16a34a' }}>
+                <CountUpNumber end={data.sufficient.length + userPatterns.filter(u => u.status === 'sufficient').length} />
+              </div>
+              <div className="text-sm font-semibold text-gray-700 mt-1 flex items-center justify-center gap-1">
+                Dominant Patterns <MLTooltip term="dominant-patterns" />
+              </div>
+              <div className="text-[10px] mt-0.5" style={{ color: '#16a34a99' }}>
+                Patterns with Sufficient Data · {totalSufficient.toLocaleString()} records
+              </div>
+            </motion.button>
+
+            {/* Non-Dominant */}
+            {showInsufficient && (
+              <motion.button
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => toggleSection('insufficient')}
+                className="flex-1 rounded-xl p-4 text-center transition-all"
+                style={{
+                  background: activeSection === 'insufficient' ? '#fee2e2' : '#fef2f2',
+                  border: '1px solid #dc262633',
+                  borderBottom: activeSection === 'insufficient' ? '4px solid #dc2626' : '1px solid #dc262633',
+                  cursor: 'pointer',
+                }}
+              >
+                <div className="text-2xl font-bold" style={{ color: '#dc2626' }}>
+                  <CountUpNumber end={data.insufficient.length + userPatterns.filter(u => u.status === 'insufficient').length} />
+                </div>
+                <div className="text-sm font-semibold text-gray-700 mt-1 flex items-center justify-center gap-1">
+                  Non-Dominant Patterns <MLTooltip term="non-dominant-patterns" />
+                </div>
+                <div className="text-[10px] mt-0.5" style={{ color: '#dc262699' }}>
+                  Patterns with Insufficient Data · {totalInsufficient.toLocaleString()} records
+                </div>
+              </motion.button>
+            )}
+
+            {/* Fuzzy */}
+            {hasHelpMe && showHelpMe && (
+              <motion.button
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => toggleSection('helpMe')}
+                className="flex-1 rounded-xl p-4 text-center transition-all"
+                style={{
+                  background: activeSection === 'helpMe' ? '#fef3c7' : '#fffbeb',
+                  border: '1px solid #d9770633',
+                  borderBottom: activeSection === 'helpMe' ? '4px solid #d97706' : '1px solid #d9770633',
+                  cursor: 'pointer',
+                }}
+              >
+                <div className="text-2xl font-bold" style={{ color: '#d97706' }}>
+                  <CountUpNumber end={data.helpMe.length + userPatterns.filter(u => u.status === 'helpMe').length} />
+                </div>
+                <div className="text-sm font-semibold text-gray-700 mt-1 flex items-center justify-center gap-1">
+                  Fuzzy Patterns <MLTooltip term="fuzzy-patterns" />
+                </div>
+                <div className="text-[10px] mt-0.5" style={{ color: '#d9770699' }}>
+                  {totalHelpMe.toLocaleString()} records
+                </div>
+              </motion.button>
+            )}
+          </div>
+        )}
+
+        {/* Content panel */}
+        <AnimatePresence mode="wait">
+          {activeSection && data && (
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-3"
+            >
+              {activeSection === 'sufficient' && (
+                <>
+                  {viewMode === 'technical' && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.15)' }}>
                       <ChevronRight className="w-4 h-4 text-indigo-500 shrink-0" />
                       <p className="text-xs text-indigo-600 font-medium">Click any pattern card to explore details</p>
                     </div>
-                    <div className="space-y-3">
-                      {data.sufficient.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
-                      ))}
-                      {userPatterns.filter(u => u.status === 'sufficient').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="sufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.sufficient.length + i} viewMode={viewMode} />
-                      ))}
+                  )}
+                  {data.sufficient.map((p, i) => (
+                    <PatternCard key={p.id} pattern={p} status="sufficient" delay={i * 0.08} targetColumn={data.targetColumn} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
+                  ))}
+                  {userPatterns.filter(u => u.status === 'sufficient').map((u, i) => (
+                    <PatternCard key={u.pattern.id} pattern={u.pattern} status="sufficient" delay={i * 0.08} targetColumn={data.targetColumn} patternIndex={data.sufficient.length + i} viewMode={viewMode} />
+                  ))}
+                </>
+              )}
+              {activeSection === 'insufficient' && (
+                <>
+                  {data.insufficient.map((p, i) => (
+                    <PatternCard key={p.id} pattern={p} status="insufficient" delay={i * 0.08} targetColumn={data.targetColumn} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
+                  ))}
+                  {userPatterns.filter(u => u.status === 'insufficient').map((u, i) => (
+                    <PatternCard key={u.pattern.id} pattern={u.pattern} status="insufficient" delay={i * 0.08} targetColumn={data.targetColumn} patternIndex={data.insufficient.length + i} viewMode={viewMode} />
+                  ))}
+                </>
+              )}
+              {activeSection === 'helpMe' && (
+                <>
+                  <div className="rounded-xl flex items-start gap-3 px-4 py-3" style={{ background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                    <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-xs font-semibold text-amber-700 mb-0.5">Domain Expert Opportunity</div>
+                      <p className="text-xs text-amber-600 leading-relaxed">Review these segments and consider whether an additional parameter — a behavioral signal, external data source, or derived feature — could separate them into clearer outcome buckets. A single well-chosen parameter can often convert these into Dominant or Non-Dominant patterns.</p>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Non-Dominant Patterns: Insufficient */}
-        <AnimatePresence>
-          {data && showInsufficient && (
-            <motion.div ref={(el) => { sectionRefs.current.insufficient = el }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <SectionHeader
-                icon={<AlertCircle className="w-4 h-4 text-red-500" />}
-                label="Non-Dominant Patterns: Impactful Patterns with Insufficient Data"
-                count={data.insufficient.length + userPatterns.filter(u => u.status === 'insufficient').length}
-                color="#dc2626"
-                collapsed={activeSection !== 'insufficient'}
-                onToggle={() => toggleSection('insufficient')}
-                tooltip={<MLTooltip term="non-dominant-patterns" />}
-              />
-              <AnimatePresence>
-                {activeSection === 'insufficient' && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div className="space-y-3">
-                      {data.insufficient.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
-                      ))}
-                      {userPatterns.filter(u => u.status === 'insufficient').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="insufficient" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.insufficient.length + i} viewMode={viewMode} />
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Fuzzy Patterns */}
-        <AnimatePresence>
-          {data && hasHelpMe && showHelpMe && (
-            <motion.div ref={(el) => { sectionRefs.current.helpMe = el }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <SectionHeader
-                icon={<HelpCircle className="w-4 h-4 text-amber-500" />}
-                label="Fuzzy Patterns"
-                count={data.helpMe.length + userPatterns.filter(u => u.status === 'helpMe').length}
-                color="#d97706"
-                collapsed={activeSection !== 'helpMe'}
-                onToggle={() => toggleSection('helpMe')}
-                tooltip={<MLTooltip term="fuzzy-patterns" />}
-              />
-              <AnimatePresence>
-                {activeSection === 'helpMe' && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div className="rounded-xl flex items-start gap-3 px-4 py-3 mb-3" style={{ background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.2)' }}>
-                      <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                      <div>
-                        <div className="text-xs font-semibold text-amber-700 mb-0.5">Domain Expert Opportunity</div>
-                        <p className="text-xs text-amber-600 leading-relaxed">Review these segments and consider whether an additional parameter — a behavioral signal, external data source, or derived feature — could separate them into clearer outcome buckets. A single well-chosen parameter can often convert these into Dominant or Non-Dominant patterns.</p>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {data.helpMe.map((p, i) => (
-                        <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
-                      ))}
-                      {userPatterns.filter(u => u.status === 'helpMe').map((u, i) => (
-                        <PatternCard key={u.pattern.id} pattern={u.pattern} status="helpMe" delay={i * 0.08} targetColumn={data?.targetColumn ?? ''} patternIndex={data.helpMe.length + i} viewMode={viewMode} />
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </div>
+                  {data.helpMe.map((p, i) => (
+                    <PatternCard key={p.id} pattern={p} status="helpMe" delay={i * 0.08} targetColumn={data.targetColumn} patternIndex={i} showConfidenceTooltip={i === 0} viewMode={viewMode} />
+                  ))}
+                  {userPatterns.filter(u => u.status === 'helpMe').map((u, i) => (
+                    <PatternCard key={u.pattern.id} pattern={u.pattern} status="helpMe" delay={i * 0.08} targetColumn={data.targetColumn} patternIndex={data.helpMe.length + i} viewMode={viewMode} />
+                  ))}
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

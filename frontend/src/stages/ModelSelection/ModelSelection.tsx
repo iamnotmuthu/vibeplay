@@ -1080,6 +1080,7 @@ export function ModelSelection() {
 
       <CompletionModal
         isOpen={showModal}
+        onClose={() => setShowModal(false)}
         onStartOver={() => {
           setShowModal(false)
           setShouldGoHome(true)

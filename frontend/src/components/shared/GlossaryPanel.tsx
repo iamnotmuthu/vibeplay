@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
 import { usePlaygroundStore } from '@/store/playgroundStore'
 import { glossaryEntries, getGlossaryEntriesForStage, type GlossaryEntry } from '@/lib/glossaryData'
+import { STAGE_LABELS, type StageId } from '@/store/types'
 
 const CATEGORY_LABELS: Record<GlossaryEntry['category'], string> = {
   algorithm: 'Algorithm',
@@ -213,26 +214,32 @@ export function GlossaryPanel() {
                   onClick={handleStageFilterToggle}
                   className="px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
                   style={{
-                    background: stageFilter ? '#3b82f6' : '#f3f4f6',
-                    color: stageFilter ? '#ffffff' : '#6b7280',
+                    background: stageFilter ? '#dbeafe' : '#f3f4f6',
+                    color: stageFilter ? '#1d4ed8' : '#6b7280',
+                    border: stageFilter ? '1.5px solid #1d4ed830' : '1.5px solid transparent',
                   }}
                 >
-                  Stage {currentStep}
+                  {STAGE_LABELS[currentStep as StageId]}
                 </button>
               )}
-              {availableCategories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-                  className="px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
-                  style={{
-                    background: activeCategory === cat ? '#8b5cf6' : '#f3f4f6',
-                    color: activeCategory === cat ? '#ffffff' : '#6b7280',
-                  }}
-                >
-                  {CATEGORY_LABELS[cat]}
-                </button>
-              ))}
+              {availableCategories.map((cat) => {
+                const isActive = activeCategory === cat
+                const color = getCategoryColor(cat)
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                    className="px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
+                    style={{
+                      background: isActive ? color.bg : '#f3f4f6',
+                      color: isActive ? color.text : '#6b7280',
+                      border: isActive ? `1.5px solid ${color.text}30` : '1.5px solid transparent',
+                    }}
+                  >
+                    {CATEGORY_LABELS[cat]}
+                  </button>
+                )
+              })}
             </div>
 
             {/* Entries */}

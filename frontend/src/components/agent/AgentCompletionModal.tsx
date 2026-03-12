@@ -1,24 +1,18 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, CalendarCheck, Zap, X } from 'lucide-react'
+import { Sparkles, CalendarCheck, Zap, X, Bot, Layers, GitBranch } from 'lucide-react'
+import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
+import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
+import { getArchitectureData } from '@/lib/agent/architectureData'
 
-interface ModelSummary {
-  modelName: string
-  modelType: string
-  datasetName: string
-  primaryMetric: string
-  primaryValue: number
-  secondaryMetric: string
-  secondaryValue: number
-}
+export function AgentCompletionModal() {
+  const isOpen = useAgentPlaygroundStore((s) => s.completionModalOpen)
+  const close = useAgentPlaygroundStore((s) => s.closeCompletionModal)
+  const resetToTiles = useAgentPlaygroundStore((s) => s.resetToTiles)
+  const activeTileId = useAgentPlaygroundStore((s) => s.activeTileId)
 
-interface CompletionModalProps {
-  isOpen: boolean
-  onClose?: () => void
-  onStartOver: () => void
-  summary?: ModelSummary
-}
+  const tile = activeTileId ? AGENT_TILE_MAP[activeTileId] : null
+  const archData = activeTileId ? getArchitectureData(activeTileId) : null
 
-export function CompletionModal({ isOpen, onClose, onStartOver, summary }: CompletionModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -45,24 +39,22 @@ export function CompletionModal({ isOpen, onClose, onStartOver, summary }: Compl
             />
 
             {/* Close button */}
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer"
-                style={{ background: '#f3f4f6', color: '#9ca3af' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#e5e7eb'
-                  e.currentTarget.style.color = '#6b7280'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#f3f4f6'
-                  e.currentTarget.style.color = '#9ca3af'
-                }}
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            <button
+              onClick={close}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer"
+              style={{ background: '#f3f4f6', color: '#9ca3af' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#e5e7eb'
+                e.currentTarget.style.color = '#6b7280'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#f3f4f6'
+                e.currentTarget.style.color = '#9ca3af'
+              }}
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
 
             <div className="p-8 text-center">
               {/* Branded icon */}
@@ -73,7 +65,7 @@ export function CompletionModal({ isOpen, onClose, onStartOver, summary }: Compl
                 className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
                 style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
               >
-                <Sparkles className="w-8 h-8 text-white" />
+                <Bot className="w-8 h-8 text-white" />
               </motion.div>
 
               {/* Heading */}
@@ -83,7 +75,7 @@ export function CompletionModal({ isOpen, onClose, onStartOver, summary }: Compl
                 transition={{ delay: 0.15 }}
                 className="text-2xl font-bold text-gray-900 mb-2"
               >
-                Your Model is Ready
+                Your Agent is Ready
               </motion.h2>
 
               <motion.p
@@ -93,12 +85,12 @@ export function CompletionModal({ isOpen, onClose, onStartOver, summary }: Compl
                 className="text-sm leading-relaxed mb-8"
                 style={{ color: '#6b7280' }}
               >
-                You've completed the full VibeModel AI pipeline — from raw data
-                to a production-ready model. Ready to build your own?
+                You've completed the full VibeModel Agent pipeline — from goal
+                definition to production architecture. Ready to build your own?
               </motion.p>
 
-              {/* Model summary */}
-              {summary && (
+              {/* Agent summary */}
+              {tile && archData && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -106,28 +98,32 @@ export function CompletionModal({ isOpen, onClose, onStartOver, summary }: Compl
                   className="rounded-xl p-4 mb-6 text-left"
                   style={{ background: '#f8fafc', border: '1px solid #e5e7eb' }}
                 >
-                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">What was built</div>
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                    What was built
+                  </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Model</span>
-                      <span className="text-xs font-semibold text-gray-800">{summary.modelName}</span>
+                      <span className="text-xs text-gray-500">Agent</span>
+                      <span className="text-xs font-semibold text-gray-800">{tile.label}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Type</span>
-                      <span className="text-xs font-semibold text-gray-800">{summary.modelType}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Dataset</span>
-                      <span className="text-xs font-semibold text-gray-800 truncate max-w-[160px] text-right">{summary.datasetName}</span>
+                      <span className="text-xs text-gray-500">Complexity</span>
+                      <span className="text-xs font-semibold text-gray-800">{tile.complexityLabel}</span>
                     </div>
                     <div className="pt-2 mt-2 flex gap-3" style={{ borderTop: '1px solid #f3f4f6' }}>
-                      <div className="flex-1 rounded-lg p-2.5 text-center" style={{ background: '#ecfdf5', border: '1px solid #d1fae5' }}>
-                        <div className="text-base font-bold text-emerald-700">{summary.primaryValue}%</div>
-                        <div className="text-[10px] text-emerald-600 font-medium">{summary.primaryMetric}</div>
-                      </div>
                       <div className="flex-1 rounded-lg p-2.5 text-center" style={{ background: '#eff6ff', border: '1px solid #dbeafe' }}>
-                        <div className="text-base font-bold text-blue-700">{summary.secondaryValue}%</div>
-                        <div className="text-[10px] text-blue-600 font-medium">{summary.secondaryMetric}</div>
+                        <div className="flex items-center justify-center gap-1 mb-0.5">
+                          <Layers className="w-3 h-3 text-blue-600" />
+                        </div>
+                        <div className="text-base font-bold text-blue-700">{archData.totalComponents}</div>
+                        <div className="text-[10px] text-blue-600 font-medium">Components</div>
+                      </div>
+                      <div className="flex-1 rounded-lg p-2.5 text-center" style={{ background: '#f5f3ff', border: '1px solid #ede9fe' }}>
+                        <div className="flex items-center justify-center gap-1 mb-0.5">
+                          <GitBranch className="w-3 h-3 text-purple-600" />
+                        </div>
+                        <div className="text-base font-bold text-purple-700">{archData.totalInteractionPaths}</div>
+                        <div className="text-[10px] text-purple-600 font-medium">Interaction Flows</div>
                       </div>
                     </div>
                   </div>
@@ -155,7 +151,6 @@ export function CompletionModal({ isOpen, onClose, onStartOver, summary }: Compl
                     border: '1px solid rgba(139,92,246,0.4)',
                   }}
                 >
-                  {/* Shimmer */}
                   <motion.div
                     className="absolute inset-0 pointer-events-none"
                     style={{
@@ -196,18 +191,21 @@ export function CompletionModal({ isOpen, onClose, onStartOver, summary }: Compl
                 </motion.a>
               </motion.div>
 
-              {/* Start over — subtle link */}
+              {/* Start over */}
               <motion.button
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.35 }}
-                onClick={onStartOver}
-                className="text-xs transition-colors"
+                onClick={() => {
+                  close()
+                  resetToTiles()
+                }}
+                className="text-xs transition-colors cursor-pointer"
                 style={{ color: '#9ca3af' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = '#6b7280' }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af' }}
               >
-                ← Start over with a new dataset
+                ← Start over with a new scenario
               </motion.button>
             </div>
           </motion.div>
