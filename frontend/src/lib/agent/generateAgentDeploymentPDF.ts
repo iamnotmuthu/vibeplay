@@ -71,7 +71,7 @@ export function generateAgentDeploymentPDF(payload: AgentPDFPayload) {
   addLabel('Complexity', tile.complexityLabel)
   addLabel('Architecture', architecture.pipelineTypeLabel)
   addLabel('Total Components', architecture.totalComponents.toString())
-  addLabel('Interaction Paths', architecture.totalInteractionPaths.toString())
+  addLabel('Interaction Paths', (architecture.totalInteractionPaths ?? 0).toString())
   addLabel('Trust Lanes', architecture.totalLanes.toString())
   y += 6
   addParagraph(tile.description)
@@ -141,7 +141,7 @@ export function generateAgentDeploymentPDF(payload: AgentPDFPayload) {
     }
   }
 
-  for (const [id, comp] of uniqueComponents) {
+  for (const [_id, comp] of uniqueComponents) {
     checkPage(30)
     doc.setFontSize(8)
     doc.setFont('helvetica', 'bold')

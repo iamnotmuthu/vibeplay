@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ChevronUp,
   Bot,
-  Info,
   AlertTriangle,
   ArrowDown,
 } from 'lucide-react'

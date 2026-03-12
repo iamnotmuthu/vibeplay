@@ -20,7 +20,6 @@ import {
   Play,
   CheckCircle2,
   TrendingUp,
-  Target,
   Lightbulb,
 } from 'lucide-react'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
@@ -28,7 +27,6 @@ import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 import { getArchitectureData } from '@/lib/agent/architectureData'
 import { getTechStack, getEvalMetrics } from '@/lib/agent/componentTechData'
 import { generateAgentDeploymentPDF } from '@/lib/agent/generateAgentDeploymentPDF'
-import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import type { TechComponent, CategoryTechMapping, EvalMetric, PatternBreakdown } from '@/lib/agent/componentTechData'
 
 // ─── Category visual config ─────────────────────────────────────────────

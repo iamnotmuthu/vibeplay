@@ -15,7 +15,7 @@ interface AgentGlossaryEntry {
   whyItMatters?: string
   category: 'architecture' | 'capability' | 'safety' | 'interaction' | 'monitoring' | 'orchestration'
   relatedTerms?: string[]
-  stages: AgentStageId[]
+  stages: string[]
 }
 
 // ─── Category Config ────────────────────────────────────────────────────────

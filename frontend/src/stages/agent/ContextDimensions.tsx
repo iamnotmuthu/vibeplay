@@ -28,7 +28,7 @@ import {
 
 // ─── Data Type Chip Icons ──────────────────────────────────────────────────
 
-const DATA_TYPE_ICONS: Record<DataTypeChip, React.ComponentType<{ className?: string }>> = {
+const DATA_TYPE_ICONS: Record<DataTypeChip, React.ElementType> = {
   'text-documents': FileText,
   tables: Table2,
   images: Image,
@@ -114,28 +114,6 @@ function SectionHeader({
       </div>
       <p className="text-xs text-gray-500 ml-[30px]">{subtitle}</p>
     </motion.div>
-  )
-}
-
-// ─── Data Type Chip Component ───────────────────────────────────────────────
-
-function DataTypeChipBadge({ type }: { type: DataTypeChip }) {
-  const colors = DATA_TYPE_COLORS[type]
-  const label = DATA_TYPE_LABELS[type]
-  const Icon = DATA_TYPE_ICONS[type]
-
-  return (
-    <span
-      className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-      style={{
-        background: colors.bg,
-        color: colors.text,
-        border: `1px solid ${colors.border}`,
-      }}
-    >
-      <Icon className="w-3 h-3" aria-hidden="true" />
-      {label}
-    </span>
   )
 }
 

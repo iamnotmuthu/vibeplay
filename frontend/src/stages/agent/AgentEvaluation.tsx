@@ -16,7 +16,6 @@ import {
   PATTERN_CLASSIFICATION_META,
 } from '@/store/agentTypes'
 import type {
-  PatternGroup,
   DiscoveredPattern,
   ScenarioTest,
 } from '@/store/agentTypes'

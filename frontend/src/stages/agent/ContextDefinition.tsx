@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText,
@@ -206,7 +206,7 @@ function SectionHeader({
   count,
   delay,
 }: {
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ElementType
   title: string
   count?: number
   delay: number

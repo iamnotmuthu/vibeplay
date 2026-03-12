@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ExternalLink, LayoutGrid, Bot, Loader2, BookOpen, Target } from 'lucide-react'
+import { ExternalLink, LayoutGrid, Loader2, BookOpen, Target } from 'lucide-react'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { usePlaygroundStore } from '@/store/playgroundStore'
-import { AGENT_STAGE_ORDER, AGENT_STAGE_LABELS, AGENT_STAGE_NUMBERS } from '@/store/agentTypes'
+import { AGENT_STAGE_LABELS, AGENT_STAGE_NUMBERS } from '@/store/agentTypes'
 import type { AgentStageId } from '@/store/agentTypes'
 import { AGENT_TILE_MAP, getBridge } from '@/lib/agent/agentDomainData'
 import { ViewModeToggle } from '@/components/shared/ViewModeToggle'
@@ -100,7 +100,7 @@ function StagePlaceholder({ stageId }: { stageId: AgentStageId }) {
 
 // ─── Main Shell ───────────────────────────────────────────────────────────
 
-export function AgentPlaygroundShell({ onBack }: AgentPlaygroundShellProps) {
+export function AgentPlaygroundShell({ onBack: _onBack }: AgentPlaygroundShellProps) {
   const {
     currentStage,
     activeTileId,

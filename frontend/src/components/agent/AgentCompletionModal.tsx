@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, CalendarCheck, Zap, X, Bot, Layers, GitBranch } from 'lucide-react'
+import { CalendarCheck, Zap, X, Bot, Layers, GitBranch } from 'lucide-react'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 import { getArchitectureData } from '@/lib/agent/architectureData'

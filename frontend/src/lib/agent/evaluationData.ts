@@ -1,6 +1,6 @@
 'use strict'
 
-import type { PatternType, EvaluationOverview, ScenarioTest, CoverageGap, DecisionPath, DecisionStep } from '@/store/agentTypes'
+import type { EvaluationOverview, ScenarioTest, CoverageGap, DecisionPath } from '@/store/agentTypes'
 
 export interface EvaluationPayload { overview: EvaluationOverview; scenarios: ScenarioTest[]; coverageGaps: CoverageGap[]; decisionPaths: DecisionPath[] }
 

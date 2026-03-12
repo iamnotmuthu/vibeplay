@@ -38,27 +38,6 @@ function ClassificationIcon({
   }
 }
 
-// ─── Coverage Bar ───────────────────────────────────────────────────────
-
-function CoverageBar({ pct, color }: { pct: number; color: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: '#f1f5f9' }}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="h-full rounded-full"
-          style={{ background: color }}
-        />
-      </div>
-      <span className="text-[10px] font-semibold text-gray-500 tabular-nums w-8 text-right">
-        {pct}%
-      </span>
-    </div>
-  )
-}
-
 // ─── Pattern Card ───────────────────────────────────────────────────────
 
 function PatternCard({

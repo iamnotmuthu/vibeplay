@@ -2,7 +2,6 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { AGENT_STAGE_ORDER, AGENT_STAGE_LABELS } from '@/store/agentTypes'
-import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 
 /**
  * Persistent bottom navigation bar for the Agent Playground.
@@ -12,7 +11,6 @@ import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
  */
 export function AgentBottomBar() {
   const currentStage = useAgentPlaygroundStore((s) => s.currentStage)
-  const activeTileId = useAgentPlaygroundStore((s) => s.activeTileId)
   const nextStage = useAgentPlaygroundStore((s) => s.nextStage)
   const prevStage = useAgentPlaygroundStore((s) => s.prevStage)
   const openCompletionModal = useAgentPlaygroundStore((s) => s.openCompletionModal)
@@ -28,7 +26,6 @@ export function AgentBottomBar() {
     ? `Continue to ${AGENT_STAGE_LABELS[nextStageId]}`
     : null
 
-  const tile = activeTileId ? AGENT_TILE_MAP[activeTileId] : null
   const prevStageId = canGoBack ? AGENT_STAGE_ORDER[idx - 1] : null
   const backLabel = prevStageId ? AGENT_STAGE_LABELS[prevStageId] : ''
 

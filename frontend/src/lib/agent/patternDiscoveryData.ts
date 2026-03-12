@@ -7,10 +7,7 @@
 
 import type {
   PatternGroup,
-  DiscoveredPattern,
   DiscoveryLogEntry,
-  PatternType,
-  PatternClassification,
 } from '@/store/agentTypes'
 
 // ─── Payload Structure ─────────────────────────────────────────────────────

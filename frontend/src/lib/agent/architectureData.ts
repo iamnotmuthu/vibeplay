@@ -49,7 +49,7 @@ function lane(
 
 export interface ArchitectureStageData {
   totalComponents: number
-  totalInteractionPaths: number
+  totalInteractionPaths?: number
   totalLanes: number
   pipelineType: string
   pipelineTypeLabel: string
@@ -555,7 +555,7 @@ const MULTIMODAL_AGENT_ARCHITECTURE: ArchitectureStageData = {
         comp('api-gateway', 'API Gateway', 'ingestion', 'Multi-modal entry point', 1, 'Handles text, image, audio, video uploads'),
         comp('auth', 'Authentication', 'ingestion', 'User authentication', 2),
         comp('input-validation', 'Input Validation', 'ingestion', 'Format validation', 3, 'File type, size, codec checks'),
-        comp('request-classification', 'Request Classification', 'routing', 'Identifies input modality', 4, 'Text vs. image vs. audio vs. video', {}, ['api-gateway']),
+        comp('request-classification', 'Request Classification', 'routing', 'Identifies input modality', 4, 'Text vs. image vs. audio vs. video', ['api-gateway']),
         comp('rag', 'RAG Pipeline', 'context', 'Text-based retrieval', 5, 'For text inputs or text embeddings', ['request-classification']),
         comp('api-integration', 'Vision / Audio APIs', 'execution', 'Format-specific processors', 6, 'OCR, audio transcription, video frame extraction', ['request-classification']),
         comp('tool-execution', 'Tool Execution', 'execution', 'Format-native processing', 7, 'Modality-specific inference', ['api-integration', 'rag']),
@@ -620,7 +620,7 @@ const CONSUMER_CHAT_ARCHITECTURE: ArchitectureStageData = {
         comp('api-gateway', 'API Gateway', 'ingestion', 'Edge-deployed entry point', 1, 'CDN-hosted for low latency'),
         comp('auth', 'Authentication', 'ingestion', 'Session token validation', 2, 'Lightweight auth for consumer context'),
         comp('input-validation', 'Input Validation', 'ingestion', 'Query validation', 3, 'Fast schema check'),
-        comp('request-classification', 'Request Classification', 'routing', 'Identifies query intent', 4, 'FAQ vs. account vs. support lookup', {}, ['api-gateway']),
+        comp('request-classification', 'Request Classification', 'routing', 'Identifies query intent', 4, 'FAQ vs. account vs. support lookup', ['api-gateway']),
         comp('memory', 'Conversation Memory', 'context', 'Edge-cached conversation history', 5, 'Client-side or local cache', ['request-classification'], { cacheLocation: 'edge' }),
         comp('rag', 'Cached RAG', 'context', 'Pre-computed embeddings cache', 6, 'Fast retrieval from local cache', ['request-classification']),
         comp('reranking', 'Re-ranking', 'context', 'Lightweight relevance scoring', 7, 'Fast local scoring', ['rag']),

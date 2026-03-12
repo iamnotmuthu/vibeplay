@@ -40,7 +40,7 @@ import type {
 
 // ─── Icon Resolver ────────────────────────────────────────────────────────
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+const ICON_MAP: Record<string, React.ElementType> = {
   search: Search,
   'trending-up': TrendingUp,
   table: Table,
@@ -311,7 +311,7 @@ function LandmineCardUI({
 
 function AlertRow({
   alert,
-  tileColor,
+  tileColor: _tileColor,
   viewMode,
   index,
 }: {
@@ -328,7 +328,7 @@ function AlertRow({
     'edge-case-cluster': 'Edge Case',
   }
 
-  const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  const typeIcons: Record<string, React.ElementType> = {
     drift: TrendingUp,
     'escalation-spike': AlertTriangle,
     'confidence-drop': XCircle,
@@ -443,7 +443,7 @@ function MonitoringExplainer({
 
 function DriftDetectedCard({
   drift,
-  tileColor,
+  tileColor: _tileColor,
   viewMode,
 }: {
   drift: DriftCard
@@ -562,7 +562,7 @@ function DriftDetectedCard({
 
 function NewDimensionDetectedCard({
   dimension,
-  tileColor,
+  tileColor: _tileColor,
   viewMode,
 }: {
   dimension: NewDimensionCard
@@ -928,8 +928,7 @@ export function Monitoring() {
           Production Monitoring
         </h2>
         <p className="text-sm text-gray-500">
-          {tile.stageSubtitles.monitoring ??
-            `12-week production simulation — ${(data.landmines ?? []).length} landmines detected, ${(data.alerts ?? []).length} alerts triggered`}
+          {`12-week production simulation — ${(data.landmines ?? []).length} landmines detected, ${(data.alerts ?? []).length} alerts triggered`}
         </p>
       </motion.div>
 
