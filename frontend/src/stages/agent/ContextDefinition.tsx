@@ -662,6 +662,8 @@ export function ContextDefinition() {
             />
           ))}
         </div>
+
+        <AddInputArea placeholder="Add new instruction step..." delay={0.25 + instructions.length * 0.06 + 0.08} />
       </div>
 
       {/* ───────────────────────────────────────────────────────────────
@@ -686,6 +688,8 @@ export function ContextDefinition() {
             />
           ))}
         </div>
+
+        <AddInputArea placeholder="Add new data source..." delay={0.35 + dataSources.length * 0.06 + 0.08} />
       </div>
 
       {/* ───────────────────────────────────────────────────────────────
