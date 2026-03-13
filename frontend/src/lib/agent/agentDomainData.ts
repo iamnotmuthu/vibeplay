@@ -1,129 +1,107 @@
-import type { AgentTile, NarrativeBridge } from '@/store/agentTypes'
+import type { AgentTile, AgentDomain, NarrativeBridge } from '@/store/agentTypes'
 
-// ─── Ten Agent Tiles (Use Cases A-J) ─────────────────────────────────────
+// ─── Agent Domains (industry verticals) ─────────────────────────────────
 
-export const AGENT_TILES: AgentTile[] = [
+export const AGENT_DOMAINS: AgentDomain[] = [
   {
-    id: 'faq-knowledge',
-    label: 'Customer Q&A Bot',
-    shortLabel: 'Q&A Bot',
-    complexity: 'simple',
-    complexityLabel: 'Simple',
-    color: '#10b981',
-    gradient: 'linear-gradient(135deg, #10b981, #059669)',
-    bgTint: 'rgba(16,185,129,0.06)',
-    borderColor: 'rgba(16,185,129,0.2)',
-    iconName: 'MessageCircleQuestion',
-    description:
-      'A knowledge base agent that handles customer FAQs, product questions, and policy lookups. Simple retrieval with clear trust boundaries.',
-    industry: 'Customer Support',
-    badge: 'Simple \u00b7 42 interaction paths',
-    goalStatement:
-      'Build an agent that answers customer questions about our product, policies, and pricing using our existing knowledge base.',
-    stageSubtitles: {
-      goal: 'A straightforward knowledge retrieval goal',
-      'context-definition': '8 steps \u2014 mostly direct lookups',
-      'context-dimensions': '12 of 26 components activated',
-      'interaction-discovery': '42 interaction paths discovered',
-      'agent-evaluation': '128 test scenarios across 3 trust levels',
-      'solution-architecture': 'Single-lane RAG pipeline',
-    },
+    id: 'technology-saas',
+    label: 'Technology / SaaS',
+    color: '#3b82f6',
+    icon: 'Monitor',
+    tagline: 'Incident response, customer success, DevOps triage',
   },
   {
-    id: 'doc-intelligence',
-    label: 'Document Reader & Analyzer',
-    shortLabel: 'Doc Analyzer',
+    id: 'financial-services',
+    label: 'Financial Services',
+    color: '#10b981',
+    icon: 'Landmark',
+    tagline: 'Loan underwriting, fraud investigation, compliance',
+  },
+  {
+    id: 'healthcare',
+    label: 'Healthcare',
+    color: '#ef4444',
+    icon: 'HeartPulse',
+    tagline: 'Care coordination, clinical documentation, patient monitoring',
+  },
+  {
+    id: 'logistics-supply-chain',
+    label: 'Logistics & Supply Chain',
+    color: '#f97316',
+    icon: 'Truck',
+    tagline: 'Shipment disruption, warehouse coordination, procurement',
+  },
+  {
+    id: 'insurance',
+    label: 'Insurance',
+    color: '#8b5cf6',
+    icon: 'Shield',
+    tagline: 'Claims processing, underwriting risk, fraud detection',
+  },
+  {
+    id: 'retail-ecommerce',
+    label: 'Retail & E-commerce',
+    color: '#f43f5e',
+    icon: 'ShoppingCart',
+    tagline: 'Order resolution, inventory rebalancing, merchandising',
+  },
+  {
+    id: 'manufacturing',
+    label: 'Manufacturing',
+    color: '#6366f1',
+    icon: 'Factory',
+    tagline: 'Predictive maintenance, production scheduling, quality analysis',
+  },
+  {
+    id: 'media-entertainment',
+    label: 'Media & Entertainment',
+    color: '#d946ef',
+    icon: 'Film',
+    tagline: 'Content moderation, distribution optimization, ad yield',
+  },
+  {
+    id: 'hr-talent',
+    label: 'HR & Talent',
+    color: '#0ea5e9',
+    icon: 'Users',
+    tagline: 'Candidate screening, onboarding, employee support',
+  },
+  {
+    id: 'marketing-advertising',
+    label: 'Marketing & Advertising',
+    color: '#14b8a6',
+    icon: 'Megaphone',
+    tagline: 'Campaign optimization, lead nurturing, market intelligence',
+  },
+]
+
+export const AGENT_DOMAIN_MAP = Object.fromEntries(
+  AGENT_DOMAINS.map((d) => [d.id, d])
+) as Record<string, AgentDomain>
+
+// ─── Ten Agent Tiles (Use Cases) ─────────────────────────────────────────
+// Each tile maps to a domain from the Excel sheet "Common agent problems by domain"
+
+export const AGENT_TILES: AgentTile[] = [
+  // ── Technology / SaaS (2 tiles) ────────────────────────────────────────
+  {
+    id: 'saas-copilot',
+    label: 'Customer Success Monitoring',
+    shortLabel: 'Success Monitor',
+    domainId: 'technology-saas',
     complexity: 'moderate',
     complexityLabel: 'Moderate',
     color: '#3b82f6',
     gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)',
     bgTint: 'rgba(59,130,246,0.06)',
     borderColor: 'rgba(59,130,246,0.2)',
-    iconName: 'FileSearch',
+    iconName: 'Monitor',
     description:
-      'An agent that extracts, classifies, and summarizes information from contracts, invoices, and reports. Multi-format parsing with cross-reference capability.',
-    industry: 'Legal / Finance',
-    badge: 'Moderate \u00b7 68 interaction paths',
-    goalStatement:
-      'Build an agent that processes incoming contracts and invoices \u2014 extracting key terms, flagging risks, and generating summary reports.',
-    stageSubtitles: {
-      goal: 'Multi-format extraction and analysis',
-      'context-definition': '8 steps \u2014 extraction + reasoning chains',
-      'context-dimensions': '18 of 26 components activated',
-      'interaction-discovery': '68 interaction paths discovered',
-      'agent-evaluation': '215 test scenarios across 3 trust levels',
-      'solution-architecture': 'Dual-lane: retrieval + reasoning',
-    },
-  },
-  {
-    id: 'research-comparison',
-    label: 'Research & Compare Assistant',
-    shortLabel: 'Research Bot',
-    complexity: 'moderate-complex',
-    complexityLabel: 'Moderate-Complex',
-    color: '#8b5cf6',
-    gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-    bgTint: 'rgba(139,92,246,0.06)',
-    borderColor: 'rgba(139,92,246,0.2)',
-    iconName: 'GitCompare',
-    description:
-      'An agent that researches multiple sources, compares options, and produces structured recommendation reports. Multi-hop reasoning with evidence synthesis.',
-    industry: 'Procurement / Strategy',
-    badge: 'Moderate-Complex \u00b7 91 interaction paths',
-    goalStatement:
-      'Build an agent that researches vendor options, compares pricing and capabilities, and generates a ranked recommendation report for procurement decisions.',
-    stageSubtitles: {
-      goal: 'Multi-source research with structured output',
-      'context-definition': '8 steps \u2014 search + compare + synthesize',
-      'context-dimensions': '22 of 26 components activated',
-      'interaction-discovery': '91 interaction paths discovered',
-      'agent-evaluation': '287 test scenarios across 3 trust levels',
-      'solution-architecture': 'Multi-agent research pipeline',
-    },
-  },
-  {
-    id: 'decision-workflow',
-    label: 'Patient Support & Scheduling',
-    shortLabel: 'Patient Bot',
-    complexity: 'complex',
-    complexityLabel: 'Complex',
-    color: '#ef4444',
-    gradient: 'linear-gradient(135deg, #ef4444, #dc2626)',
-    bgTint: 'rgba(239,68,68,0.06)',
-    borderColor: 'rgba(239,68,68,0.2)',
-    iconName: 'Workflow',
-    description:
-      'A dental patient support agent that handles appointment scheduling, insurance verification, treatment plan inquiries, and emergency triage. The full stack \u2014 decisions, workflows, and human escalation.',
-    industry: 'Healthcare / Dental',
-    badge: 'Complex \u00b7 127 interaction paths',
-    goalStatement:
-      'Build a patient support agent for a dental practice that handles appointments, insurance, treatment plans, emergency triage, and post-procedure follow-ups.',
-    stageSubtitles: {
-      goal: 'Multi-domain clinical + administrative goal',
-      'context-definition': '8 steps \u2014 clinical decision paths with escalation',
-      'context-dimensions': '26 of 26 components activated',
-      'interaction-discovery': '127 interaction paths discovered',
-      'agent-evaluation': '342 test scenarios across 4 trust levels',
-      'solution-architecture': 'Multi-agent coordinator with human routing',
-    },
-  },
-  {
-    id: 'saas-copilot',
-    label: 'In-App Product Assistant',
-    shortLabel: 'Product Assistant',
-    complexity: 'moderate',
-    complexityLabel: 'Moderate',
-    color: '#0ea5e9',
-    gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
-    bgTint: 'rgba(14,165,233,0.06)',
-    borderColor: 'rgba(14,165,233,0.2)',
-    iconName: 'Wrench',
-    description:
-      'An in-app assistant that takes actions inside your SaaS product — creating records, running reports, updating settings. Tool-calling with guardrails.',
-    industry: 'SaaS / Product',
+      'Monitors product usage signals, detects churn risk, and triggers retention actions inside your SaaS platform. Tool-calling with guardrails.',
+    industry: 'Technology / SaaS',
     badge: 'Moderate · 74 interaction paths',
     goalStatement:
-      'Build a copilot that helps users navigate our SaaS platform — creating records, generating reports, and updating configurations through natural language.',
+      'Build an agent that monitors customer usage patterns, detects churn signals, and triggers proactive retention actions through your product.',
     stageSubtitles: {
       goal: 'In-product tool-calling assistant',
       'context-definition': '8 steps — tool invocation with confirmation gates',
@@ -134,22 +112,110 @@ export const AGENT_TILES: AgentTile[] = [
     },
   },
   {
+    id: 'coding-agent',
+    label: 'Incident Response Automation',
+    shortLabel: 'Incident Agent',
+    domainId: 'technology-saas',
+    complexity: 'complex',
+    complexityLabel: 'Complex',
+    color: '#3b82f6',
+    gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+    bgTint: 'rgba(59,130,246,0.06)',
+    borderColor: 'rgba(59,130,246,0.2)',
+    iconName: 'Monitor',
+    description:
+      'Detects production outages, diagnoses root causes across logs and metrics, and triggers automated remediation. Context-aware across entire system stacks with sandboxed execution.',
+    industry: 'Technology / SaaS',
+    badge: 'Complex · 112 interaction paths',
+    goalStatement:
+      'Build an agent that detects outages, correlates logs and metrics to diagnose root cause, and triggers automated remediation — with safe rollback.',
+    stageSubtitles: {
+      goal: 'Full-stack incident response agent',
+      'context-definition': '8 steps — log context + sandboxed execution',
+      'context-dimensions': '24 of 26 components activated',
+      'interaction-discovery': '112 interaction paths discovered',
+      'agent-evaluation': '318 test scenarios across 4 trust levels',
+      'solution-architecture': 'Code-aware pipeline with sandbox layer',
+    },
+  },
+
+  // ── Financial Services ─────────────────────────────────────────────────
+  {
+    id: 'doc-intelligence',
+    label: 'Loan Underwriting Automation',
+    shortLabel: 'Underwriting Agent',
+    domainId: 'financial-services',
+    complexity: 'moderate',
+    complexityLabel: 'Moderate',
+    color: '#10b981',
+    gradient: 'linear-gradient(135deg, #10b981, #059669)',
+    bgTint: 'rgba(16,185,129,0.06)',
+    borderColor: 'rgba(16,185,129,0.2)',
+    iconName: 'Landmark',
+    description:
+      'Collects loan documents, validates applicant data, extracts key terms, and coordinates the multi-step approval workflow. Multi-format parsing with cross-reference capability.',
+    industry: 'Financial Services',
+    badge: 'Moderate · 68 interaction paths',
+    goalStatement:
+      'Build an agent that processes loan applications — collecting documents, extracting key financial data, validating eligibility, and coordinating the approval workflow.',
+    stageSubtitles: {
+      goal: 'Multi-format extraction and analysis',
+      'context-definition': '8 steps — extraction + reasoning chains',
+      'context-dimensions': '18 of 26 components activated',
+      'interaction-discovery': '68 interaction paths discovered',
+      'agent-evaluation': '215 test scenarios across 3 trust levels',
+      'solution-architecture': 'Dual-lane: retrieval + reasoning',
+    },
+  },
+
+  // ── Healthcare ─────────────────────────────────────────────────────────
+  {
+    id: 'decision-workflow',
+    label: 'Care Coordination Agent',
+    shortLabel: 'Care Agent',
+    domainId: 'healthcare',
+    complexity: 'complex',
+    complexityLabel: 'Complex',
+    color: '#ef4444',
+    gradient: 'linear-gradient(135deg, #ef4444, #dc2626)',
+    bgTint: 'rgba(239,68,68,0.06)',
+    borderColor: 'rgba(239,68,68,0.2)',
+    iconName: 'HeartPulse',
+    description:
+      'Manages patient appointments, follow-ups, referrals between providers, insurance verification, and emergency triage. The full stack — decisions, workflows, and human escalation.',
+    industry: 'Healthcare',
+    badge: 'Complex · 127 interaction paths',
+    goalStatement:
+      'Build a care coordination agent that manages appointments, referrals, insurance verification, emergency triage, and post-procedure follow-ups across providers.',
+    stageSubtitles: {
+      goal: 'Multi-domain clinical + administrative goal',
+      'context-definition': '8 steps — clinical decision paths with escalation',
+      'context-dimensions': '26 of 26 components activated',
+      'interaction-discovery': '127 interaction paths discovered',
+      'agent-evaluation': '342 test scenarios across 4 trust levels',
+      'solution-architecture': 'Multi-agent coordinator with human routing',
+    },
+  },
+
+  // ── Logistics & Supply Chain ───────────────────────────────────────────
+  {
     id: 'ops-agent',
-    label: 'Background Task Manager',
-    shortLabel: 'Task Manager',
+    label: 'Shipment Disruption Manager',
+    shortLabel: 'Shipment Agent',
+    domainId: 'logistics-supply-chain',
     complexity: 'moderate-complex',
     complexityLabel: 'Moderate-Complex',
     color: '#f97316',
     gradient: 'linear-gradient(135deg, #f97316, #ea580c)',
     bgTint: 'rgba(249,115,22,0.06)',
     borderColor: 'rgba(249,115,22,0.2)',
-    iconName: 'Timer',
+    iconName: 'Truck',
     description:
-      'An agent that manages long-running background tasks — batch processing, data migrations, scheduled reports. Async orchestration with progress tracking.',
-    industry: 'DevOps / Data Engineering',
+      'Detects shipment delays across carriers, reroutes packages, updates customer ETAs, and coordinates with warehouse operations. Async orchestration with progress tracking.',
+    industry: 'Logistics & Supply Chain',
     badge: 'Moderate-Complex · 83 interaction paths',
     goalStatement:
-      'Build an agent that manages overnight batch jobs, data pipeline orchestration, and scheduled report generation with real-time status updates.',
+      'Build an agent that detects shipment disruptions, automatically reroutes across carriers, updates customer ETAs, and coordinates warehouse re-allocation.',
     stageSubtitles: {
       goal: 'Async task orchestration with monitoring',
       'context-definition': '8 steps — async workflow with checkpoints',
@@ -159,51 +225,86 @@ export const AGENT_TILES: AgentTile[] = [
       'solution-architecture': 'Async orchestrator with progress bus',
     },
   },
+
+  // ── Insurance ──────────────────────────────────────────────────────────
   {
-    id: 'coding-agent',
-    label: 'AI Coding Assistant',
-    shortLabel: 'Code Assistant',
-    complexity: 'complex',
-    complexityLabel: 'Complex',
-    color: '#14b8a6',
-    gradient: 'linear-gradient(135deg, #14b8a6, #0d9488)',
-    bgTint: 'rgba(20,184,166,0.06)',
-    borderColor: 'rgba(20,184,166,0.2)',
-    iconName: 'Code2',
+    id: 'research-comparison',
+    label: 'Underwriting Risk Analysis',
+    shortLabel: 'Risk Analyst',
+    domainId: 'insurance',
+    complexity: 'moderate-complex',
+    complexityLabel: 'Moderate-Complex',
+    color: '#8b5cf6',
+    gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+    bgTint: 'rgba(139,92,246,0.06)',
+    borderColor: 'rgba(139,92,246,0.2)',
+    iconName: 'Shield',
     description:
-      'A developer assistant that writes, reviews, debugs, and refactors code. Context-aware across entire codebases with sandboxed execution.',
-    industry: 'Software Engineering',
-    badge: 'Complex · 112 interaction paths',
+      'Gathers risk data from multiple sources, compares coverage options, and produces structured underwriting recommendations. Multi-hop reasoning with evidence synthesis.',
+    industry: 'Insurance',
+    badge: 'Moderate-Complex · 91 interaction paths',
     goalStatement:
-      'Build a coding agent that assists developers with code generation, review, debugging, and refactoring — with full codebase context and safe execution.',
+      'Build an agent that gathers risk data across property, liability, and claims history — then generates a ranked coverage recommendation for underwriters.',
     stageSubtitles: {
-      goal: 'Full-stack development assistant',
-      'context-definition': '8 steps — code context + sandboxed execution',
-      'context-dimensions': '24 of 26 components activated',
-      'interaction-discovery': '112 interaction paths discovered',
-      'agent-evaluation': '318 test scenarios across 4 trust levels',
-      'solution-architecture': 'Code-aware pipeline with sandbox layer',
+      goal: 'Multi-source research with structured output',
+      'context-definition': '8 steps — search + compare + synthesize',
+      'context-dimensions': '22 of 26 components activated',
+      'interaction-discovery': '91 interaction paths discovered',
+      'agent-evaluation': '287 test scenarios across 3 trust levels',
+      'solution-architecture': 'Multi-agent research pipeline',
     },
   },
+
+  // ── Retail & E-commerce ────────────────────────────────────────────────
+  {
+    id: 'faq-knowledge',
+    label: 'Order Issue Resolution',
+    shortLabel: 'Order Agent',
+    domainId: 'retail-ecommerce',
+    complexity: 'simple',
+    complexityLabel: 'Simple',
+    color: '#f43f5e',
+    gradient: 'linear-gradient(135deg, #f43f5e, #e11d48)',
+    bgTint: 'rgba(244,63,94,0.06)',
+    borderColor: 'rgba(244,63,94,0.2)',
+    iconName: 'ShoppingCart',
+    description:
+      'Handles delivery problems, processes refunds, coordinates with logistics carriers, and answers customer order inquiries. Simple retrieval with clear trust boundaries.',
+    industry: 'Retail & E-commerce',
+    badge: 'Simple · 42 interaction paths',
+    goalStatement:
+      'Build an agent that resolves order issues — tracking delivery problems, processing refunds, coordinating with carriers, and answering order status questions.',
+    stageSubtitles: {
+      goal: 'A straightforward knowledge retrieval goal',
+      'context-definition': '8 steps — mostly direct lookups',
+      'context-dimensions': '12 of 26 components activated',
+      'interaction-discovery': '42 interaction paths discovered',
+      'agent-evaluation': '128 test scenarios across 3 trust levels',
+      'solution-architecture': 'Single-lane RAG pipeline',
+    },
+  },
+
+  // ── Manufacturing ──────────────────────────────────────────────────────
   {
     id: 'onprem-assistant',
-    label: 'Private & Secure Assistant',
-    shortLabel: 'Secure Assistant',
+    label: 'Predictive Maintenance Agent',
+    shortLabel: 'Maintenance Agent',
+    domainId: 'manufacturing',
     complexity: 'moderate-complex',
     complexityLabel: 'Moderate-Complex',
     color: '#6366f1',
     gradient: 'linear-gradient(135deg, #6366f1, #4f46e5)',
     bgTint: 'rgba(99,102,241,0.06)',
     borderColor: 'rgba(99,102,241,0.2)',
-    iconName: 'Shield',
+    iconName: 'Factory',
     description:
-      'An agent deployed on-premises with air-gapped data access, local model inference, and strict data residency compliance. No cloud calls.',
-    industry: 'Government / Defense',
+      'Detects equipment failures early from sensor data, schedules maintenance automatically, and operates on-premises with air-gapped data access and local inference. No cloud calls.',
+    industry: 'Manufacturing',
     badge: 'Moderate-Complex · 58 interaction paths',
     goalStatement:
-      'Build a secure assistant for classified environments — local inference, no external API calls, data never leaves the perimeter.',
+      'Build a predictive maintenance agent for factory equipment — local inference on sensor data, automated maintenance scheduling, no external API calls.',
     stageSubtitles: {
-      goal: 'Air-gapped knowledge assistant',
+      goal: 'Air-gapped predictive maintenance',
       'context-definition': '8 steps — local inference with strict access control',
       'context-dimensions': '15 of 26 components activated',
       'interaction-discovery': '58 interaction paths discovered',
@@ -211,25 +312,28 @@ export const AGENT_TILES: AgentTile[] = [
       'solution-architecture': 'On-prem single-node with local RAG',
     },
   },
+
+  // ── Media & Entertainment ──────────────────────────────────────────────
   {
     id: 'multimodal-agent',
-    label: 'Image, Audio & Video Assistant',
-    shortLabel: 'Media Assistant',
+    label: 'Content Moderation Agent',
+    shortLabel: 'Moderation Agent',
+    domainId: 'media-entertainment',
     complexity: 'complex',
     complexityLabel: 'Complex',
     color: '#d946ef',
     gradient: 'linear-gradient(135deg, #d946ef, #c026d3)',
     bgTint: 'rgba(217,70,239,0.06)',
     borderColor: 'rgba(217,70,239,0.2)',
-    iconName: 'Image',
+    iconName: 'Film',
     description:
-      'An agent that processes text, images, audio, and video inputs — visual Q&A, document scanning, audio transcription, and cross-modal reasoning.',
-    industry: 'Media / Education',
+      'Reviews flagged content across text, images, audio, and video — enforcing platform policies with cross-modal reasoning and human escalation for edge cases.',
+    industry: 'Media & Entertainment',
     badge: 'Complex · 105 interaction paths',
     goalStatement:
-      'Build an assistant that understands and responds across text, images, audio, and video — with cross-modal reasoning and format-aware output.',
+      'Build a content moderation agent that reviews flagged text, images, audio, and video — enforcing platform policies with cross-modal reasoning and escalation.',
     stageSubtitles: {
-      goal: 'Cross-modal understanding and generation',
+      goal: 'Cross-modal understanding and policy enforcement',
       'context-definition': '8 steps — multi-format processing pipeline',
       'context-dimensions': '23 of 26 components activated',
       'interaction-discovery': '105 interaction paths discovered',
@@ -237,25 +341,28 @@ export const AGENT_TILES: AgentTile[] = [
       'solution-architecture': 'Multi-modal orchestrator with format adapters',
     },
   },
+
+  // ── HR & Talent ────────────────────────────────────────────────────────
   {
     id: 'consumer-chat',
-    label: 'High-Volume Customer Chat',
-    shortLabel: 'Customer Chat',
+    label: 'Employee Support Agent',
+    shortLabel: 'HR Agent',
+    domainId: 'hr-talent',
     complexity: 'moderate',
     complexityLabel: 'Moderate',
-    color: '#f43f5e',
-    gradient: 'linear-gradient(135deg, #f43f5e, #e11d48)',
-    bgTint: 'rgba(244,63,94,0.06)',
-    borderColor: 'rgba(244,63,94,0.2)',
-    iconName: 'MessageSquare',
+    color: '#0ea5e9',
+    gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+    bgTint: 'rgba(14,165,233,0.06)',
+    borderColor: 'rgba(14,165,233,0.2)',
+    iconName: 'Users',
     description:
-      'A high-throughput conversational agent for consumer apps — handling millions of daily interactions with sub-second latency and personalized responses.',
-    industry: 'Consumer Tech / E-commerce',
+      'Resolves employee queries about policies, benefits, PTO, and payroll at scale — handling thousands of daily interactions with personalized responses and graceful escalation.',
+    industry: 'HR & Talent',
     badge: 'Moderate · 64 interaction paths',
     goalStatement:
-      'Build a consumer-facing chatbot that scales to millions of daily conversations with personalized responses, low latency, and graceful degradation.',
+      'Build an employee support agent that answers HR policy questions, processes benefits inquiries, and handles PTO requests at scale with personalized responses.',
     stageSubtitles: {
-      goal: 'High-throughput personalized chat',
+      goal: 'High-throughput personalized support',
       'context-definition': '8 steps — fast retrieval with personalization',
       'context-dimensions': '14 of 26 components activated',
       'interaction-discovery': '64 interaction paths discovered',
@@ -270,6 +377,12 @@ export const AGENT_TILES: AgentTile[] = [
 export const AGENT_TILE_MAP = Object.fromEntries(
   AGENT_TILES.map((t) => [t.id, t])
 ) as Record<string, AgentTile>
+
+// ─── Tiles grouped by domain ──────────────────────────────────────────────
+
+export function getTilesByDomain(domainId: string): AgentTile[] {
+  return AGENT_TILES.filter((t) => t.domainId === domainId)
+}
 
 // ─── Narrative Bridges ────────────────────────────────────────────────────
 // Each bridge has business and technical variants, plus complexity variants.

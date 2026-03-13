@@ -42,10 +42,19 @@ export const AGENT_STAGE_NUMBERS: Record<AgentStageId, number> = {
 
 // ─── Tile / Use Case ──────────────────────────────────────────────────────
 
+export interface AgentDomain {
+  id: string
+  label: string
+  color: string
+  icon: string
+  tagline: string
+}
+
 export interface AgentTile {
   id: string
   label: string
   shortLabel: string
+  domainId: string
   complexity: 'simple' | 'moderate' | 'moderate-complex' | 'complex'
   complexityLabel: string
   color: string
