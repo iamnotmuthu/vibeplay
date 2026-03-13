@@ -124,23 +124,16 @@ function DomainCard({
         </div>
 
         {/* CTA */}
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              className="absolute bottom-6 right-6"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold" style={{ color: domain.color }}>
-                  Explore
-                </span>
-                <ArrowRight className="w-4 h-4" style={{ color: domain.color }} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div
+          animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 6 }}
+          transition={{ duration: 0.18 }}
+          className="mt-4 flex items-center gap-1.5"
+        >
+          <span className="text-xs font-bold" style={{ color: domain.color }}>
+            Explore
+          </span>
+          <ArrowRight className="w-3.5 h-3.5" style={{ color: domain.color }} />
+        </motion.div>
       </motion.div>
     </motion.div>
   )

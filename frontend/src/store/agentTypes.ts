@@ -1,5 +1,5 @@
 // ─── Agent Playground Types ────────────────────────────────────────────────
-// 6-step flow: Goal → Context Definition → Context Dimensions → Interaction Discovery → Agent Evaluation → Solution Architecture
+// 6-step flow: Goal → Context Definition → Dimension Analysis → Patterns → Agent Evaluation → Solution Architecture
 // Monitoring is a modal launched from Step 6, NOT a stepper step.
 
 export type AgentStageId =
@@ -24,8 +24,8 @@ export const AGENT_STAGE_LABELS: Record<AgentStageId, string> = {
   tiles: 'Select Use Case',
   goal: 'Goal Definition',
   'context-definition': 'Context Definition',
-  'context-dimensions': 'Context Dimensions',
-  'interaction-discovery': 'Interaction Discovery',
+  'context-dimensions': 'Dimension Analysis',
+  'interaction-discovery': 'Patterns',
   'agent-evaluation': 'Agent Evaluation',
   'solution-architecture': 'Solution Architecture',
 }
@@ -151,11 +151,141 @@ export interface AgentTask {
   triggeredBy?: string
 }
 
+// ─── Dimension Analysis (Step 3) ─────────────────────────────────────────
+// Three-dimensional context model: Flow × Data × Response
+// Flow Dimensions = high-level capability lanes (the WHAT)
+// Data Dimensions = knowledge map showing content topology, depth, entities, gaps
+// Response Dimensions = output modes grouped by complexity, linked to user profiles
+
+export type OutputPreference =
+  | 'short-answer'
+  | 'detailed-explanation'
+  | 'summary-report'
+  | 'action-list'
+  | 'data-table'
+  | 'visual-chart'
+  | 'step-by-step'
+  | 'comparison'
+  | 'code-snippet'
+
+export interface FlowDimension {
+  id: string
+  label: string
+  description: string
+  intentCategories: string[]
+  confidence: 'high' | 'medium' | 'low'
+}
+
+export interface KnowledgeSubTopic {
+  name: string
+  depth: number // 1-5
+}
+
+export interface DataDimension {
+  id: string
+  label: string
+  subTopics: KnowledgeSubTopic[]
+  sourceAttribution: SourceContribution[]
+  depthScore: 1 | 2 | 3 | 4 | 5
+  keyEntities: string[]
+  connectedDomains: string[]
+  gapNote?: string
+}
+
+export interface ResponseDimension {
+  id: string
+  outputMode: OutputPreference
+  userProfilesRequiring: string[] // IDs from UserProfile
+  complexity: 'simple' | 'moderate' | 'complex'
+  exampleOutput: string
+}
+
+export interface DimensionAnalysisPayload {
+  tileId: string
+  agentName: string
+  flowDimensions: FlowDimension[]
+  dataDimensions: DataDimension[]
+  responseDimensions: ResponseDimension[]
+  summaryText: string
+}
+
+// ─── Patterns / Combination Matrix (Step 4) ──────────────────────────────
+// Combinatorial output of Dimension Analysis: Flow × Data × Response
+// Matrix heatmap with explosion animation, pattern cards with dimension DNA
+
+export type PatternTier = 'simple' | 'complex' | 'fuzzy'
+
+export interface CombinationCell {
+  flowDimensionId: string
+  dataDimensionId: string
+  isValid: boolean
+  patternCount: number
+  dominantTier: PatternTier
+  responseDimensionIds: string[]
+}
+
+export interface DimensionPattern {
+  id: string
+  name: string
+  description: string
+  tier: PatternTier
+  flowDimensionId: string
+  dataDimensionIds: string[]
+  responseDimensionId: string
+  patternType: PatternType
+  exampleQuestions: string[]
+  activatedComponents?: string[]
+  inferenceNotes?: string
+  ambiguityNotes?: string
+  confidence: number // 0-100
+}
+
+export interface PatternsPayload {
+  tileId: string
+  agentName: string
+  tileDescription: string
+  flowDimensions: string[]
+  dataDimensions: string[]
+  responseDimensions: string[]
+  totalCombinations: number
+  validPatterns: number
+  matrix: CombinationCell[][]
+  patterns: DimensionPattern[]
+  tierBreakdown: { simple: number; complex: number; fuzzy: number }
+}
+
+// ─── Source Contribution (shared across dimensions) ──────────────────────
+
+export interface SourceContribution {
+  sourceId: string
+  sourceName: string
+  count: string
+}
+
+// ─── WOW Factor Types ────────────────────────────────────────────────────
+// Live iteration counter, "What Just Happened" receipt, floating sidebar
+
+export interface WorkSavedEntry {
+  stageId: AgentStageId
+  stageLabel: string
+  metric: string
+  value: string
+  icon: string
+}
+
+export interface StageReceipt {
+  stageId: AgentStageId
+  stageLabel: string
+  duration: string
+  itemsProcessed: number
+  highlights: string[]
+}
+
 // ─── Pattern Types & Classification (Steps 3-4) ─────────────────────────
 // 5 question complexity pattern types (Simple, Hopping, Aggregator, Branch, Reasoning).
 // "Combination" was removed — handled by merged activation profiles.
 // "Comparison" was rejected as standalone — it's Aggregator + Branch merged.
-// Classified into 3 groups: Dominant, Non-Dominant, Fuzzy.
+// Classified into 3 tiers: Simple (dominant), Complex (non-dominant), Fuzzy.
 
 export type PatternType = 'simple' | 'hopping' | 'aggregator' | 'branch' | 'reasoning'
 
@@ -178,9 +308,9 @@ export const PATTERN_TYPE_COMPLEXITY: Record<PatternType, string> = {
 export type PatternClassification = 'dominant' | 'non-dominant' | 'fuzzy'
 
 export const PATTERN_CLASSIFICATION_LABELS: Record<PatternClassification, string> = {
-  dominant: 'Dominant',
-  'non-dominant': 'Non-Dominant',
-  fuzzy: 'Fuzzy',
+  dominant: 'Simple Patterns',
+  'non-dominant': 'Complex Patterns',
+  fuzzy: 'Fuzzy Patterns',
 }
 
 export const PATTERN_CLASSIFICATION_META: Record<PatternClassification, {
@@ -191,29 +321,29 @@ export const PATTERN_CLASSIFICATION_META: Record<PatternClassification, {
   description: string
 }> = {
   dominant: {
-    label: 'Dominant',
+    label: 'Simple Patterns',
     color: '#16a34a',
     bgColor: '#f0fdf4',
     borderColor: '#bbf7d0',
     description: 'Explicit criteria, high confidence — the agent handles these reliably.',
   },
   'non-dominant': {
-    label: 'Non-Dominant',
-    color: '#ef4444',
-    bgColor: '#fef2f2',
-    borderColor: '#fecaca',
-    description: 'Implicit criteria requiring inference — the agent handles these, but they may need human review.',
-  },
-  fuzzy: {
-    label: 'Fuzzy',
+    label: 'Complex Patterns',
     color: '#f59e0b',
     bgColor: '#fffbeb',
     borderColor: '#fde68a',
+    description: 'Multi-step inference required — the agent handles these, but they may need human review.',
+  },
+  fuzzy: {
+    label: 'Fuzzy Patterns',
+    color: '#ef4444',
+    bgColor: '#fef2f2',
+    borderColor: '#fecaca',
     description: 'Ambiguous criteria — requires human input to resolve.',
   },
 }
 
-// ─── Cluster (Context Dimensions) ────────────────────────────────────────
+// ─── Cluster (Dimension Analysis — legacy) ───────────────────────────────
 
 export interface Cluster {
   id: string
@@ -223,7 +353,7 @@ export interface Cluster {
   description: string
 }
 
-// ─── Discovered Pattern (Interaction Discovery) ──────────────────────────
+// ─── Discovered Pattern (Patterns — legacy) ──────────────────────────────
 
 export interface DiscoveredPattern {
   id: string
@@ -432,8 +562,8 @@ export interface CapabilityGroup {
   requirements: CapabilityRequirement[]
 }
 
-// ─── Interaction Discovery (Step 4) ──────────────────────────────────────
-// Patterns grouped by classification (Dominant / Non-Dominant / Fuzzy),
+// ─── Patterns (Step 4) ───────────────────────────────────────────────────
+// Patterns grouped by tier (Simple / Complex / Fuzzy),
 // each containing discovered patterns with auto-generated example questions.
 
 export type InteractionConfidence = 'green' | 'amber' | 'red'

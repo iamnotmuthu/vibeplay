@@ -1,16 +1,18 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText,
   Database,
   Users,
   Wrench,
-  ListChecks,
+  Shield,
   ChevronDown,
   ChevronUp,
   Plus,
   Info,
   Pencil,
+  Target,
+  Zap,
 } from 'lucide-react'
 import { AgentTooltip } from '@/components/agent/AgentTooltip'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
@@ -25,6 +27,168 @@ import type {
   AgentTool,
   AgentTask,
 } from '@/store/agentTypes'
+
+// ─── Tab Configuration ──────────────────────────────────────────────────────
+
+type ContextTab = 'tasks' | 'data-sources' | 'user-profiles' | 'tools' | 'guardrails'
+
+interface TabDef {
+  id: ContextTab
+  label: string
+  icon: React.ElementType
+  goalLink: string // short description of how this tab traces to the goal
+}
+
+const TABS: TabDef[] = [
+  { id: 'tasks', label: 'Tasks', icon: Target, goalLink: 'What the agent does' },
+  { id: 'data-sources', label: 'Data Sources', icon: Database, goalLink: 'Knowledge it uses' },
+  { id: 'user-profiles', label: 'User Profiles', icon: Users, goalLink: 'Who it serves' },
+  { id: 'tools', label: 'Tools', icon: Wrench, goalLink: 'Capabilities available' },
+  { id: 'guardrails', label: 'Guardrails', icon: Shield, goalLink: 'Boundaries & rules' },
+]
+
+// ─── Goal Traceability Ribbon ───────────────────────────────────────────────
+
+function GoalRibbon({
+  goalStatement,
+  tabGoalLink,
+  accentColor,
+}: {
+  goalStatement: string
+  tabGoalLink: string
+  accentColor: string
+}) {
+  // Show truncated goal + how this tab connects
+  const truncated = goalStatement.length > 90 ? goalStatement.slice(0, 90) + '...' : goalStatement
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="rounded-lg border px-3.5 py-2.5 flex items-start gap-2.5"
+      style={{ borderColor: `${accentColor}20`, background: `${accentColor}04` }}
+    >
+      <Zap className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: accentColor }} aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: accentColor }}>
+          {tabGoalLink}
+        </p>
+        <p className="text-[11px] text-gray-500 leading-relaxed mt-0.5 truncate" title={goalStatement}>
+          {truncated}
+        </p>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Tab Bar ────────────────────────────────────────────────────────────────
+
+function TabBar({
+  tabs,
+  activeTab,
+  onTabChange,
+  counts,
+  accentColor,
+}: {
+  tabs: TabDef[]
+  activeTab: ContextTab
+  onTabChange: (tab: ContextTab) => void
+  counts: Record<ContextTab, number>
+  accentColor: string
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
+
+  // Update indicator position on tab change (useLayoutEffect for accurate post-paint measurements)
+  useEffect(() => {
+    if (!containerRef.current) return
+    const activeBtn = containerRef.current.querySelector(`[data-tab="${activeTab}"]`) as HTMLElement
+    if (activeBtn) {
+      setIndicatorStyle({
+        left: activeBtn.offsetLeft,
+        width: activeBtn.offsetWidth,
+      })
+    }
+  }, [activeTab])
+
+  // Arrow-key navigation between tabs (WCAG tablist pattern)
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const tabIds = tabs.map((t) => t.id)
+    const currentIndex = tabIds.indexOf(activeTab)
+    let nextIndex = -1
+
+    if (e.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % tabIds.length
+    } else if (e.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length
+    } else if (e.key === 'Home') {
+      nextIndex = 0
+    } else if (e.key === 'End') {
+      nextIndex = tabIds.length - 1
+    }
+
+    if (nextIndex >= 0) {
+      e.preventDefault()
+      onTabChange(tabIds[nextIndex])
+      // Focus the newly active tab button
+      const nextBtn = containerRef.current?.querySelector(`[data-tab="${tabIds[nextIndex]}"]`) as HTMLElement
+      nextBtn?.focus()
+    }
+  }
+
+  return (
+    <div className="relative">
+      <div
+        ref={containerRef}
+        className="flex gap-1 overflow-x-auto scrollbar-hide border-b border-gray-200"
+        role="tablist"
+        aria-label="Context definition sections"
+        onKeyDown={handleTabKeyDown}
+      >
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              id={`tab-${tab.id}`}
+              data-tab={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`tabpanel-${tab.id}`}
+              tabIndex={isActive ? 0 : -1}
+              onClick={() => onTabChange(tab.id)}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium whitespace-nowrap transition-colors relative shrink-0 cursor-pointer"
+              style={{
+                color: isActive ? accentColor : '#9ca3af',
+              }}
+            >
+              <Icon className="w-4 h-4" aria-hidden="true" />
+              <span>{tab.label}</span>
+              <span
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5"
+                style={{
+                  background: isActive ? `${accentColor}12` : '#f3f4f6',
+                  color: isActive ? accentColor : '#9ca3af',
+                }}
+              >
+                {counts[tab.id]}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      {/* Sliding indicator */}
+      <motion.div
+        className="absolute bottom-0 h-[2px] rounded-full"
+        style={{ background: accentColor }}
+        animate={{ left: indicatorStyle.left, width: indicatorStyle.width }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      />
+    </div>
+  )
+}
 
 // ─── Stage Explainer ────────────────────────────────────────────────
 
@@ -48,9 +212,9 @@ function ContextExplainer({ viewMode }: { viewMode: 'business' | 'technical' }) 
   )
 }
 
-// ─── Instruction Card ────────────────────────────────────────────────
+// ─── Guardrail Card (renamed from InstructionCard) ──────────────────
 
-function InstructionCard({
+function GuardrailCard({
   step,
   accentColor,
   delay,
@@ -62,6 +226,7 @@ function InstructionCard({
   viewMode: 'business' | 'technical'
 }) {
   const [expanded, setExpanded] = useState(false)
+  const panelId = `guardrail-panel-${step.stepNumber}`
 
   const hasTechnicalContent =
     step.technicalDetail ||
@@ -83,7 +248,6 @@ function InstructionCard({
       style={{ borderColor: `${accentColor}20` }}
     >
       <div className="flex items-start gap-3 px-4 py-3.5">
-        {/* Step number */}
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
           style={{ background: `${accentColor}10` }}
@@ -93,15 +257,11 @@ function InstructionCard({
           </span>
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
           <span className="text-sm font-bold text-gray-900">{step.label}</span>
-          <p className="text-xs text-gray-600 leading-relaxed mt-1.5">
-            {step.description}
-          </p>
+          <p className="text-xs text-gray-600 leading-relaxed mt-1.5">{step.description}</p>
         </div>
 
-        {/* Edit button */}
         <AgentTooltip
           title="Demo Mode"
           content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
@@ -110,19 +270,19 @@ function InstructionCard({
         >
           <button
             className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
-            aria-label={`Edit step ${step.stepNumber}`}
+            aria-label={`Edit guardrail ${step.stepNumber}`}
           >
             <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </AgentTooltip>
 
-        {/* Expand button for technical details */}
         {canExpand && (
           <button
             onClick={() => setExpanded(!expanded)}
             className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
             aria-expanded={expanded}
-            aria-label={`${expanded ? 'Collapse' : 'Expand'} technical details for step ${step.stepNumber}`}
+            aria-controls={panelId}
+            aria-label={`${expanded ? 'Collapse' : 'Expand'} technical details for guardrail ${step.stepNumber}`}
           >
             {expanded ? (
               <ChevronUp className="w-4 h-4" aria-hidden="true" />
@@ -133,10 +293,12 @@ function InstructionCard({
         )}
       </div>
 
-      {/* Technical expansion */}
       <AnimatePresence>
         {expanded && canExpand && (
           <motion.div
+            id={panelId}
+            role="region"
+            aria-label={`Guardrail ${step.stepNumber} technical details`}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -147,32 +309,17 @@ function InstructionCard({
               {step.technicalDetail && (
                 <div
                   className="rounded-lg px-3 py-2.5 text-[11px] font-mono text-gray-600 leading-relaxed"
-                  style={{
-                    background: `${accentColor}06`,
-                    borderLeft: `2px solid ${accentColor}30`,
-                  }}
+                  style={{ background: `${accentColor}06`, borderLeft: `2px solid ${accentColor}30` }}
                 >
                   {step.technicalDetail}
                 </div>
               )}
-
-              {(step.dataSource ||
-                step.retrievalType ||
-                step.toolInvocation ||
-                step.errorHandling) && (
+              {(step.dataSource || step.retrievalType || step.toolInvocation || step.errorHandling) && (
                 <div className="grid grid-cols-2 gap-2">
-                  {step.dataSource && (
-                    <MetaItem label="Data Source" value={step.dataSource} />
-                  )}
-                  {step.retrievalType && (
-                    <MetaItem label="Retrieval" value={step.retrievalType} />
-                  )}
-                  {step.toolInvocation && (
-                    <MetaItem label="Tools" value={step.toolInvocation} />
-                  )}
-                  {step.errorHandling && (
-                    <MetaItem label="Error Handling" value={step.errorHandling} />
-                  )}
+                  {step.dataSource && <MetaItem label="Data Source" value={step.dataSource} />}
+                  {step.retrievalType && <MetaItem label="Retrieval" value={step.retrievalType} />}
+                  {step.toolInvocation && <MetaItem label="Tools" value={step.toolInvocation} />}
+                  {step.errorHandling && <MetaItem label="Error Handling" value={step.errorHandling} />}
                 </div>
               )}
             </div>
@@ -188,47 +335,9 @@ function InstructionCard({
 function MetaItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg bg-gray-50 px-2.5 py-2">
-      <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 block">
-        {label}
-      </span>
-      <span className="text-[11px] text-gray-600 leading-tight mt-0.5 block">
-        {value}
-      </span>
+      <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 block">{label}</span>
+      <span className="text-[11px] text-gray-600 leading-tight mt-0.5 block">{value}</span>
     </div>
-  )
-}
-
-// ─── Section Header ─────────────────────────────────────────────────
-
-function SectionHeader({
-  icon: Icon,
-  title,
-  count,
-  delay,
-}: {
-  icon: React.ElementType
-  title: string
-  count?: number
-  delay: number
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay, duration: 0.3 }}
-      className="flex items-center gap-2.5"
-    >
-      <Icon className="w-5 h-5" style={{ color: '#3b82f6' }} aria-hidden="true" />
-      <h2 className="text-sm font-bold text-gray-900">{title}</h2>
-      {count !== undefined && (
-        <div
-          className="inline-flex items-center justify-center min-w-6 h-6 rounded-full text-[11px] font-bold"
-          style={{ background: '#3b82f620', color: '#3b82f6' }}
-        >
-          {count}
-        </div>
-      )}
-    </motion.div>
   )
 }
 
@@ -245,7 +354,6 @@ function DataSourceCard({
   viewMode?: 'business' | 'technical'
   matchedDomain?: DataDomain | null
 }) {
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -279,12 +387,6 @@ function DataSourceCard({
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span
-            className="text-[10px] font-semibold px-2 py-1 rounded-full"
-            style={{ background: '#f3f4f620', color: '#6b7280' }}
-          >
-            {source.format}
-          </span>
           <span className="text-xs text-gray-400">{source.size}</span>
         </div>
         <AgentTooltip
@@ -316,34 +418,25 @@ const PROFICIENCY_META: Record<
     color: '#166534',
     bg: '#dcfce7',
     border: '#86efac',
-    tooltip:
-      'The agent acts independently with minimal confirmation. Bulk operations, advanced options, and technical language are enabled.',
+    tooltip: 'The agent acts independently with minimal confirmation. Bulk operations, advanced options, and technical language are enabled.',
   },
   medium: {
     label: 'Flexible',
     color: '#92400e',
     bg: '#fef3c7',
     border: '#fde047',
-    tooltip:
-      'The agent uses domain terminology and offers shortcuts, but confirms before high-impact actions. A balance of speed and safety.',
+    tooltip: 'The agent uses domain terminology and offers shortcuts, but confirms before high-impact actions. A balance of speed and safety.',
   },
   low: {
     label: 'Guided',
     color: '#991b1b',
     bg: '#fee2e2',
     border: '#fca5a5',
-    tooltip:
-      'The agent uses plain language, confirms before every action, and provides step-by-step guidance. Maximum guardrails for safety.',
+    tooltip: 'The agent uses plain language, confirms before every action, and provides step-by-step guidance. Maximum guardrails for safety.',
   },
 }
 
-function UserProfileCard({
-  profile,
-  delay,
-}: {
-  profile: UserProfile
-  delay: number
-}) {
+function UserProfileCard({ profile, delay }: { profile: UserProfile; delay: number }) {
   const meta = PROFICIENCY_META[profile.proficiency]
 
   return (
@@ -356,9 +449,7 @@ function UserProfileCard({
     >
       <div className="p-4">
         <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-gray-900">{profile.category}</p>
-          </div>
+          <p className="text-sm font-bold text-gray-900 flex-1 min-w-0">{profile.category}</p>
           <div className="flex items-center gap-2 shrink-0">
             <span
               className="text-[9px] font-bold px-2 py-1 rounded-full"
@@ -366,40 +457,18 @@ function UserProfileCard({
             >
               {meta.label}
             </span>
-            <AgentTooltip
-              title={meta.label}
-              content={meta.tooltip}
-              trigger="hover"
-              position="bottom"
-            >
+            <AgentTooltip title={meta.label} content={meta.tooltip} trigger="hover" position="bottom">
               <div className="p-0.5 rounded-md text-gray-400 hover:text-gray-600 transition-colors cursor-help">
                 <Info className="w-3.5 h-3.5" aria-hidden="true" />
               </div>
             </AgentTooltip>
-            <AgentTooltip
-              title="Demo Mode"
-              content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
-              trigger="click"
-              position="bottom"
-            >
-              <button
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white/50 transition-colors"
-                aria-label={`Edit profile ${profile.category}`}
-              >
-                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </AgentTooltip>
           </div>
         </div>
-
         <div className="space-y-1.5">
           {profile.exampleQuestions.map((q, i) => (
             <div key={i} className="flex items-start gap-2">
-              <span
-                className="text-xs font-semibold mt-0.5 shrink-0"
-                style={{ color: meta.color }}
-              >
-                •
+              <span className="text-xs font-semibold mt-0.5 shrink-0" style={{ color: meta.color }}>
+                &bull;
               </span>
               <p className="text-xs text-gray-700 leading-relaxed">{q}</p>
             </div>
@@ -412,13 +481,7 @@ function UserProfileCard({
 
 // ─── Tool Card ──────────────────────────────────────────────────────
 
-function ToolCard({
-  tool,
-  delay,
-}: {
-  tool: AgentTool
-  delay: number
-}) {
+function ToolCard({ tool, delay }: { tool: AgentTool; delay: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -428,48 +491,18 @@ function ToolCard({
     >
       <div className="p-4">
         <div className="flex items-start justify-between gap-3 mb-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-gray-900">{tool.name}</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span
-              className="text-[9px] font-bold px-2 py-1 rounded-full"
-              style={{ background: '#dcfce7', color: '#166534' }}
-            >
-              Active
-            </span>
-            <AgentTooltip
-              title="Demo Mode"
-              content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
-              trigger="click"
-              position="bottom"
-            >
-              <button
-                className="p-1 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-                aria-label={`Edit tool ${tool.name}`}
-              >
-                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </AgentTooltip>
-          </div>
+          <p className="text-sm font-bold text-gray-900 flex-1 min-w-0">{tool.name}</p>
+          <span className="text-[9px] font-bold px-2 py-1 rounded-full shrink-0" style={{ background: '#dcfce7', color: '#166534' }}>
+            Active
+          </span>
         </div>
-
-        <p className="text-xs text-gray-600 leading-relaxed">
-          {tool.description}
-        </p>
-
+        <p className="text-xs text-gray-600 leading-relaxed">{tool.description}</p>
         {tool.accesses && tool.accesses.length > 0 && (
-          <p className="text-[10px] text-gray-400 mt-1">
-            Accesses: {tool.accesses.join(', ')}
-          </p>
+          <p className="text-[10px] text-gray-400 mt-1">Accesses: {tool.accesses.join(', ')}</p>
         )}
-
         {tool.autoDetected && (
           <div className="mt-3 pt-3 border-t border-gray-100">
-            <span
-              className="text-[9px] font-semibold px-2 py-1 rounded-full"
-              style={{ background: '#f3f4f620', color: '#6b7280' }}
-            >
+            <span className="text-[9px] font-semibold px-2 py-1 rounded-full" style={{ background: '#f3f4f620', color: '#6b7280' }}>
               Auto-detected
             </span>
           </div>
@@ -481,13 +514,7 @@ function ToolCard({
 
 // ─── Task Card ──────────────────────────────────────────────────────
 
-function TaskCard({
-  task,
-  delay,
-}: {
-  task: AgentTask
-  delay: number
-}) {
+function TaskCard({ task, delay }: { task: AgentTask; delay: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -500,87 +527,50 @@ function TaskCard({
           <p className="text-sm font-bold text-gray-900">{task.label}</p>
           <div className="flex items-center gap-2 shrink-0">
             {task.systemSuggested && (
-              <span
-                className="text-[9px] font-bold px-2 py-1 rounded-full"
-                style={{ background: '#ede9fe', color: '#5b21b6' }}
-              >
+              <span className="text-[9px] font-bold px-2 py-1 rounded-full" style={{ background: '#ede9fe', color: '#5b21b6' }}>
                 System Suggested
               </span>
             )}
-            <AgentTooltip
-              title="Demo Mode"
-              content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
-              trigger="click"
-              position="bottom"
-            >
-              <button
-                className="p-1 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-                aria-label={`Edit task ${task.label}`}
-              >
-                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </AgentTooltip>
           </div>
         </div>
-
-        <p className="text-xs text-gray-600 leading-relaxed">
-          {task.description}
-        </p>
-
+        <p className="text-xs text-gray-600 leading-relaxed">{task.description}</p>
         {task.triggeredBy && (
-          <p className="text-[10px] text-gray-400 mt-1">
-            Triggered by: {task.triggeredBy}
-          </p>
+          <p className="text-[10px] text-gray-400 mt-1">Triggered by: {task.triggeredBy}</p>
         )}
       </div>
     </motion.div>
   )
 }
 
-// ─── Add Input Component ────────────────────────────────────────────
+// ─── Add Input ──────────────────────────────────────────────────────
 
-function AddInputArea({
-  placeholder,
-  delay,
-}: {
-  placeholder: string
-  delay: number
-}) {
+function AddInputArea({ placeholder }: { placeholder: string }) {
   const [value, setValue] = useState('')
 
   return (
-    <div className="space-y-2">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay }}
-        className="flex items-center gap-2"
+    <div className="flex items-center gap-2">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      <AgentTooltip
+        title="Demo Mode"
+        content="Custom inputs are available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
+        trigger="click"
+        position="bottom"
       >
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={placeholder}
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-        <AgentTooltip
-          title="Demo Mode"
-          content="Custom inputs are available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
-          trigger="click"
-          position="bottom"
+        <button
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-semibold text-sm text-white transition-opacity hover:opacity-90"
+          style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
+          aria-label="Add item"
         >
-          <button
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-semibold text-sm text-white transition-opacity hover:opacity-90"
-            style={{
-              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            }}
-            aria-label="Add item"
-          >
-            <Plus className="w-4 h-4" aria-hidden="true" />
-            Add
-          </button>
-        </AgentTooltip>
-      </motion.div>
+          <Plus className="w-4 h-4" aria-hidden="true" />
+          Add
+        </button>
+      </AgentTooltip>
     </div>
   )
 }
@@ -595,6 +585,17 @@ export function ContextDefinition() {
   const contextData = activeTileId ? getContextDefinitionData(activeTileId) : null
   const goalData = activeTileId ? getGoalData(activeTileId) : null
   const accentColor = tile?.color ?? '#f59e0b'
+
+  const [activeTab, setActiveTab] = useState<ContextTab>('tasks')
+
+  // Reset tab when tile changes
+  const prevTileRef = useRef(activeTileId)
+  useEffect(() => {
+    if (activeTileId !== prevTileRef.current) {
+      setActiveTab('tasks')
+      prevTileRef.current = activeTileId
+    }
+  }, [activeTileId])
 
   // Build data-domain lookup: source name → DataDomain (for technical mode)
   const domainLookup = new Map<string, DataDomain>()
@@ -612,21 +613,24 @@ export function ContextDefinition() {
     )
   }
 
-  const {
-    instructions,
-    businessSummary,
-    technicalSummary,
-    dataSources,
-    userProfiles,
-    tools,
-    tasks,
-  } = contextData
+  const { instructions, businessSummary, technicalSummary, dataSources, userProfiles, tools, tasks } = contextData
+
+  const counts: Record<ContextTab, number> = {
+    tasks: tasks.length,
+    'data-sources': dataSources.length,
+    'user-profiles': userProfiles.length,
+    tools: tools.length,
+    guardrails: instructions.length,
+  }
+
+  const activeTabDef = TABS.find((t) => t.id === activeTab)!
+  const goalStatement = goalData?.goalStatement ?? ''
 
   const coreProfiles = userProfiles.filter((p) => p.isCore)
   const domainProfiles = userProfiles.filter((p) => !p.isCore)
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-5">
       {/* Stage explainer */}
       <ContextExplainer viewMode={viewMode} />
 
@@ -640,164 +644,123 @@ export function ContextDefinition() {
         {viewMode === 'business' ? businessSummary : technicalSummary}
       </motion.p>
 
-      {/* ───────────────────────────────────────────────────────────────
-          SECTION 1: INSTRUCTIONS
-          ─────────────────────────────────────────────────────────────── */}
-      <div className="space-y-4">
-        <SectionHeader
-          icon={FileText}
-          title="Instructions"
-          count={instructions.length}
-          delay={0.2}
-        />
+      {/* Tab bar */}
+      <TabBar
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        counts={counts}
+        accentColor={accentColor}
+      />
 
-        <div className="space-y-3">
-          {instructions.map((step, i) => (
-            <InstructionCard
-              key={step.stepNumber}
-              step={step}
-              accentColor={accentColor}
-              delay={0.25 + i * 0.06}
-              viewMode={viewMode}
-            />
-          ))}
-        </div>
+      {/* Goal traceability ribbon */}
+      <GoalRibbon
+        goalStatement={goalStatement}
+        tabGoalLink={activeTabDef.goalLink}
+        accentColor={accentColor}
+      />
 
-        <AddInputArea placeholder="Add new instruction step..." delay={0.25 + instructions.length * 0.06 + 0.08} />
-      </div>
+      {/* Tab content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          id={`tabpanel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${activeTab}`}
+          initial={{ opacity: 0, x: 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -12 }}
+          transition={{ duration: 0.2 }}
+          className="space-y-4"
+        >
+          {/* ─── Tasks Tab ─── */}
+          {activeTab === 'tasks' && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {tasks.map((task, i) => (
+                  <TaskCard key={task.id} task={task} delay={0.05 + i * 0.04} />
+                ))}
+              </div>
+              <AddInputArea placeholder="Add new task..." />
+            </>
+          )}
 
-      {/* ───────────────────────────────────────────────────────────────
-          SECTION 2: DATA SOURCES
-          ─────────────────────────────────────────────────────────────── */}
-      <div className="space-y-4">
-        <SectionHeader
-          icon={Database}
-          title="Data Sources"
-          count={dataSources.length}
-          delay={0.3}
-        />
+          {/* ─── Data Sources Tab ─── */}
+          {activeTab === 'data-sources' && (
+            <>
+              <div className="space-y-2">
+                {dataSources.map((source, i) => (
+                  <DataSourceCard
+                    key={source.id}
+                    source={source}
+                    delay={0.05 + i * 0.04}
+                    viewMode={viewMode}
+                    matchedDomain={domainLookup.get(source.name.toLowerCase()) ?? null}
+                  />
+                ))}
+              </div>
+              <AddInputArea placeholder="Add new data source..." />
+            </>
+          )}
 
-        <div className="space-y-2">
-          {dataSources.map((source, i) => (
-            <DataSourceCard
-              key={source.id}
-              source={source}
-              delay={0.35 + i * 0.06}
-              viewMode={viewMode}
-              matchedDomain={domainLookup.get(source.name.toLowerCase()) ?? null}
-            />
-          ))}
-        </div>
+          {/* ─── User Profiles Tab ─── */}
+          {activeTab === 'user-profiles' && (
+            <>
+              {coreProfiles.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Core Users</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {coreProfiles.map((profile, i) => (
+                      <UserProfileCard key={profile.id} profile={profile} delay={0.05 + i * 0.04} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {domainProfiles.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 pt-2">Specialized Users</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {domainProfiles.map((profile, i) => (
+                      <UserProfileCard key={profile.id} profile={profile} delay={0.05 + i * 0.04} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <AddInputArea placeholder="Add new user profile..." />
+            </>
+          )}
 
-        <AddInputArea placeholder="Add new data source..." delay={0.35 + dataSources.length * 0.06 + 0.08} />
-      </div>
+          {/* ─── Tools Tab ─── */}
+          {activeTab === 'tools' && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {tools.map((tool, i) => (
+                  <ToolCard key={tool.id} tool={tool} delay={0.05 + i * 0.04} />
+                ))}
+              </div>
+              <AddInputArea placeholder="Add new tool..." />
+            </>
+          )}
 
-      {/* ───────────────────────────────────────────────────────────────
-          SECTION 3: USER PROFILES
-          ─────────────────────────────────────────────────────────────── */}
-      <div className="space-y-4">
-        <SectionHeader
-          icon={Users}
-          title="User Profiles"
-          count={userProfiles.length}
-          delay={0.4}
-        />
-
-        {/* Core profiles */}
-        {coreProfiles.length > 0 && (
-          <div>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.42, duration: 0.3 }}
-              className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3"
-            >
-              Core Users
-            </motion.p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {coreProfiles.map((profile, i) => (
-                <UserProfileCard
-                  key={profile.id}
-                  profile={profile}
-                  delay={0.45 + i * 0.06}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Domain-specific profiles */}
-        {domainProfiles.length > 0 && (
-          <div>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{
-                delay: 0.42 + coreProfiles.length * 0.06,
-                duration: 0.3,
-              }}
-              className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 pt-2"
-            >
-              Specialized Users
-            </motion.p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {domainProfiles.map((profile, i) => (
-                <UserProfileCard
-                  key={profile.id}
-                  profile={profile}
-                  delay={
-                    0.45 + coreProfiles.length * 0.06 + 0.08 + i * 0.06
-                  }
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <AddInputArea placeholder="Add new user profile..." delay={0.45 + userProfiles.length * 0.06 + 0.08} />
-      </div>
-
-      {/* ───────────────────────────────────────────────────────────────
-          SECTION 4: TOOLS
-          ─────────────────────────────────────────────────────────────── */}
-      <div className="space-y-4">
-        <SectionHeader
-          icon={Wrench}
-          title="Tools"
-          count={tools.length}
-          delay={0.5}
-        />
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {tools.map((tool, i) => (
-            <ToolCard key={tool.id} tool={tool} delay={0.55 + i * 0.06} />
-          ))}
-        </div>
-
-        <AddInputArea placeholder="Add new tool..." delay={0.55 + tools.length * 0.06 + 0.08} />
-      </div>
-
-      {/* ───────────────────────────────────────────────────────────────
-          SECTION 5: TASKS
-          ─────────────────────────────────────────────────────────────── */}
-      <div className="space-y-4">
-        <SectionHeader
-          icon={ListChecks}
-          title="Tasks"
-          count={tasks.length}
-          delay={0.6}
-        />
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {tasks.map((task, i) => (
-            <TaskCard key={task.id} task={task} delay={0.65 + i * 0.06} />
-          ))}
-        </div>
-
-        <AddInputArea placeholder="Add new task..." delay={0.65 + tasks.length * 0.06 + 0.08} />
-      </div>
+          {/* ─── Guardrails Tab (renamed from Instructions) ─── */}
+          {activeTab === 'guardrails' && (
+            <>
+              <div className="space-y-3">
+                {instructions.map((step, i) => (
+                  <GuardrailCard
+                    key={step.stepNumber}
+                    step={step}
+                    accentColor={accentColor}
+                    delay={0.05 + i * 0.04}
+                    viewMode={viewMode}
+                  />
+                ))}
+              </div>
+              <AddInputArea placeholder="Add new guardrail..." />
+            </>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }

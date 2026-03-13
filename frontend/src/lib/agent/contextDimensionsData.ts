@@ -1,4 +1,4 @@
-import type { UserProfile } from '@/store/agentTypes'
+import type { UserProfile, OutputPreference, SourceContribution } from '@/store/agentTypes'
 
 // ─── Data Type Chips ──────────────────────────────────────────────────────
 // Auto-detected data type categories for each source
@@ -24,18 +24,9 @@ export const DATA_TYPE_COLORS: Record<DataTypeChip, { bg: string; text: string; 
 }
 
 // ─── Output Preference Tags ──────────────────────────────────────────────
-// What kind of responses each user profile needs
+// OutputPreference type is now canonical in agentTypes.ts — re-exported below
 
-export type OutputPreference =
-  | 'short-answer'
-  | 'detailed-explanation'
-  | 'summary-report'
-  | 'action-list'
-  | 'data-table'
-  | 'visual-chart'
-  | 'step-by-step'
-  | 'comparison'
-  | 'code-snippet'
+export { type OutputPreference } from '@/store/agentTypes'
 
 export const OUTPUT_PREFERENCE_LABELS: Record<OutputPreference, string> = {
   'short-answer': 'Short Answer',
@@ -50,12 +41,9 @@ export const OUTPUT_PREFERENCE_LABELS: Record<OutputPreference, string> = {
 }
 
 // ─── Source Contribution (traces back to Context Definition) ─────────────
+// SourceContribution interface is now canonical in agentTypes.ts — re-exported below
 
-export interface SourceContribution {
-  sourceId: string    // maps to Context Definition DataSource.id
-  sourceName: string  // display name for quick reference
-  count: string       // "186 pages", "28 tables", "3,800 records"
-}
+export { type SourceContribution } from '@/store/agentTypes'
 
 // ─── Dimension Aggregate (type-based, with source attribution) ──────────
 

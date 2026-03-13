@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AgentStageId } from './agentTypes'
+import type { AgentStageId, WorkSavedEntry, StageReceipt } from './agentTypes'
 import { AGENT_STAGE_ORDER } from './agentTypes'
 
 interface AgentPlaygroundState {
@@ -31,6 +31,12 @@ interface AgentPlaygroundState {
   // Glossary
   glossaryOpen: boolean
 
+  // WOW Factor — Work Saved sidebar
+  workSavedOpen: boolean
+  workSavedEntries: WorkSavedEntry[]
+  stageReceipts: StageReceipt[]
+  iterationCount: number
+
   // Actions
   setStage: (stage: AgentStageId) => void
   nextStage: () => void
@@ -48,6 +54,10 @@ interface AgentPlaygroundState {
   setAnimationComplete: (key: string) => void
   setSkipAnimation: (skip: boolean) => void
   toggleGlossary: () => void
+  toggleWorkSaved: () => void
+  addWorkSavedEntries: (entries: WorkSavedEntry[]) => void
+  addStageReceipt: (receipt: StageReceipt) => void
+  incrementIteration: () => void
   reset: () => void
   resetToTiles: () => void
 }
@@ -65,6 +75,10 @@ export const useAgentPlaygroundStore = create<AgentPlaygroundState>((set, get) =
   animationComplete: {},
   skipAnimation: false,
   glossaryOpen: false,
+  workSavedOpen: false,
+  workSavedEntries: [],
+  stageReceipts: [],
+  iterationCount: 0,
 
   setStage: (stage) => set({ currentStage: stage }),
 
@@ -127,6 +141,18 @@ export const useAgentPlaygroundStore = create<AgentPlaygroundState>((set, get) =
       simulationOpen: s.glossaryOpen ? s.simulationOpen : false,
     })),
 
+  toggleWorkSaved: () =>
+    set((s) => ({ workSavedOpen: !s.workSavedOpen })),
+
+  addWorkSavedEntries: (entries) =>
+    set((s) => ({ workSavedEntries: [...s.workSavedEntries, ...entries] })),
+
+  addStageReceipt: (receipt) =>
+    set((s) => ({ stageReceipts: [...s.stageReceipts, receipt] })),
+
+  incrementIteration: () =>
+    set((s) => ({ iterationCount: s.iterationCount + 1 })),
+
   reset: () =>
     set({
       currentStage: 'tiles',
@@ -140,6 +166,10 @@ export const useAgentPlaygroundStore = create<AgentPlaygroundState>((set, get) =
       animationComplete: {},
       skipAnimation: false,
       glossaryOpen: false,
+      workSavedOpen: false,
+      workSavedEntries: [],
+      stageReceipts: [],
+      iterationCount: 0,
     }),
 
   resetToTiles: () =>
@@ -154,5 +184,9 @@ export const useAgentPlaygroundStore = create<AgentPlaygroundState>((set, get) =
       evaluationTab: 'overview',
       animationComplete: {},
       glossaryOpen: false,
+      workSavedOpen: false,
+      workSavedEntries: [],
+      stageReceipts: [],
+      iterationCount: 0,
     }),
 }))
