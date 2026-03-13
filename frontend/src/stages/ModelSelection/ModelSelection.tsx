@@ -15,6 +15,106 @@ import { businessSubtypeLabels, componentToBusinessSummary, metricToBusinessStat
 import type { ModelSelectionResults, ModelComponent } from '@/store/types'
 
 
+// ─── Pipeline Build Animation ─────────────────────────────────────────────────
+
+const PIPELINE_STAGES = [
+  { label: 'Preprocessor',   color: '#3b82f6' },
+  { label: 'Feature Eng.',   color: '#8b5cf6' },
+  { label: 'Model Fn.',      color: '#10b981' },
+  { label: 'Loss Fn.',       color: '#f59e0b' },
+  { label: 'Regularization', color: '#ef4444' },
+  { label: 'Optimization',   color: '#06b6d4' },
+  { label: 'Inference',      color: '#ec4899' },
+]
+
+function PipelineBuildAnimation() {
+  const [visibleCount, setVisibleCount] = useState(0)
+  const [flowActive, setFlowActive] = useState(false)
+
+  useEffect(() => {
+    let count = 0
+    const iv = setInterval(() => {
+      count++
+      setVisibleCount(count)
+      if (count >= PIPELINE_STAGES.length) {
+        clearInterval(iv)
+        setTimeout(() => setFlowActive(true), 250)
+      }
+    }, 160)
+    return () => clearInterval(iv)
+  }, [])
+
+  return (
+    <div className="mt-4 relative overflow-hidden">
+      <div className="flex items-center flex-wrap gap-y-2">
+        {PIPELINE_STAGES.map((stage, i) => {
+          const isVisible = i < visibleCount
+          return (
+            <div key={stage.label} className="flex items-center">
+              <motion.div
+                initial={{ opacity: 0, y: -14, scale: 0.6, rotate: -6 }}
+                animate={isVisible ? { opacity: 1, y: 0, scale: 1, rotate: 0 } : { opacity: 0, y: -14, scale: 0.6, rotate: -6 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 18 }}
+                className="relative px-2.5 py-1.5 rounded-md text-[10px] font-bold whitespace-nowrap select-none"
+                style={{
+                  background: `${stage.color}12`,
+                  border: `1px solid ${stage.color}35`,
+                  color: stage.color,
+                  boxShadow: isVisible ? `0 2px 8px ${stage.color}18` : 'none',
+                }}
+              >
+                {stage.label}
+                {/* snap-in ring */}
+                <AnimatePresence>
+                  {isVisible && i === visibleCount - 1 && (
+                    <motion.div
+                      key="ring"
+                      initial={{ opacity: 0.6, scale: 1 }}
+                      animate={{ opacity: 0, scale: 1.8 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.45 }}
+                      className="absolute inset-0 rounded-md pointer-events-none"
+                      style={{ border: `2px solid ${stage.color}` }}
+                    />
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              {i < PIPELINE_STAGES.length - 1 && (
+                <div className="flex items-center mx-1 shrink-0">
+                  <motion.div
+                    initial={{ scaleX: 0 }}
+                    animate={isVisible ? { scaleX: 1 } : { scaleX: 0 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                    className="w-3 h-0.5 rounded-full"
+                    style={{ background: `linear-gradient(90deg, ${stage.color}60, ${PIPELINE_STAGES[i + 1].color}60)`, originX: 0 }}
+                  />
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={isVisible ? { opacity: 1 } : { opacity: 0 }}
+                    transition={{ duration: 0.12, delay: 0.15 }}
+                    className="text-gray-400 text-[9px] leading-none"
+                  >›</motion.span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Flowing data dot — loops after all stages appear */}
+      {flowActive && (
+        <motion.div
+          className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full pointer-events-none"
+          style={{ background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)', boxShadow: '0 0 6px #8b5cf680' }}
+          animate={{ left: ['-4px', 'calc(100% + 4px)'], opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 1.4, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.6 }}
+        />
+      )}
+    </div>
+  )
+}
+
 function getModelTermKey(champion: string): string {
   const n = champion.toLowerCase()
   if (n.includes('logistic')) return 'logistic-regression'
@@ -911,17 +1011,8 @@ export function ModelSelection() {
             </div>
           </div>
 
-          {/* Horizontal pipeline visualization */}
-          <div className="mt-4 flex items-center gap-1 overflow-x-auto">
-            {['Preprocessor', 'Feature Eng.', 'Model Function', 'Loss Function', 'Regularization', 'Optimization', 'Inference'].map((step, i) => (
-              <div key={step} className="flex items-center gap-1 shrink-0">
-                <div className="px-2.5 py-1 rounded-md text-[10px] font-semibold text-gray-700 bg-white border border-gray-200 whitespace-nowrap" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                  {step}
-                </div>
-                {i < 6 && <span className="text-gray-400 text-xs">&rarr;</span>}
-              </div>
-            ))}
-          </div>
+          {/* Animated pipeline build visualization */}
+          <PipelineBuildAnimation />
         </motion.div>
 
         {/* Chosen model panel */}

@@ -403,83 +403,125 @@ function EvalMetricCard({
 function AssemblyStrip({
   phase,
   visibleCount,
-  scanProgress,
 }: {
   phase: BuildPhase
   visibleCount: number
-  scanProgress: number // 0-1
+  scanProgress: number // 0-1 (kept for API compat)
 }) {
   return (
-    <div className="relative py-4">
+    <div className="relative py-6">
       {/* Pipeline strip */}
-      <div className="flex items-center justify-center gap-1 sm:gap-2 relative">
+      <div className="flex items-center justify-center gap-0 relative">
         {ASSEMBLY_ORDER.map((catId, i) => {
           const vis = CATEGORY_VISUALS[catId]
           const isVisible = i < visibleCount
+          const isEval = phase === 'evaluating'
 
           return (
-            <motion.div
-              key={catId}
-              initial={{ opacity: 0, scale: 0, y: -8 }}
-              animate={
-                isVisible
-                  ? { opacity: 1, scale: 1, y: 0 }
-                  : { opacity: 0, scale: 0, y: -8 }
-              }
-              transition={{
-                duration: 0.2,
-                delay: isVisible ? i * 0.1 : 0,
-                ease: 'backOut',
-              }}
-              className="relative"
-            >
-              {/* Icon circle */}
-              <div
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center border transition-all duration-300"
-                style={{
-                  background: vis.bg,
-                  borderColor: vis.border,
-                  color: vis.color,
-                  boxShadow:
-                    phase === 'evaluating' && isVisible
-                      ? `0 0 12px ${vis.color}30`
-                      : 'none',
-                }}
+            <div key={catId} className="flex items-center">
+              {/* Icon tile */}
+              <motion.div
+                initial={{ opacity: 0, y: -22, scale: 0.5, rotate: -8 }}
+                animate={
+                  isVisible
+                    ? { opacity: 1, y: 0, scale: 1, rotate: 0 }
+                    : { opacity: 0, y: -22, scale: 0.5, rotate: -8 }
+                }
+                transition={
+                  isVisible
+                    ? { type: 'spring', stiffness: 420, damping: 20 }
+                    : { duration: 0.1 }
+                }
+                className="relative"
               >
-                {vis.icon}
-              </div>
-
-              {/* Connector line to next */}
-              {i < ASSEMBLY_ORDER.length - 1 && isVisible && (
+                {/* Icon box */}
                 <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.15, delay: i * 0.1 + 0.1 }}
-                  className="absolute top-1/2 -right-1 sm:-right-2 w-1 sm:w-2 h-0.5 bg-gray-200 origin-left"
-                />
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border-2"
+                  style={{
+                    background: vis.bg,
+                    borderColor: isEval && isVisible ? vis.color : vis.border,
+                    color: vis.color,
+                  }}
+                  animate={
+                    isEval && isVisible
+                      ? {
+                          boxShadow: [
+                            `0 0 0px ${vis.color}00`,
+                            `0 0 18px ${vis.color}70`,
+                            `0 0 0px ${vis.color}00`,
+                          ],
+                        }
+                      : { boxShadow: `0 2px 8px ${vis.color}20` }
+                  }
+                  transition={
+                    isEval && isVisible
+                      ? {
+                          delay: i * 0.13,
+                          duration: 0.75,
+                          repeat: Infinity,
+                          repeatDelay: 0.9,
+                          ease: 'easeInOut',
+                        }
+                      : { duration: 0.2 }
+                  }
+                >
+                  {vis.icon}
+                </motion.div>
+
+                {/* Snap-in ring */}
+                <AnimatePresence>
+                  {isVisible && i === visibleCount - 1 && phase === 'assembling' && (
+                    <motion.div
+                      key="snap"
+                      initial={{ opacity: 0.8, scale: 1 }}
+                      animate={{ opacity: 0, scale: 1.9 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="absolute inset-0 rounded-xl pointer-events-none"
+                      style={{ border: `2px solid ${vis.color}` }}
+                    />
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              {/* Connector to next icon */}
+              {i < ASSEMBLY_ORDER.length - 1 && (
+                <div className="relative flex items-center w-3 sm:w-4 shrink-0">
+                  <motion.div
+                    initial={{ scaleX: 0 }}
+                    animate={isVisible ? { scaleX: 1 } : { scaleX: 0 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                    style={{
+                      originX: 0,
+                      height: '2px',
+                      width: '100%',
+                      background: isEval && isVisible
+                        ? `linear-gradient(90deg, ${vis.color}80, ${CATEGORY_VISUALS[ASSEMBLY_ORDER[i + 1]].color}80)`
+                        : '#e5e7eb',
+                      borderRadius: '9999px',
+                    }}
+                  />
+                  {/* Flowing data dot on connector during eval */}
+                  {isEval && isVisible && (
+                    <motion.div
+                      className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none"
+                      style={{ background: vis.color, boxShadow: `0 0 4px ${vis.color}` }}
+                      animate={{ left: ['-4px', 'calc(100% + 4px)'], opacity: [0, 1, 0] }}
+                      transition={{
+                        delay: i * 0.13 + 0.3,
+                        duration: 0.5,
+                        repeat: Infinity,
+                        repeatDelay: 1.4,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                  )}
+                </div>
               )}
-            </motion.div>
+            </div>
           )
         })}
       </div>
-
-      {/* Scan line effect during evaluation phase */}
-      {phase === 'evaluating' && (
-        <motion.div
-          className="absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-blue-500 to-transparent opacity-60"
-          style={{
-            left: `${scanProgress * 100}%`,
-          }}
-          animate={{
-            left: ['0%', '100%'],
-          }}
-          transition={{
-            duration: 1.5,
-            ease: 'easeInOut',
-            repeat: Infinity,
-          }}
-        />
-      )}
     </div>
   )
 }
