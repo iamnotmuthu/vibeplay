@@ -462,6 +462,19 @@ function UserProfileCard({ profile, delay }: { profile: UserProfile; delay: numb
                 <Info className="w-3.5 h-3.5" aria-hidden="true" />
               </div>
             </AgentTooltip>
+            <AgentTooltip
+              title="Demo Mode"
+              content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
+              trigger="click"
+              position="bottom"
+            >
+              <button
+                className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                aria-label={`Edit user profile ${profile.category}`}
+              >
+                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </AgentTooltip>
           </div>
         </div>
         <div className="space-y-1.5">
@@ -492,9 +505,24 @@ function ToolCard({ tool, delay }: { tool: AgentTool; delay: number }) {
       <div className="p-4">
         <div className="flex items-start justify-between gap-3 mb-2">
           <p className="text-sm font-bold text-gray-900 flex-1 min-w-0">{tool.name}</p>
-          <span className="text-[9px] font-bold px-2 py-1 rounded-full shrink-0" style={{ background: '#dcfce7', color: '#166534' }}>
-            Active
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[9px] font-bold px-2 py-1 rounded-full" style={{ background: '#dcfce7', color: '#166534' }}>
+              Active
+            </span>
+            <AgentTooltip
+              title="Demo Mode"
+              content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
+              trigger="click"
+              position="bottom"
+            >
+              <button
+                className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                aria-label={`Edit tool ${tool.name}`}
+              >
+                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </AgentTooltip>
+          </div>
         </div>
         <p className="text-xs text-gray-600 leading-relaxed">{tool.description}</p>
         {tool.accesses && tool.accesses.length > 0 && (
@@ -531,6 +559,19 @@ function TaskCard({ task, delay }: { task: AgentTask; delay: number }) {
                 System Suggested
               </span>
             )}
+            <AgentTooltip
+              title="Demo Mode"
+              content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
+              trigger="click"
+              position="bottom"
+            >
+              <button
+                className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                aria-label={`Edit task ${task.label}`}
+              >
+                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </AgentTooltip>
           </div>
         </div>
         <p className="text-xs text-gray-600 leading-relaxed">{task.description}</p>
