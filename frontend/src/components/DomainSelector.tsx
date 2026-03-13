@@ -141,11 +141,9 @@ export function DomainSelector({ onSelect, embedded = false }: DomainSelectorPro
                 >
                     <div className="flex items-center gap-3">
                         <a
-                            href="https://vibemodel.ai"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="/playground"
                             className="flex items-center hover:opacity-80 transition-opacity"
-                            aria-label="VibeModel home"
+                            aria-label="VibeModel playground home"
                         >
                             <img
                                 src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}

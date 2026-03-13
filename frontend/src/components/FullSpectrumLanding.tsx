@@ -60,11 +60,9 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
       >
         <div className="flex items-center gap-3">
           <a
-            href="https://vibemodel.ai"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/playground"
             className="flex items-center hover:opacity-80 transition-opacity"
-            aria-label="VibeModel home"
+            aria-label="VibeModel playground home"
           >
             <img
               src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}
@@ -202,7 +200,16 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
 
       {/* Solution Type Tabs */}
       <div className="px-6 pb-8 relative z-10">
-        <SolutionTypeTabs activeType={activeSolutionType} onTypeChange={setActiveSolutionType} />
+        <SolutionTypeTabs
+          activeType={activeSolutionType}
+          onTypeChange={(typeId) => {
+            if (typeId === 'agentic') {
+              setActiveAgentDemo(true)
+            } else {
+              setActiveSolutionType(typeId)
+            }
+          }}
+        />
       </div>
 
       {/* Content Area */}
@@ -239,15 +246,6 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
                 <SolutionTypePreview
                   solutionType={activeSolutionData}
                   onBackToPredictive={() => setActiveSolutionType('predictive')}
-                  onLaunchDemo={
-                    activeSolutionData.demoAvailable
-                      ? () => {
-                          if (activeSolutionData.demoId === 'agent') {
-                            setActiveAgentDemo(true)
-                          }
-                        }
-                      : undefined
-                  }
                 />
               )}
             </motion.div>

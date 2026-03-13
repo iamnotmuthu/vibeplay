@@ -47,18 +47,17 @@ function BrandHeader() {
       }}
     >
       <div className="flex items-center gap-3">
-        <a
-          href="https://vibemodel.ai"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={handleBackToHome}
           className="flex items-center hover:opacity-80 transition-opacity"
+          aria-label="Back to playground home"
         >
           <img
             src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}
             alt="VibeModel"
             style={{ height: 36, width: 'auto' }}
           />
-        </a>
+        </button>
         <button
           onClick={handleBackToHome}
           title="Back to scenario selection"
