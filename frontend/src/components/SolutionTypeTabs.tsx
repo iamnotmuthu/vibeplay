@@ -15,7 +15,7 @@ export function SolutionTypeTabs({ activeType, onTypeChange }: SolutionTypeTabsP
       <div
         role="tablist"
         aria-label="AI Solution Types"
-        className="flex gap-2 max-w-4xl mx-auto w-max sm:w-auto"
+        className="flex gap-2 justify-center w-full"
       >
         {SOLUTION_TYPES.map((type, i) => {
           const Icon = type.icon
@@ -66,7 +66,7 @@ export function SolutionTypeTabs({ activeType, onTypeChange }: SolutionTypeTabsP
                 <Icon className="w-4 h-4 shrink-0" />
                 <span>{type.label}</span>
               </div>
-              {isComingSoon && (
+              {isComingSoon && type.id !== 'agentic' && (
                 <span
                   className="text-[9px] uppercase tracking-widest leading-none"
                   style={{ color: isActive ? 'rgba(255,255,255,0.7)' : '#9ca3af' }}
