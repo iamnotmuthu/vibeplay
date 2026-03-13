@@ -6,8 +6,6 @@ import {
   Users,
   Wrench,
   Shield,
-  ChevronDown,
-  ChevronUp,
   Plus,
   Info,
   Pencil,
@@ -21,12 +19,14 @@ import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 import { getGoalData, DATA_DOMAIN_LABELS, DATA_DOMAIN_COLORS } from '@/lib/agent/goalData'
 import type { DataDomain } from '@/lib/agent/goalData'
 import type {
-  InstructionStep,
   DataSource,
   UserProfile,
   AgentTool,
   AgentTask,
+  Guardrail,
+  GuardrailCategory,
 } from '@/store/agentTypes'
+import { GUARDRAIL_CATEGORY_META } from '@/store/agentTypes'
 
 // ─── Tab Configuration ──────────────────────────────────────────────────────
 
@@ -212,132 +212,108 @@ function ContextExplainer({ viewMode }: { viewMode: 'business' | 'technical' }) 
   )
 }
 
-// ─── Guardrail Card (renamed from InstructionCard) ──────────────────
+// ─── Guardrail Card ──────────────────────────────────────────────────
 
-function GuardrailCard({
-  step,
-  accentColor,
+function GuardrailItemCard({
+  guardrail,
+  categoryMeta,
   delay,
-  viewMode,
 }: {
-  step: InstructionStep
-  accentColor: string
+  guardrail: Guardrail
+  categoryMeta: { color: string; bgColor: string; borderColor: string }
   delay: number
-  viewMode: 'business' | 'technical'
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const panelId = `guardrail-panel-${step.stepNumber}`
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay }}
+      className="flex items-start gap-3 px-3.5 py-3 rounded-lg border bg-white"
+      style={{ borderColor: `${categoryMeta.borderColor}80` }}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm font-semibold text-gray-900">{guardrail.label}</span>
+          <span
+            className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+            style={{
+              background: guardrail.enforcement === 'hard' ? '#fef2f2' : '#f0fdf4',
+              color: guardrail.enforcement === 'hard' ? '#dc2626' : '#16a34a',
+              border: `1px solid ${guardrail.enforcement === 'hard' ? '#fecaca' : '#86efac'}`,
+            }}
+          >
+            {guardrail.enforcement === 'hard' ? 'Hard' : 'Soft'}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 leading-relaxed">{guardrail.description}</p>
+        {guardrail.threshold && (
+          <p className="text-[10px] font-mono mt-1.5" style={{ color: categoryMeta.color }}>
+            Threshold: {guardrail.threshold}
+          </p>
+        )}
+      </div>
+      <AgentTooltip
+        title="Demo Mode"
+        content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
+        trigger="click"
+        position="bottom"
+      >
+        <button
+          className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
+          aria-label={`Edit guardrail ${guardrail.label}`}
+        >
+          <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
+      </AgentTooltip>
+    </motion.div>
+  )
+}
 
-  const hasTechnicalContent =
-    step.technicalDetail ||
-    step.dataSource ||
-    step.retrievalType ||
-    step.toolInvocation ||
-    step.routingRule ||
-    step.errorHandling ||
-    step.escalationCondition
+// ─── Guardrail Category Group ─────────────────────────────────────────
 
-  const canExpand = viewMode === 'technical' && hasTechnicalContent
+function GuardrailCategoryGroup({
+  category,
+  guardrails,
+  delay,
+}: {
+  category: GuardrailCategory
+  guardrails: Guardrail[]
+  delay: number
+}) {
+  const meta = GUARDRAIL_CATEGORY_META[category]
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
-      className="rounded-xl border bg-white overflow-hidden"
-      style={{ borderColor: `${accentColor}20` }}
+      className="rounded-xl border overflow-hidden"
+      style={{ borderColor: meta.borderColor, background: `${meta.bgColor}60` }}
     >
-      <div className="flex items-start gap-3 px-4 py-3.5">
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-          style={{ background: `${accentColor}10` }}
-        >
-          <span className="text-xs font-bold" style={{ color: accentColor }}>
-            {step.stepNumber}
-          </span>
-        </div>
-
+      <div className="px-4 py-3 flex items-center gap-2.5" style={{ borderBottom: `1px solid ${meta.borderColor}` }}>
+        <Shield className="w-4 h-4" style={{ color: meta.color }} aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <span className="text-sm font-bold text-gray-900">{step.label}</span>
-          <p className="text-xs text-gray-600 leading-relaxed mt-1.5">{step.description}</p>
+          <p className="text-sm font-bold" style={{ color: meta.color }}>{meta.label}</p>
+          <p className="text-[10px] text-gray-500">{meta.description}</p>
         </div>
-
-        <AgentTooltip
-          title="Demo Mode"
-          content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
-          trigger="click"
-          position="bottom"
+        <span
+          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+          style={{ background: `${meta.color}12`, color: meta.color }}
         >
-          <button
-            className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
-            aria-label={`Edit guardrail ${step.stepNumber}`}
-          >
-            <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
-        </AgentTooltip>
-
-        {canExpand && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
-            aria-expanded={expanded}
-            aria-controls={panelId}
-            aria-label={`${expanded ? 'Collapse' : 'Expand'} technical details for guardrail ${step.stepNumber}`}
-          >
-            {expanded ? (
-              <ChevronUp className="w-4 h-4" aria-hidden="true" />
-            ) : (
-              <ChevronDown className="w-4 h-4" aria-hidden="true" />
-            )}
-          </button>
-        )}
+          {guardrails.length}
+        </span>
       </div>
-
-      <AnimatePresence>
-        {expanded && canExpand && (
-          <motion.div
-            id={panelId}
-            role="region"
-            aria-label={`Guardrail ${step.stepNumber} technical details`}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 space-y-2">
-              {step.technicalDetail && (
-                <div
-                  className="rounded-lg px-3 py-2.5 text-[11px] font-mono text-gray-600 leading-relaxed"
-                  style={{ background: `${accentColor}06`, borderLeft: `2px solid ${accentColor}30` }}
-                >
-                  {step.technicalDetail}
-                </div>
-              )}
-              {(step.dataSource || step.retrievalType || step.toolInvocation || step.errorHandling) && (
-                <div className="grid grid-cols-2 gap-2">
-                  {step.dataSource && <MetaItem label="Data Source" value={step.dataSource} />}
-                  {step.retrievalType && <MetaItem label="Retrieval" value={step.retrievalType} />}
-                  {step.toolInvocation && <MetaItem label="Tools" value={step.toolInvocation} />}
-                  {step.errorHandling && <MetaItem label="Error Handling" value={step.errorHandling} />}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="p-3 space-y-2">
+        {guardrails.map((g, i) => (
+          <GuardrailItemCard
+            key={g.id}
+            guardrail={g}
+            categoryMeta={meta}
+            delay={delay + 0.03 + i * 0.03}
+          />
+        ))}
+      </div>
     </motion.div>
-  )
-}
-
-// ─── Metadata Item ───────────────────────────────────────────────────
-
-function MetaItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg bg-gray-50 px-2.5 py-2">
-      <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 block">{label}</span>
-      <span className="text-[11px] text-gray-600 leading-tight mt-0.5 block">{value}</span>
-    </div>
   )
 }
 
@@ -654,14 +630,14 @@ export function ContextDefinition() {
     )
   }
 
-  const { instructions, businessSummary, technicalSummary, dataSources, userProfiles, tools, tasks } = contextData
+  const { guardrails, businessSummary, technicalSummary, dataSources, userProfiles, tools, tasks } = contextData
 
   const counts: Record<ContextTab, number> = {
     tasks: tasks.length,
     'data-sources': dataSources.length,
     'user-profiles': userProfiles.length,
     tools: tools.length,
-    guardrails: instructions.length,
+    guardrails: guardrails.length,
   }
 
   const activeTabDef = TABS.find((t) => t.id === activeTab)!
@@ -783,19 +759,24 @@ export function ContextDefinition() {
             </>
           )}
 
-          {/* ─── Guardrails Tab (renamed from Instructions) ─── */}
+          {/* ─── Guardrails Tab ─── */}
           {activeTab === 'guardrails' && (
             <>
-              <div className="space-y-3">
-                {instructions.map((step, i) => (
-                  <GuardrailCard
-                    key={step.stepNumber}
-                    step={step}
-                    accentColor={accentColor}
-                    delay={0.05 + i * 0.04}
-                    viewMode={viewMode}
-                  />
-                ))}
+              <div className="space-y-5">
+                {(['safety', 'quality', 'escalation', 'compliance'] as GuardrailCategory[]).map(
+                  (cat, ci) => {
+                    const group = guardrails.filter((g) => g.category === cat)
+                    if (group.length === 0) return null
+                    return (
+                      <GuardrailCategoryGroup
+                        key={cat}
+                        category={cat}
+                        guardrails={group}
+                        delay={0.05 + ci * 0.08}
+                      />
+                    )
+                  },
+                )}
               </div>
               <AddInputArea placeholder="Add new guardrail..." />
             </>

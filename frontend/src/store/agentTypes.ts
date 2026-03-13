@@ -152,10 +152,10 @@ export interface AgentTask {
 }
 
 // ─── Dimension Analysis (Step 3) ─────────────────────────────────────────
-// Three-dimensional context model: Flow × Data × Response
-// Flow Dimensions = high-level capability lanes (the WHAT)
+// Three-dimensional context model: Task × Data × User Profile
+// Task Dimensions = sliced sub-tasks derived from Context Definition tasks
 // Data Dimensions = knowledge map showing content topology, depth, entities, gaps
-// Response Dimensions = output modes grouped by complexity, linked to user profiles
+// User Profile Dimensions = behavioral axes (Context × Posture × Channel)
 
 export type OutputPreference =
   | 'short-answer'
@@ -168,10 +168,14 @@ export type OutputPreference =
   | 'comparison'
   | 'code-snippet'
 
-export interface FlowDimension {
+// Legacy alias for backward compatibility during migration
+export type FlowDimension = TaskDimension
+
+export interface TaskDimension {
   id: string
   label: string
   description: string
+  parentTaskId: string // traces back to AgentTask.id in Context Definition
   intentCategories: string[]
   confidence: 'high' | 'medium' | 'low'
 }
@@ -192,36 +196,41 @@ export interface DataDimension {
   gapNote?: string
 }
 
-export interface ResponseDimension {
+// Legacy alias for backward compatibility during migration
+export type ResponseDimension = UserProfileDimension
+
+export interface UserProfileDimension {
   id: string
-  outputMode: OutputPreference
-  userProfilesRequiring: string[] // IDs from UserProfile
-  complexity: 'simple' | 'moderate' | 'complex'
-  exampleOutput: string
+  label: string
+  description: string
+  contextAxis: string
+  postureAxis: string
+  channelAxis: string
+  behaviorImpact: string // how this combination changes agent behavior
 }
 
 export interface DimensionAnalysisPayload {
   tileId: string
   agentName: string
-  flowDimensions: FlowDimension[]
+  taskDimensions: TaskDimension[]
   dataDimensions: DataDimension[]
-  responseDimensions: ResponseDimension[]
+  userProfileDimensions: UserProfileDimension[]
   summaryText: string
 }
 
 // ─── Patterns / Combination Matrix (Step 4) ──────────────────────────────
-// Combinatorial output of Dimension Analysis: Flow × Data × Response
+// Combinatorial output of Dimension Analysis: Task × Data (power set) × User Profile
 // Matrix heatmap with explosion animation, pattern cards with dimension DNA
 
 export type PatternTier = 'simple' | 'complex' | 'fuzzy'
 
 export interface CombinationCell {
-  flowDimensionId: string
-  dataDimensionId: string
+  taskDimensionId: string
+  dataDimensionIds: string[] // supports multi-data combos (was singular)
   isValid: boolean
   patternCount: number
   dominantTier: PatternTier
-  responseDimensionIds: string[]
+  userProfileDimensionIds: string[]
 }
 
 export interface DimensionPattern {
@@ -229,9 +238,9 @@ export interface DimensionPattern {
   name: string
   description: string
   tier: PatternTier
-  flowDimensionId: string
-  dataDimensionIds: string[]
-  responseDimensionId: string
+  taskDimensionId: string
+  dataDimensionIds: string[] // multi-data: power set combinations
+  userProfileDimensionId: string
   patternType: PatternType
   exampleQuestions: string[]
   activatedComponents?: string[]
@@ -244,9 +253,9 @@ export interface PatternsPayload {
   tileId: string
   agentName: string
   tileDescription: string
-  flowDimensions: string[]
-  dataDimensions: string[]
-  responseDimensions: string[]
+  taskDimensions: string[]
+  dataDimensions: string[] // includes combo IDs like 'faq-data-product+pricing'
+  userProfileDimensions: string[]
   totalCombinations: number
   validPatterns: number
   matrix: CombinationCell[][]
@@ -260,6 +269,63 @@ export interface SourceContribution {
   sourceId: string
   sourceName: string
   count: string
+}
+
+// ─── Guardrails (pattern modifiers, not dimensions) ─────────────────────
+// Guardrails don't create patterns — they constrain them.
+// Four categories: Safety, Quality, Escalation, Compliance.
+
+export type GuardrailCategory = 'safety' | 'quality' | 'escalation' | 'compliance'
+
+export interface Guardrail {
+  id: string
+  category: GuardrailCategory
+  label: string
+  description: string
+  enforcement: 'hard' | 'soft' // hard = always enforced, soft = configurable threshold
+  threshold?: string // e.g., "confidence < 80%", "PII detected"
+}
+
+export const GUARDRAIL_CATEGORY_META: Record<GuardrailCategory, {
+  label: string
+  color: string
+  bgColor: string
+  borderColor: string
+  icon: string
+  description: string
+}> = {
+  safety: {
+    label: 'Safety Boundaries',
+    color: '#dc2626',
+    bgColor: '#fef2f2',
+    borderColor: '#fecaca',
+    icon: 'Shield',
+    description: 'Hard limits the agent will never cross',
+  },
+  quality: {
+    label: 'Quality Thresholds',
+    color: '#2563eb',
+    bgColor: '#eff6ff',
+    borderColor: '#bfdbfe',
+    icon: 'Gauge',
+    description: 'Minimum standards for agent output',
+  },
+  escalation: {
+    label: 'Escalation Policies',
+    color: '#d97706',
+    bgColor: '#fffbeb',
+    borderColor: '#fde68a',
+    icon: 'ArrowUpRight',
+    description: 'When the agent hands off to a human',
+  },
+  compliance: {
+    label: 'Compliance Rules',
+    color: '#7c3aed',
+    bgColor: '#f5f3ff',
+    borderColor: '#ddd6fe',
+    icon: 'Scale',
+    description: 'Regulatory and policy requirements',
+  },
 }
 
 // ─── WOW Factor Types ────────────────────────────────────────────────────
@@ -318,28 +384,32 @@ export const PATTERN_CLASSIFICATION_META: Record<PatternClassification, {
   color: string
   bgColor: string
   borderColor: string
+  activeBg: string
   description: string
 }> = {
   dominant: {
     label: 'Simple Patterns',
     color: '#16a34a',
     bgColor: '#f0fdf4',
-    borderColor: '#bbf7d0',
-    description: 'Explicit criteria, high confidence — the agent handles these reliably.',
+    borderColor: '#16a34a33',
+    activeBg: '#dcfce7',
+    description: 'High-confidence, single-path patterns the agent handles reliably.',
   },
   'non-dominant': {
     label: 'Complex Patterns',
-    color: '#f59e0b',
-    bgColor: '#fffbeb',
-    borderColor: '#fde68a',
-    description: 'Multi-step inference required — the agent handles these, but they may need human review.',
+    color: '#dc2626',
+    bgColor: '#fef2f2',
+    borderColor: '#dc262633',
+    activeBg: '#fee2e2',
+    description: 'Multi-step patterns requiring cross-referencing or decision logic.',
   },
   fuzzy: {
     label: 'Fuzzy Patterns',
-    color: '#ef4444',
-    bgColor: '#fef2f2',
-    borderColor: '#fecaca',
-    description: 'Ambiguous criteria — requires human input to resolve.',
+    color: '#d97706',
+    bgColor: '#fffbeb',
+    borderColor: '#d9770633',
+    activeBg: '#fef3c7',
+    description: 'Ambiguous patterns where confidence is low and fallback may be needed.',
   },
 }
 

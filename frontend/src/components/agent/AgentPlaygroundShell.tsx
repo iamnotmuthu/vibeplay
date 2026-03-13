@@ -19,7 +19,6 @@ import { AgentEvaluation } from '@/stages/agent/AgentEvaluation'
 import { SolutionArchitecture } from '@/stages/agent/SolutionArchitecture'
 import { MonitoringModal } from '@/stages/agent/MonitoringModal'
 import { AgentCompletionModal } from './AgentCompletionModal'
-import { WorkSavedSidebar } from './WorkSavedSidebar'
 
 interface AgentPlaygroundShellProps {
   onBack: () => void
@@ -394,9 +393,6 @@ export function AgentPlaygroundShell({ onBack }: AgentPlaygroundShellProps) {
 
       {/* ── Completion Modal (shown after all stages) ─────────────── */}
       <AgentCompletionModal />
-
-      {/* ── Floating Work Saved Sidebar ───────────────────────────────── */}
-      <WorkSavedSidebar />
 
       {/* ── Scenario Switch Confirmation Dialog ───────────────────────── */}
       <AnimatePresence>

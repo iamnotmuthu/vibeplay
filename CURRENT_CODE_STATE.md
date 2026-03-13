@@ -108,34 +108,43 @@ Supporting modal: **Monitoring Dashboard** - Production monitoring and observabi
 ### 4. InteractionDiscovery.tsx
 **Location:** `/stages/agent/InteractionDiscovery.tsx`
 **Stage:** Step 4 of 6 (NEW implementation)
-**Purpose:** Pattern discovery visualization and classification
+**Purpose:** Pattern discovery visualization — mirrors the VibeModel Playground Pattern Recognition screen
 
 **Key UI Elements:**
-- Pattern classification display showing 3 groups:
-  - Dominant patterns
-  - Non-dominant patterns
-  - Fuzzy patterns
-- Distribution bar showing percentage breakdown
+- Three colored tab tiles at top matching VibeModel Playground Pattern Recognition:
+  - Dominant Patterns (green — #dcfce7 active, #f0fdf4 inactive, border #16a34a33)
+  - Non-Dominant Patterns (red — #fee2e2 active, #fef2f2 inactive, border #dc262633)
+  - Fuzzy Patterns (amber — #fef3c7 active, #fffbeb inactive, border #d9770633)
 - Pattern cards with:
-  - Type badges (6 types: simple, hopping, aggregator, branch, reasoning, combination)
-  - Coverage bars
-  - Inference/ambiguity notes
-  - Example interaction questions
-- Activated components list (technical view)
-- Discovery log showing detection timeline
-- Classification group cards with metrics
+  - Standardized labels ("Dominant Pattern 1", "Non-Dominant Pattern 3", etc.)
+  - Confidence badges (High Confidence / Low Confidence)
+  - Key signals and description
+  - Dimension DNA strip (Task + Data + User Profile IDs)
+- Domain Expert Opportunity callout (amber box with Lightbulb icon) for fuzzy patterns
+- Analysis Modules sidebar with checkmarks (technical view)
+- Business/Technical view toggle
+- Staggered animation sequence (loading → dominant → non-dominant → fuzzy → complete)
+- AddPatternForm for manual pattern entry (technical view)
+
+**Data Source — Full Power-Set Combinatorics:**
+- Generates all Task × DataPowerSet × UserProfile combinations
+- For 4 data sources: 2^4 - 1 = 15 data combinations
+- Full space: 10 tasks × 15 data combos × 6 user profiles = 900 per tile
+- Each combination assessed for validity; only valid patterns shown
+- Invalid combinations discarded (never stored or displayed)
+- Valid patterns classified into Dominant / Non-Dominant / Fuzzy tiers
 
 **User Interactions:**
-- View pattern type distribution
+- Click tab tiles to filter by pattern tier
 - Explore pattern cards for details
 - Switch between business and technical views
-- Review discovery log timeline
+- Review Domain Expert Opportunity callouts on fuzzy patterns
 
 **Key Data Structures:**
-- Pattern array with type, coverage, classification
-- Discovery log entries with timestamps
-- Pattern classification enum (dominant, non-dominant, fuzzy)
-- Activated component registry
+- PatternsPayload with dominant[], nonDominant[], fuzzy[] arrays
+- Each pattern: id, label, description, confidence, keySignals, dimensionDNA
+- DimensionAnalysisPayload for the dimensional context
+- CombinationCell[] for the matrix view
 
 ---
 
@@ -544,6 +553,17 @@ Supporting modal: **Monitoring Dashboard** - Production monitoring and observabi
 - Pattern metadata with coverage and inference data
 ```
 
+**Pattern Tiers (3 Tiers — mirrors VibeModel Playground Pattern Recognition):**
+```
+- PatternTier: 'simple' | 'complex' | 'fuzzy'
+  - simple → Dominant Patterns (green #16a34a)
+  - complex → Non-Dominant Patterns (red #dc2626)
+  - fuzzy → Fuzzy Patterns (amber #d97706)
+- Full power-set combinatorial generation:
+  - Task × DataPowerSet × UserProfile (up to 900 per tile)
+  - Only valid combinations retained and displayed
+```
+
 **Pattern Classification (3 Types):**
 ```
 - ClassificationType: 'dominant' | 'non-dominant' | 'fuzzy'
@@ -724,7 +744,7 @@ Legacy Components (also reference agentTypes and store):
 
 5. **Trust Boundaries:** Central concept with 4 autonomy levels (autonomous, supervised, escalation, blocked) represented throughout.
 
-6. **Pattern Types:** 6 distinct patterns (simple, hopping, aggregator, branch, reasoning, combination) drive the interaction discovery workflow.
+6. **Pattern Tiers:** Three pattern tiers (Dominant/Non-Dominant/Fuzzy) generated via full power-set combinatorics (Task × DataPowerSet × UserProfile). UI mirrors the VibeModel Playground Pattern Recognition screen with colored tab tiles, confidence badges, and Domain Expert Opportunity callouts.
 
 7. **Comprehensive Evaluation:** 4-tab evaluation system (overview, scenario matrix, coverage analysis, decision paths) provides multi-dimensional agent assessment.
 

@@ -1,7 +1,7 @@
 import type {
-  FlowDimension,
+  TaskDimension,
   DataDimension,
-  ResponseDimension,
+  UserProfileDimension,
   DimensionAnalysisPayload,
 } from '@/store/agentTypes'
 
@@ -9,27 +9,94 @@ import type {
 // FAQ & Knowledge Agent (faq-knowledge)
 // ============================================================================
 
-const faqFlowDimensions: FlowDimension[] = [
+// Task Dimensions — sliced from 3 parent tasks in Context Definition
+// Parent: "Answer Customer Questions" (answer-questions) → 5 sub-tasks
+// Parent: "Route Unanswerable Queries" (route-unanswerable) → 3 sub-tasks
+// Parent: "Track Resolution Rate" (track-resolution) → 2 sub-tasks
+
+const faqTaskDimensions: TaskDimension[] = [
+  // ── From: Answer Customer Questions ──
   {
-    id: 'faq-flow-retrieval',
-    label: 'Knowledge Retrieval',
-    description: 'Single-fact lookup from KB',
-    intentCategories: ['product-question', 'policy-inquiry', 'pricing-lookup'],
+    id: 'faq-task-product-lookup',
+    label: 'Product Feature Lookup',
+    description: 'Retrieve specific product feature details, capabilities, and limitations',
+    parentTaskId: 'answer-questions',
+    intentCategories: ['feature-question', 'capability-check', 'integration-support'],
     confidence: 'high',
   },
   {
-    id: 'faq-flow-clarification',
-    label: 'Clarification Loop',
-    description: 'Disambiguate vague questions',
-    intentCategories: ['ambiguous-entity', 'underspecified-query'],
+    id: 'faq-task-pricing-inquiry',
+    label: 'Pricing & Plan Inquiry',
+    description: 'Answer questions about plan tiers, pricing, add-ons, and billing',
+    parentTaskId: 'answer-questions',
+    intentCategories: ['pricing-lookup', 'plan-comparison', 'billing-question'],
+    confidence: 'high',
+  },
+  {
+    id: 'faq-task-policy-question',
+    label: 'Policy & Compliance Question',
+    description: 'Explain return policies, privacy terms, SLA guarantees, and compliance',
+    parentTaskId: 'answer-questions',
+    intentCategories: ['policy-inquiry', 'compliance-check', 'terms-question'],
+    confidence: 'high',
+  },
+  {
+    id: 'faq-task-troubleshooting',
+    label: 'Troubleshooting Guide',
+    description: 'Walk through diagnostic steps for known issues and error resolution',
+    parentTaskId: 'answer-questions',
+    intentCategories: ['error-resolution', 'bug-workaround', 'configuration-fix'],
     confidence: 'medium',
   },
   {
-    id: 'faq-flow-escalation',
-    label: 'Human Escalation',
-    description: 'Route out-of-scope to human',
-    intentCategories: ['complaint', 'billing-dispute', 'legal-question'],
+    id: 'faq-task-how-to',
+    label: 'How-To Walkthrough',
+    description: 'Provide step-by-step instructions for setup, configuration, and usage',
+    parentTaskId: 'answer-questions',
+    intentCategories: ['setup-guide', 'onboarding-help', 'workflow-instruction'],
     confidence: 'high',
+  },
+  // ── From: Route Unanswerable Queries ──
+  {
+    id: 'faq-task-low-confidence-handoff',
+    label: 'Low-Confidence Handoff',
+    description: 'Transfer to human agent when retrieval confidence drops below threshold',
+    parentTaskId: 'route-unanswerable',
+    intentCategories: ['ambiguous-entity', 'underspecified-query', 'no-match-found'],
+    confidence: 'medium',
+  },
+  {
+    id: 'faq-task-sensitive-route',
+    label: 'Sensitive Topic Routing',
+    description: 'Immediately route billing disputes, cancellations, and complaints to tier-2',
+    parentTaskId: 'route-unanswerable',
+    intentCategories: ['billing-dispute', 'cancellation-request', 'complaint-escalation'],
+    confidence: 'high',
+  },
+  {
+    id: 'faq-task-out-of-scope',
+    label: 'Out-of-Scope Redirect',
+    description: 'Redirect questions outside agent domain to appropriate channels',
+    parentTaskId: 'route-unanswerable',
+    intentCategories: ['legal-question', 'medical-query', 'unrelated-topic'],
+    confidence: 'high',
+  },
+  // ── From: Track Resolution Rate ──
+  {
+    id: 'faq-task-resolution-logging',
+    label: 'Resolution Logging',
+    description: 'Record outcome of each interaction for resolution rate tracking',
+    parentTaskId: 'track-resolution',
+    intentCategories: ['resolution-confirm', 'satisfaction-check', 'follow-up-flag'],
+    confidence: 'high',
+  },
+  {
+    id: 'faq-task-coverage-gap',
+    label: 'Coverage Gap Detection',
+    description: 'Identify topics with low resolution rates for knowledge base improvement',
+    parentTaskId: 'track-resolution',
+    intentCategories: ['gap-analysis', 'trending-topic', 'missing-content'],
+    confidence: 'medium',
   },
 ]
 
@@ -101,87 +168,167 @@ const faqDataDimensions: DataDimension[] = [
   },
 ]
 
-const faqResponseDimensions: ResponseDimension[] = [
+// User Profile Dimensions — behavioral axes replacing role-based profiles
+// Context × Posture × Channel = behavioral intersection
+
+const faqUserProfileDimensions: UserProfileDimension[] = [
   {
-    id: 'faq-resp-short',
-    outputMode: 'short-answer',
-    userProfilesRequiring: ['end-user'],
-    complexity: 'simple',
-    exampleOutput: 'Our business hours are Monday-Friday, 9am-6pm EST.',
+    id: 'faq-up-anon-info-self',
+    label: 'Anonymous Browser',
+    description: 'Unknown visitor seeking general info via self-service',
+    contextAxis: 'anonymous',
+    postureAxis: 'info-seeking',
+    channelAxis: 'self-service',
+    behaviorImpact: 'Serve public FAQ only. No account-specific data. Prompt login for personalized answers.',
   },
   {
-    id: 'faq-resp-step',
-    outputMode: 'step-by-step',
-    userProfilesRequiring: ['end-user', 'support-agent'],
-    complexity: 'simple',
-    exampleOutput: '1. Go to Settings → Account\n2. Click "Reset Password"\n3. Check your email for the link',
+    id: 'faq-up-known-info-self',
+    label: 'Known Self-Server',
+    description: 'Logged-in customer browsing for product info independently',
+    contextAxis: 'known-customer',
+    postureAxis: 'info-seeking',
+    channelAxis: 'self-service',
+    behaviorImpact: 'Personalize answers with account context. Show plan-specific features. Track for coverage analytics.',
   },
   {
-    id: 'faq-resp-detailed',
-    outputMode: 'detailed-explanation',
-    userProfilesRequiring: ['support-agent'],
-    complexity: 'moderate',
-    exampleOutput:
-      'The return policy allows returns within 30 days of purchase. Items must be unused and in original packaging. Refunds are processed within 5-7 business days...',
+    id: 'faq-up-known-problem-self',
+    label: 'Self-Service Troubleshooter',
+    description: 'Known customer trying to resolve an issue on their own',
+    contextAxis: 'known-customer',
+    postureAxis: 'problem-reporting',
+    channelAxis: 'self-service',
+    behaviorImpact: 'Pull account history for context. Offer guided troubleshooting. Auto-create ticket if unresolved after 2 attempts.',
   },
   {
-    id: 'faq-resp-summary',
-    outputMode: 'summary-report',
-    userProfilesRequiring: ['business-user'],
-    complexity: 'moderate',
-    exampleOutput:
-      'FAQ Coverage Report: 1,247 topics covered. Top 3 gaps: Enterprise SLA, Custom Integrations, Data Migration.',
+    id: 'faq-up-known-problem-agent',
+    label: 'Agent-Assisted Reporter',
+    description: 'Known customer reporting a problem via live agent channel',
+    contextAxis: 'known-customer',
+    postureAxis: 'problem-reporting',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Pre-populate agent screen with account context and interaction history. Suggest resolution paths to human agent.',
+  },
+  {
+    id: 'faq-up-vip-info-agent',
+    label: 'VIP Concierge',
+    description: 'High-value customer with priority routing for information requests',
+    contextAxis: 'vip',
+    postureAxis: 'info-seeking',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Priority queue. Detailed, white-glove responses. Proactive account health check. Dedicated success manager loop-in.',
+  },
+  {
+    id: 'faq-up-vip-dispute-agent',
+    label: 'VIP Dispute Handler',
+    description: 'High-value customer with billing dispute or escalation',
+    contextAxis: 'vip',
+    postureAxis: 'dispute',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Immediate escalation to senior support. Full account and billing history pre-loaded. Retention offer authority.',
   },
 ]
 
 const faqAnalysis: DimensionAnalysisPayload = {
   tileId: 'faq-knowledge',
   agentName: 'FAQ & Knowledge Agent',
-  flowDimensions: faqFlowDimensions,
+  taskDimensions: faqTaskDimensions,
   dataDimensions: faqDataDimensions,
-  responseDimensions: faqResponseDimensions,
+  userProfileDimensions: faqUserProfileDimensions,
   summaryText:
-    '3 capability lanes identified across 4 knowledge domains. 9 sub-topics mapped with depths from 1-5. 4 output modes serving 4 user profiles. 3 coverage gaps flagged.',
+    '10 task dimensions sliced from 3 parent tasks across 4 knowledge domains. 6 behavioral user profiles defined on Context × Posture × Channel axes. 2 coverage gaps flagged in policy and support documentation.',
 }
 
 // ============================================================================
 // SaaS Copilot Agent (saas-copilot)
 // ============================================================================
 
-const saasFlowDimensions: FlowDimension[] = [
+// Task Dimensions — sliced from 3 parent tasks in Context Definition
+// Parent: "Create Records" (create-record) → 4 sub-tasks
+// Parent: "Generate Reports" (generate-report) → 3 sub-tasks
+// Parent: "Update Settings" (update-settings) → 3 sub-tasks
+
+const saasTaskDimensions: TaskDimension[] = [
+  // ── From: Create Records ──
   {
-    id: 'saas-flow-action',
-    label: 'Action Execution',
-    description: 'Execute user-initiated actions in SaaS tools',
-    intentCategories: ['create-record', 'update-field', 'delete-item', 'trigger-workflow'],
+    id: 'saas-task-single-create',
+    label: 'Single Record Creation',
+    description: 'Create one entity (lead, contact, opportunity) via natural language',
+    parentTaskId: 'create-record',
+    intentCategories: ['create-lead', 'create-contact', 'create-opportunity'],
     confidence: 'high',
   },
   {
-    id: 'saas-flow-query',
-    label: 'Data Query',
-    description: 'Retrieve and filter SaaS data',
-    intentCategories: ['search-records', 'filter-list', 'aggregate-stats', 'export-data'],
-    confidence: 'high',
-  },
-  {
-    id: 'saas-flow-automation',
-    label: 'Workflow Automation',
-    description: 'Multi-step automated sequences',
-    intentCategories: ['scheduled-task', 'conditional-flow', 'batch-operation'],
+    id: 'saas-task-bulk-import',
+    label: 'Bulk Record Import',
+    description: 'Import multiple records from CSV, spreadsheet, or API payload',
+    parentTaskId: 'create-record',
+    intentCategories: ['csv-upload', 'batch-create', 'api-import'],
     confidence: 'medium',
   },
   {
-    id: 'saas-flow-permission',
-    label: 'Permission Check',
-    description: 'Validate user authorization',
-    intentCategories: ['access-check', 'role-verification', 'scope-validation'],
+    id: 'saas-task-duplicate-check',
+    label: 'Duplicate Detection',
+    description: 'Identify and resolve potential duplicate records before creation',
+    parentTaskId: 'create-record',
+    intentCategories: ['duplicate-check', 'merge-suggestion', 'conflict-resolution'],
     confidence: 'high',
   },
   {
-    id: 'saas-flow-integration',
-    label: 'Cross-App Integration',
-    description: 'Bridge actions across multiple SaaS tools',
-    intentCategories: ['sync-data', 'cross-reference', 'webhook-trigger'],
+    id: 'saas-task-related-create',
+    label: 'Related Entity Creation',
+    description: 'Create linked records (e.g., contact + opportunity + task in one action)',
+    parentTaskId: 'create-record',
+    intentCategories: ['linked-creation', 'workflow-trigger', 'cascade-create'],
+    confidence: 'medium',
+  },
+  // ── From: Generate Reports ──
+  {
+    id: 'saas-task-standard-report',
+    label: 'Standard Report Generation',
+    description: 'Run pre-defined report templates with date range and filters',
+    parentTaskId: 'generate-report',
+    intentCategories: ['pipeline-report', 'activity-report', 'forecast-report'],
+    confidence: 'high',
+  },
+  {
+    id: 'saas-task-custom-query',
+    label: 'Custom Query Builder',
+    description: 'Construct ad-hoc queries from natural language descriptions',
+    parentTaskId: 'generate-report',
+    intentCategories: ['custom-filter', 'aggregation-query', 'cross-object-report'],
+    confidence: 'medium',
+  },
+  {
+    id: 'saas-task-export-data',
+    label: 'Data Export',
+    description: 'Export query results to CSV, PDF, or dashboard format',
+    parentTaskId: 'generate-report',
+    intentCategories: ['csv-export', 'pdf-export', 'dashboard-embed'],
+    confidence: 'high',
+  },
+  // ── From: Update Settings ──
+  {
+    id: 'saas-task-user-prefs',
+    label: 'User Preference Update',
+    description: 'Modify individual user settings (notifications, timezone, display)',
+    parentTaskId: 'update-settings',
+    intentCategories: ['notification-change', 'timezone-update', 'display-preference'],
+    confidence: 'high',
+  },
+  {
+    id: 'saas-task-workflow-config',
+    label: 'Workflow Configuration',
+    description: 'Create or modify automation rules, triggers, and action sequences',
+    parentTaskId: 'update-settings',
+    intentCategories: ['automation-rule', 'trigger-condition', 'action-sequence'],
+    confidence: 'medium',
+  },
+  {
+    id: 'saas-task-integration-setup',
+    label: 'Integration Setup',
+    description: 'Configure webhooks, API connections, and cross-app sync rules',
+    parentTaskId: 'update-settings',
+    intentCategories: ['webhook-config', 'api-key-management', 'sync-mapping'],
     confidence: 'low',
   },
 ]
@@ -267,101 +414,165 @@ const saasDataDimensions: DataDimension[] = [
   },
 ]
 
-const saasResponseDimensions: ResponseDimension[] = [
+const saasUserProfileDimensions: UserProfileDimension[] = [
   {
-    id: 'saas-resp-short',
-    outputMode: 'short-answer',
-    userProfilesRequiring: ['end-user'],
-    complexity: 'simple',
-    exampleOutput: 'You have Editor access to the Marketing workspace.',
+    id: 'saas-up-known-info-self',
+    label: 'Self-Service Explorer',
+    description: 'Logged-in user browsing data and running reports independently',
+    contextAxis: 'known-customer',
+    postureAxis: 'info-seeking',
+    channelAxis: 'self-service',
+    behaviorImpact: 'Show data within user permission scope. Auto-suggest relevant reports. Track usage patterns for recommendations.',
   },
   {
-    id: 'saas-resp-step',
-    outputMode: 'step-by-step',
-    userProfilesRequiring: ['end-user'],
-    complexity: 'simple',
-    exampleOutput: '1. Navigate to Settings\n2. Select "API Keys"\n3. Click "Generate New Key"',
+    id: 'saas-up-known-info-agent',
+    label: 'Guided Power User',
+    description: 'Known user requesting help with complex queries or configurations',
+    contextAxis: 'known-customer',
+    postureAxis: 'info-seeking',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Provide step-by-step guidance with previews. Confirm before executing. Show related documentation links.',
   },
   {
-    id: 'saas-resp-code',
-    outputMode: 'code-snippet',
-    userProfilesRequiring: ['power-user', 'system-user'],
-    complexity: 'complex',
-    exampleOutput:
-      'curl -X POST /api/v2/projects \\\n  -H "Authorization: Bearer $TOKEN" \\\n  -d \'{"name": "New Project"}\'',
+    id: 'saas-up-known-problem-self',
+    label: 'Self-Service Fixer',
+    description: 'User encountering errors or unexpected behavior during self-service',
+    contextAxis: 'known-customer',
+    postureAxis: 'problem-reporting',
+    channelAxis: 'self-service',
+    behaviorImpact: 'Surface error context from action history. Suggest rollback or retry. Auto-create support ticket if unresolved.',
   },
   {
-    id: 'saas-resp-table',
-    outputMode: 'data-table',
-    userProfilesRequiring: ['product-manager', 'system-user', 'power-user'],
-    complexity: 'moderate',
-    exampleOutput: '| Endpoint | Calls/day | Avg Latency | Error Rate |\n|---|---|---|---|',
+    id: 'saas-up-known-problem-agent',
+    label: 'Agent-Assisted Debugger',
+    description: 'User working with support to resolve a workflow or integration issue',
+    contextAxis: 'known-customer',
+    postureAxis: 'problem-reporting',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Pre-load error logs, recent actions, and system state. Provide diagnostic tools to support agent. Track resolution path.',
   },
   {
-    id: 'saas-resp-action',
-    outputMode: 'action-list',
-    userProfilesRequiring: ['system-user', 'power-user'],
-    complexity: 'moderate',
-    exampleOutput: '✓ Create project "Q4 Campaign"\n✓ Add team members\n⏳ Configure webhook...',
+    id: 'saas-up-vip-info-agent',
+    label: 'Enterprise Admin Concierge',
+    description: 'Enterprise admin with priority access for configuration and reporting',
+    contextAxis: 'vip',
+    postureAxis: 'info-seeking',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Full admin scope access. Priority queue. Proactive health checks on workflows and integrations. CSM loop-in.',
+  },
+  {
+    id: 'saas-up-vip-dispute-agent',
+    label: 'Enterprise Escalation',
+    description: 'Enterprise customer with data integrity concerns or SLA disputes',
+    contextAxis: 'vip',
+    postureAxis: 'dispute',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Immediate engineering escalation path. Full audit trail export. SLA compliance documentation auto-generated.',
   },
 ]
 
 const saasAnalysis: DimensionAnalysisPayload = {
   tileId: 'saas-copilot',
   agentName: 'SaaS Copilot Agent',
-  flowDimensions: saasFlowDimensions,
+  taskDimensions: saasTaskDimensions,
   dataDimensions: saasDataDimensions,
-  responseDimensions: saasResponseDimensions,
+  userProfileDimensions: saasUserProfileDimensions,
   summaryText:
-    '5 capability lanes identified across 5 knowledge domains. 19 sub-topics mapped with depths from 2-5. 5 output modes serving 4 user profiles. 1 coverage gap flagged.',
+    '10 task dimensions sliced from 3 parent tasks across 5 knowledge domains. 6 behavioral user profiles defined on Context × Posture × Channel axes. 1 coverage gap flagged in permission documentation.',
 }
 
 // ============================================================================
 // Research & Comparison Agent (research-comparison)
 // ============================================================================
 
-const researchFlowDimensions: FlowDimension[] = [
+// Task Dimensions — sliced from 3 parent tasks in Context Definition
+// Parent: "Literature Review" (literature-review) → 4 sub-tasks
+// Parent: "Trend Analysis" (trend-analysis) → 3 sub-tasks
+// Parent: "Citation Mapping" (citation-mapping) → 3 sub-tasks
+
+const researchTaskDimensions: TaskDimension[] = [
+  // ── From: Literature Review ──
   {
-    id: 'research-flow-search',
-    label: 'Literature Search',
-    description: 'Semantic search across research corpus',
-    intentCategories: ['keyword-search', 'semantic-search', 'citation-chain', 'author-lookup'],
+    id: 'research-task-keyword-search',
+    label: 'Keyword & Semantic Search',
+    description: 'Find papers matching keywords, semantic queries, or author names',
+    parentTaskId: 'literature-review',
+    intentCategories: ['keyword-search', 'semantic-search', 'author-lookup'],
     confidence: 'high',
   },
   {
-    id: 'research-flow-compare',
-    label: 'Comparative Analysis',
-    description: 'Side-by-side comparison of entities',
-    intentCategories: ['feature-comparison', 'methodology-comparison', 'vendor-evaluation'],
-    confidence: 'medium',
+    id: 'research-task-evidence-collection',
+    label: 'Evidence Collection',
+    description: 'Gather and organize findings, data points, and quotes from sources',
+    parentTaskId: 'literature-review',
+    intentCategories: ['data-extraction', 'finding-collection', 'methodology-catalog'],
+    confidence: 'high',
   },
   {
-    id: 'research-flow-synthesize',
+    id: 'research-task-synthesis',
     label: 'Research Synthesis',
-    description: 'Aggregate findings across sources',
-    intentCategories: ['trend-analysis', 'meta-review', 'gap-identification'],
+    description: 'Aggregate findings across multiple sources into coherent narrative',
+    parentTaskId: 'literature-review',
+    intentCategories: ['meta-review', 'cross-study-comparison', 'narrative-synthesis'],
     confidence: 'medium',
   },
   {
-    id: 'research-flow-cite',
-    label: 'Citation Management',
-    description: 'Track and format references',
-    intentCategories: ['citation-format', 'reference-check', 'bibliography-export'],
+    id: 'research-task-gap-identification',
+    label: 'Gap Identification',
+    description: 'Identify research gaps, underexplored areas, and conflicting findings',
+    parentTaskId: 'literature-review',
+    intentCategories: ['gap-analysis', 'conflict-detection', 'opportunity-mapping'],
+    confidence: 'low',
+  },
+  // ── From: Trend Analysis ──
+  {
+    id: 'research-task-temporal-trends',
+    label: 'Temporal Trend Detection',
+    description: 'Track how research focus and methodology evolve over time periods',
+    parentTaskId: 'trend-analysis',
+    intentCategories: ['publication-trend', 'methodology-shift', 'funding-pattern'],
+    confidence: 'medium',
+  },
+  {
+    id: 'research-task-vendor-evaluation',
+    label: 'Vendor & Tool Evaluation',
+    description: 'Compare vendors, tools, or solutions across standardized criteria',
+    parentTaskId: 'trend-analysis',
+    intentCategories: ['vendor-comparison', 'feature-matrix', 'pricing-analysis'],
+    confidence: 'medium',
+  },
+  {
+    id: 'research-task-recommendation',
+    label: 'Scored Recommendation',
+    description: 'Produce ranked recommendations with scoring rationale and sensitivity analysis',
+    parentTaskId: 'trend-analysis',
+    intentCategories: ['vendor-recommendation', 'tool-selection', 'methodology-recommendation'],
+    confidence: 'low',
+  },
+  // ── From: Citation Mapping ──
+  {
+    id: 'research-task-citation-trace',
+    label: 'Citation Chain Tracing',
+    description: 'Follow citation chains forward and backward to map influence networks',
+    parentTaskId: 'citation-mapping',
+    intentCategories: ['forward-citation', 'backward-citation', 'co-citation-cluster'],
     confidence: 'high',
   },
   {
-    id: 'research-flow-recommend',
-    label: 'Recommendation Engine',
-    description: 'Suggest based on criteria',
-    intentCategories: ['vendor-recommendation', 'paper-suggestion', 'tool-selection'],
-    confidence: 'low',
+    id: 'research-task-impact-scoring',
+    label: 'Impact & Credibility Scoring',
+    description: 'Calculate influence metrics: h-index, citation count, journal ranking',
+    parentTaskId: 'citation-mapping',
+    intentCategories: ['impact-metric', 'journal-ranking', 'author-influence'],
+    confidence: 'high',
   },
   {
-    id: 'research-flow-validate',
-    label: 'Fact Validation',
-    description: 'Cross-reference claims with sources',
-    intentCategories: ['claim-verification', 'data-validation', 'source-credibility'],
-    confidence: 'low',
+    id: 'research-task-bibliography-export',
+    label: 'Bibliography Management',
+    description: 'Format, deduplicate, and export references in standard citation formats',
+    parentTaskId: 'citation-mapping',
+    intentCategories: ['citation-format', 'bibliography-export', 'reference-dedup'],
+    confidence: 'high',
   },
 ]
 
@@ -453,70 +664,105 @@ const researchDataDimensions: DataDimension[] = [
   },
 ]
 
-const researchResponseDimensions: ResponseDimension[] = [
+const researchUserProfileDimensions: UserProfileDimension[] = [
   {
-    id: 'research-resp-short',
-    outputMode: 'short-answer',
-    userProfilesRequiring: ['end-user'],
-    complexity: 'simple',
-    exampleOutput: 'Yes, Vendor X supports HIPAA compliance as of their 2024 certification.',
+    id: 'research-up-anon-info-self',
+    label: 'Casual Researcher',
+    description: 'Anonymous user doing exploratory research via self-service search',
+    contextAxis: 'anonymous',
+    postureAxis: 'info-seeking',
+    channelAxis: 'self-service',
+    behaviorImpact: 'Public-access papers only. Basic search and comparison tools. Prompt registration for saved searches.',
   },
   {
-    id: 'research-resp-comparison',
-    outputMode: 'comparison',
-    userProfilesRequiring: ['business-user', 'end-user'],
-    complexity: 'complex',
-    exampleOutput: '| Criterion | Vendor A | Vendor B | Vendor C |\n|---|---|---|---|',
+    id: 'research-up-known-info-self',
+    label: 'Independent Analyst',
+    description: 'Authenticated user running structured research queries independently',
+    contextAxis: 'known-customer',
+    postureAxis: 'info-seeking',
+    channelAxis: 'self-service',
+    behaviorImpact: 'Full corpus access. Saved search history. Citation export. Personalized recommendations based on past queries.',
   },
   {
-    id: 'research-resp-summary',
-    outputMode: 'summary-report',
-    userProfilesRequiring: ['business-user'],
-    complexity: 'complex',
-    exampleOutput: 'Research synthesis across 42 papers: 3 dominant methodologies identified...',
+    id: 'research-up-known-info-agent',
+    label: 'Guided Researcher',
+    description: 'Known user requesting help to refine complex multi-source analysis',
+    contextAxis: 'known-customer',
+    postureAxis: 'info-seeking',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Interactive refinement loop. Agent suggests search strategy and source diversification. Methodology guidance.',
   },
   {
-    id: 'research-resp-chart',
-    outputMode: 'visual-chart',
-    userProfilesRequiring: ['business-user'],
-    complexity: 'complex',
-    exampleOutput: '[Radar chart comparing 5 vendors across 8 evaluation criteria]',
+    id: 'research-up-known-problem-self',
+    label: 'Self-Service Validator',
+    description: 'Known user checking claims or validating findings independently',
+    contextAxis: 'known-customer',
+    postureAxis: 'problem-reporting',
+    channelAxis: 'self-service',
+    behaviorImpact: 'Fact-check mode with source credibility scoring. Highlight conflicting evidence. Flag verification gaps.',
   },
   {
-    id: 'research-resp-detailed',
-    outputMode: 'detailed-explanation',
-    userProfilesRequiring: ['business-user', 'end-user'],
-    complexity: 'moderate',
-    exampleOutput:
-      'The meta-analysis of 12 studies shows a mean effect size of 0.42 (95% CI: 0.31-0.53)...',
+    id: 'research-up-vip-info-agent',
+    label: 'Executive Briefing',
+    description: 'Senior stakeholder needing curated, high-level research summaries',
+    contextAxis: 'vip',
+    postureAxis: 'info-seeking',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Executive summary format. Key findings only. Decision-ready recommendations. Priority analyst support.',
   },
   {
-    id: 'research-resp-table',
-    outputMode: 'data-table',
-    userProfilesRequiring: ['system-user'],
-    complexity: 'moderate',
-    exampleOutput: '| Paper ID | Year | Method | Sample Size | Key Finding |',
+    id: 'research-up-vip-dispute-agent',
+    label: 'Methodology Challenger',
+    description: 'Expert disputing findings or methodology used in previous analysis',
+    contextAxis: 'vip',
+    postureAxis: 'dispute',
+    channelAxis: 'agent-assisted',
+    behaviorImpact: 'Full methodology transparency. Raw data access. Sensitivity analysis on disputed claims. Peer review loop-in.',
   },
 ]
 
 const researchAnalysis: DimensionAnalysisPayload = {
   tileId: 'research-comparison',
   agentName: 'Research & Comparison Agent',
-  flowDimensions: researchFlowDimensions,
+  taskDimensions: researchTaskDimensions,
   dataDimensions: researchDataDimensions,
-  responseDimensions: researchResponseDimensions,
+  userProfileDimensions: researchUserProfileDimensions,
   summaryText:
-    '6 capability lanes identified across 5 knowledge domains. 21 sub-topics mapped with depths from 1-5. 6 output modes serving 3 user profiles. 3 coverage gaps flagged.',
+    '10 task dimensions sliced from 3 parent tasks across 5 knowledge domains. 6 behavioral user profiles defined on Context × Posture × Channel axes. 3 coverage gaps flagged in methodology, statistical data, and vendor intelligence.',
 }
 
 // ============================================================================
 // Lookup Map
 // ============================================================================
 
+// ============================================================================
+// Batch Imports (7 remaining tiles)
+// ============================================================================
+
+import {
+  DOC_INTELLIGENCE_DIMENSIONS,
+  DECISION_WORKFLOW_DIMENSIONS,
+  CODING_AGENT_DIMENSIONS,
+} from './dimensionAnalysisData_batch1'
+
+import {
+  OPS_AGENT_DIMENSIONS,
+  ONPREM_ASSISTANT_DIMENSIONS,
+  MULTIMODAL_AGENT_DIMENSIONS,
+  CONSUMER_CHAT_DIMENSIONS,
+} from './dimensionAnalysisData_batch2'
+
 const DIMENSION_ANALYSIS_DATA: Record<string, DimensionAnalysisPayload> = {
   'faq-knowledge': faqAnalysis,
   'saas-copilot': saasAnalysis,
   'research-comparison': researchAnalysis,
+  'doc-intelligence': DOC_INTELLIGENCE_DIMENSIONS,
+  'decision-workflow': DECISION_WORKFLOW_DIMENSIONS,
+  'coding-agent': CODING_AGENT_DIMENSIONS,
+  'ops-agent': OPS_AGENT_DIMENSIONS,
+  'onprem-assistant': ONPREM_ASSISTANT_DIMENSIONS,
+  'multimodal-agent': MULTIMODAL_AGENT_DIMENSIONS,
+  'consumer-chat': CONSUMER_CHAT_DIMENSIONS,
 }
 
 export function getDimensionAnalysisData(tileId: string): DimensionAnalysisPayload | null {

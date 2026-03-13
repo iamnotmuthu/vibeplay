@@ -321,8 +321,8 @@ const PATTERN_BARS: {
   textClass: string
 }[] = [
   { key: 'overall', label: 'Overall Performance', color: '#3b82f6', bgClass: 'bg-blue-500', textClass: 'text-blue-600' },
-  { key: 'dominant', label: 'Dominant Patterns', color: '#10b981', bgClass: 'bg-emerald-500', textClass: 'text-emerald-600' },
-  { key: 'nonDominant', label: 'Non-Dominant Patterns', color: '#ef4444', bgClass: 'bg-red-500', textClass: 'text-red-600' },
+  { key: 'dominant', label: 'Simple Patterns', color: '#10b981', bgClass: 'bg-emerald-500', textClass: 'text-emerald-600' },
+  { key: 'nonDominant', label: 'Complex Patterns', color: '#ef4444', bgClass: 'bg-red-500', textClass: 'text-red-600' },
   { key: 'fuzzy', label: 'Fuzzy Patterns', color: '#f59e0b', bgClass: 'bg-amber-500', textClass: 'text-amber-600' },
 ]
 

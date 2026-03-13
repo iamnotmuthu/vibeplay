@@ -3,25 +3,26 @@ import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
   GitBranch,
   Database,
-  MessageSquare,
+  Users,
   Layers,
   ArrowRight,
   BookOpen,
   AlertTriangle,
+  Target,
 } from 'lucide-react'
+import { AgentTooltip } from '@/components/agent/AgentTooltip'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 import { getDimensionAnalysisData } from '@/lib/agent/dimensionAnalysisData'
 import type {
-  FlowDimension,
+  TaskDimension,
   DataDimension,
-  ResponseDimension,
-  OutputPreference,
+  UserProfileDimension,
 } from '@/store/agentTypes'
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
-type DimensionTab = 'flow' | 'data' | 'response'
+type DimensionTab = 'task' | 'data' | 'userprofile'
 
 interface TabDef {
   id: DimensionTab
@@ -31,57 +32,60 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: 'flow', label: 'Flow Dimensions', icon: GitBranch, goalLink: 'How the agent thinks' },
+  { id: 'task', label: 'Task Dimensions', icon: Target, goalLink: 'What the agent does' },
   { id: 'data', label: 'Data Dimensions', icon: Database, goalLink: 'What the agent knows' },
-  { id: 'response', label: 'Response Dimensions', icon: MessageSquare, goalLink: 'How the agent responds' },
+  { id: 'userprofile', label: 'User Profile Dimensions', icon: Users, goalLink: 'Who the agent serves' },
 ]
 
 // ─── Confidence Colors ────────────────────────────────────────────────────────
 
 const CONFIDENCE_META: Record<
   'high' | 'medium' | 'low',
-  { label: string; color: string; bg: string; border: string }
+  { label: string; color: string; bg: string; border: string; tooltipTitle: string; tooltipContent: string }
 > = {
-  high: { label: 'High', color: '#166534', bg: '#dcfce7', border: '#86efac' },
-  medium: { label: 'Medium', color: '#92400e', bg: '#fef3c7', border: '#fde047' },
-  low: { label: 'Low', color: '#991b1b', bg: '#fee2e2', border: '#fca5a5' },
+  high: {
+    label: 'High',
+    color: '#166534',
+    bg: '#dcfce7',
+    border: '#86efac',
+    tooltipTitle: 'High Intent Confidence',
+    tooltipContent: 'The engine can reliably detect and classify this task dimension from user input. Clear intent signals with minimal ambiguity — the agent handles this without guessing.',
+  },
+  medium: {
+    label: 'Medium',
+    color: '#92400e',
+    bg: '#fef3c7',
+    border: '#fde047',
+    tooltipTitle: 'Medium Intent Confidence',
+    tooltipContent: 'The engine can usually detect this task dimension, but some user inputs may be ambiguous. May require follow-up clarification or contextual inference to classify correctly.',
+  },
+  low: {
+    label: 'Low',
+    color: '#991b1b',
+    bg: '#fee2e2',
+    border: '#fca5a5',
+    tooltipTitle: 'Low Intent Confidence',
+    tooltipContent: 'This task dimension is difficult to detect from user input alone. Overlaps with other intents or lacks clear signals. Often requires multi-turn dialogue or human-in-the-loop to resolve.',
+  },
 }
 
-// ─── Complexity Colors ────────────────────────────────────────────────────────
+// ─── User Profile Axis Colors ─────────────────────────────────────────────────
 
-const COMPLEXITY_META: Record<
-  'simple' | 'moderate' | 'complex',
-  { label: string; color: string; bg: string; border: string }
-> = {
-  simple: { label: 'Simple', color: '#166534', bg: '#dcfce7', border: '#86efac' },
-  moderate: { label: 'Moderate', color: '#92400e', bg: '#fef3c7', border: '#fde047' },
-  complex: { label: 'Complex', color: '#991b1b', bg: '#fee2e2', border: '#fca5a5' },
+const CONTEXT_AXIS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  anonymous: { label: 'Anonymous', color: '#6b7280', bg: '#f3f4f6', border: '#d1d5db' },
+  known: { label: 'Known', color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' },
+  vip: { label: 'VIP', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
 }
 
-// ─── Output Mode Labels ───────────────────────────────────────────────────────
-
-const OUTPUT_MODE_LABELS: Record<OutputPreference, string> = {
-  'short-answer': 'Short Answer',
-  'detailed-explanation': 'Detailed Explanation',
-  'summary-report': 'Summary Report',
-  'action-list': 'Action List',
-  'data-table': 'Data Table',
-  'visual-chart': 'Visual Chart',
-  'step-by-step': 'Step-by-Step',
-  comparison: 'Comparison',
-  'code-snippet': 'Code Snippet',
+const POSTURE_AXIS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  'info-seeking': { label: 'Info-Seeking', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  'problem-reporting': { label: 'Problem-Reporting', color: '#b45309', bg: '#fff7ed', border: '#fed7aa' },
+  dispute: { label: 'Dispute', color: '#991b1b', bg: '#fee2e2', border: '#fca5a5' },
 }
 
-const OUTPUT_MODE_COLORS: Record<OutputPreference, { bg: string; text: string; border: string }> = {
-  'short-answer': { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
-  'detailed-explanation': { bg: '#fef3c7', text: '#b45309', border: '#fde68a' },
-  'summary-report': { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
-  'action-list': { bg: '#fce7f3', text: '#be185d', border: '#fbcfe8' },
-  'data-table': { bg: '#f5f3ff', text: '#6d28d9', border: '#ddd6fe' },
-  'visual-chart': { bg: '#ecfdf5', text: '#047857', border: '#a7f3d0' },
-  'step-by-step': { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa' },
-  comparison: { bg: '#fdf2f8', text: '#9d174d', border: '#fbcfe8' },
-  'code-snippet': { bg: '#f0f9ff', text: '#0369a1', border: '#bae6fd' },
+const CHANNEL_AXIS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  'self-service': { label: 'Self-Service', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  'agent-assisted': { label: 'Agent-Assisted', color: '#be185d', bg: '#fce7f3', border: '#fbcfe8' },
 }
 
 // ─── Animation Variants ───────────────────────────────────────────────────────
@@ -139,15 +143,15 @@ function GoalRibbon({ text, accentColor }: { text: string; accentColor: string }
   )
 }
 
-// ─── Flow Dimension Card ──────────────────────────────────────────────────────
+// ─── Task Dimension Card ──────────────────────────────────────────────────────
 
-function FlowDimensionCard({
+function TaskDimensionCard({
   dim,
   accentColor,
   delay,
   viewMode,
 }: {
-  dim: FlowDimension
+  dim: TaskDimension
   accentColor: string
   delay: number
   viewMode: 'business' | 'technical'
@@ -168,7 +172,7 @@ function FlowDimensionCard({
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: `${accentColor}10` }}
           >
-            <GitBranch className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />
+            <Target className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0">
@@ -182,28 +186,43 @@ function FlowDimensionCard({
             <p className="text-[11px] text-gray-500">{dim.description}</p>
           </div>
         </div>
-        <span
-          className="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0"
-          style={{ background: conf.bg, color: conf.color, border: `1px solid ${conf.border}` }}
-        >
-          {conf.label}
-        </span>
+        <AgentTooltip title={conf.tooltipTitle} content={conf.tooltipContent}>
+          <span
+            className="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 cursor-help"
+            style={{ background: conf.bg, color: conf.color, border: `1px solid ${conf.border}` }}
+          >
+            {conf.label}
+          </span>
+        </AgentTooltip>
       </div>
 
-      {/* Intent categories */}
-      <div className="ml-[42px] mt-2">
-        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-          Intent Categories
-        </p>
-        <div className="flex flex-wrap gap-1">
-          {dim.intentCategories.map((cat) => (
-            <span
-              key={cat}
-              className="text-[10px] font-medium text-gray-600 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full"
-            >
-              {cat}
+      <div className="ml-[42px] mt-2 space-y-2.5">
+        {/* Parent task traceability */}
+        {viewMode === 'technical' && dim.parentTaskId && (
+          <div className="flex items-center gap-1.5">
+            <GitBranch className="w-3 h-3 text-gray-400 shrink-0" aria-hidden="true" />
+            <span className="text-[10px] text-gray-400">Parent:</span>
+            <span className="text-[10px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+              {dim.parentTaskId}
             </span>
-          ))}
+          </div>
+        )}
+
+        {/* Intent categories */}
+        <div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+            Intent Categories
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {dim.intentCategories.map((cat) => (
+              <span
+                key={cat}
+                className="text-[10px] font-medium text-gray-600 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full"
+              >
+                {cat}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </motion.div>
@@ -337,22 +356,33 @@ function DataDimensionCard({
   )
 }
 
-// ─── Response Dimension Card ──────────────────────────────────────────────────
+// ─── User Profile Dimension Card ──────────────────────────────────────────────
 
-function ResponseDimensionCard({
+function AxisBadge({ meta }: { meta: { label: string; color: string; bg: string; border: string } }) {
+  return (
+    <span
+      className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+      style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}
+    >
+      {meta.label}
+    </span>
+  )
+}
+
+function UserProfileDimensionCard({
   dim,
   accentColor,
   delay,
   viewMode,
 }: {
-  dim: ResponseDimension
+  dim: UserProfileDimension
   accentColor: string
   delay: number
   viewMode: 'business' | 'technical'
 }) {
-  const comp = COMPLEXITY_META[dim.complexity]
-  const modeColors = OUTPUT_MODE_COLORS[dim.outputMode]
-  const modeLabel = OUTPUT_MODE_LABELS[dim.outputMode]
+  const contextMeta = CONTEXT_AXIS_META[dim.contextAxis] ?? CONTEXT_AXIS_META.anonymous
+  const postureMeta = POSTURE_AXIS_META[dim.postureAxis] ?? POSTURE_AXIS_META['info-seeking']
+  const channelMeta = CHANNEL_AXIS_META[dim.channelAxis] ?? CHANNEL_AXIS_META['self-service']
 
   return (
     <motion.div
@@ -366,55 +396,45 @@ function ResponseDimensionCard({
         <div className="flex items-center gap-2.5 min-w-0">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: modeColors.bg, border: `1px solid ${modeColors.border}` }}
+            style={{ background: `${contextMeta.bg}`, border: `1px solid ${contextMeta.border}` }}
           >
-            <MessageSquare className="w-4 h-4" style={{ color: modeColors.text }} aria-hidden="true" />
+            <Users className="w-4 h-4" style={{ color: contextMeta.color }} aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-bold text-gray-900">{modeLabel}</p>
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-sm font-bold text-gray-900 truncate">{dim.label}</p>
               {viewMode === 'technical' && (
                 <span className="text-[8px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
-                  {dim.outputMode}
+                  {dim.id}
                 </span>
               )}
             </div>
+            <p className="text-[11px] text-gray-500">{dim.description}</p>
           </div>
         </div>
-        <span
-          className="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0"
-          style={{ background: comp.bg, color: comp.color, border: `1px solid ${comp.border}` }}
-        >
-          {comp.label}
-        </span>
       </div>
 
       <div className="ml-[42px] space-y-2.5 mt-2">
-        {/* User profiles requiring this output */}
+        {/* Behavioral axes */}
         <div>
           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-            Required By
+            Behavioral Axes
           </p>
-          <div className="flex flex-wrap gap-1">
-            {dim.userProfilesRequiring.map((profile) => (
-              <span
-                key={profile}
-                className="text-[10px] font-medium text-violet-700 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full"
-              >
-                {profile}
-              </span>
-            ))}
+          <div className="flex flex-wrap gap-1.5">
+            <AxisBadge meta={contextMeta} />
+            <AxisBadge meta={postureMeta} />
+            <AxisBadge meta={channelMeta} />
           </div>
         </div>
 
-        {/* Example output */}
+        {/* Behavior impact */}
         <div>
           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-            Example Output
+            Behavior Impact
           </p>
           <div className="bg-gray-50 border border-gray-100 rounded-lg p-2.5">
-            <p className="text-[11px] text-gray-600 leading-relaxed whitespace-pre-wrap font-mono">
-              {dim.exampleOutput}
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              {dim.behaviorImpact}
             </p>
           </div>
         </div>
@@ -545,8 +565,8 @@ function DimensionExplainer({ viewMode }: { viewMode: 'business' | 'technical' }
         <Layers className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" aria-hidden="true" />
         <p className="text-sm text-gray-700 leading-relaxed">
           {viewMode === 'business'
-            ? 'Three-dimensional analysis: how the agent processes requests (flow), what knowledge it draws from (data), and how it formats responses. Each dimension drives the pattern combinations in the next stage.'
-            : 'Three-axis dimensional decomposition: (1) Flow dimensions identify capability lanes with intent classification and confidence scoring, (2) Data dimensions build a knowledge topology with depth profiling across sub-topics, entity extraction, and domain linkage, (3) Response dimensions map output modalities to user profiles with complexity tiers. The resulting tensor drives combinatorial pattern enumeration.'}
+            ? 'Three-dimensional analysis: what the agent does (tasks), what knowledge it draws from (data), and who it serves (user profiles). Each dimension drives the pattern combinations in the next stage.'
+            : 'Three-axis dimensional decomposition: (1) Task dimensions slice parent tasks into sub-capabilities with intent classification and confidence scoring, traced back to Context Definition via parentTaskId, (2) Data dimensions build a knowledge topology with depth profiling across sub-topics, entity extraction, and domain linkage, (3) User Profile dimensions model behavioral axes — Context (anonymous/known/VIP) × Posture (info-seeking/problem-reporting/dispute) × Channel (self-service/agent-assisted). The resulting tensor drives combinatorial pattern enumeration.'}
         </p>
       </div>
     </motion.div>
@@ -584,18 +604,18 @@ function SummaryStats({
 export function ContextDimensions() {
   const activeTileId = useAgentPlaygroundStore((s) => s.activeTileId)
   const viewMode = useAgentPlaygroundStore((s) => s.viewMode)
-  const [activeTab, setActiveTab] = useState<DimensionTab>('flow')
+  const [activeTab, setActiveTab] = useState<DimensionTab>('task')
 
   const tile = activeTileId ? AGENT_TILE_MAP[activeTileId] : null
   const dimensionsData = activeTileId ? getDimensionAnalysisData(activeTileId) : null
   const accentColor = tile?.color ?? '#3b82f6'
 
   const counts = useMemo<Record<DimensionTab, number>>(() => {
-    if (!dimensionsData) return { flow: 0, data: 0, response: 0 }
+    if (!dimensionsData) return { task: 0, data: 0, userprofile: 0 }
     return {
-      flow: dimensionsData.flowDimensions.length,
+      task: dimensionsData.taskDimensions.length,
       data: dimensionsData.dataDimensions.length,
-      response: dimensionsData.responseDimensions.length,
+      userprofile: dimensionsData.userProfileDimensions.length,
     }
   }, [dimensionsData])
 
@@ -674,9 +694,9 @@ export function ContextDimensions() {
         aria-labelledby={`dim-tab-${activeTab}`}
       >
         <AnimatePresence mode="wait">
-          {activeTab === 'flow' && (
+          {activeTab === 'task' && (
             <motion.div
-              key="flow"
+              key="task"
               variants={panelVariants}
               initial="enter"
               animate="center"
@@ -685,12 +705,12 @@ export function ContextDimensions() {
               className="space-y-3"
             >
               <p className="text-xs text-gray-500 leading-relaxed">
-                Each flow dimension represents a distinct capability lane the agent follows when
-                processing user requests. Intent categories show which types of queries activate
-                each lane.
+                Each task dimension represents a specific sub-capability sliced from the parent
+                tasks defined in Context Definition. Intent categories show which types of queries
+                activate each task, with parentTaskId tracing back to the original goal.
               </p>
-              {dimensionsData.flowDimensions.map((dim, i) => (
-                <FlowDimensionCard
+              {dimensionsData.taskDimensions.map((dim, i) => (
+                <TaskDimensionCard
                   key={dim.id}
                   dim={dim}
                   accentColor={accentColor}
@@ -728,9 +748,9 @@ export function ContextDimensions() {
             </motion.div>
           )}
 
-          {activeTab === 'response' && (
+          {activeTab === 'userprofile' && (
             <motion.div
-              key="response"
+              key="userprofile"
               variants={panelVariants}
               initial="enter"
               animate="center"
@@ -739,11 +759,12 @@ export function ContextDimensions() {
               className="space-y-3"
             >
               <p className="text-xs text-gray-500 leading-relaxed">
-                How the agent formats its outputs. Each response dimension maps an output mode to
-                the user profiles that require it, with complexity classification and example output.
+                Who the agent serves. Each user profile dimension models a behavioral combination
+                across three axes: Context (anonymous/known/VIP), Posture (info-seeking/problem-reporting/dispute),
+                and Channel (self-service/agent-assisted).
               </p>
-              {dimensionsData.responseDimensions.map((dim, i) => (
-                <ResponseDimensionCard
+              {dimensionsData.userProfileDimensions.map((dim, i) => (
+                <UserProfileDimensionCard
                   key={dim.id}
                   dim={dim}
                   accentColor={accentColor}

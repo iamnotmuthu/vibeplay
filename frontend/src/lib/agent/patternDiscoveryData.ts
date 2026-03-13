@@ -24,7 +24,7 @@ export interface InteractionDiscoveryPayload {
 const FAQ_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'Explicit criteria, high confidence. These patterns are explicit lookup tasks with unambiguous answers from the knowledge base. Coverage: 76% of all FAQ interactions.',
     color: '#16a34a',
@@ -156,7 +156,7 @@ const FAQ_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Implicit criteria requiring inference. Agent handles these but confidence is lower. Includes context-dependent answers and multi-turn clarifications.',
     color: '#d97706',
@@ -392,7 +392,7 @@ const FAQ_DISCOVERY_LOG: DiscoveryLogEntry[] = [
 const DOC_INTEL_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'Explicit document structure, high confidence extraction. Clear field mapping, well-formatted documents, structured tables. Coverage: 65% of document intelligence interactions.',
     color: '#16a34a',
@@ -513,7 +513,7 @@ const DOC_INTEL_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Implicit field mapping, inferred relationships. Requires synthesis across document sections. Coverage: 30% of interactions.',
     color: '#d97706',
@@ -745,7 +745,7 @@ const DOC_INTEL_DISCOVERY_LOG: DiscoveryLogEntry[] = [
 const RESEARCH_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'Factual vendor data with clear answers. Single-source lookups, feature matrices, security certifications. Coverage: 53% of research interactions.',
     color: '#16a34a',
@@ -872,7 +872,7 @@ const RESEARCH_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Cross-source synthesis, time-sensitive data, contextual interpretation. Coverage: 33% of interactions.',
     color: '#d97706',
@@ -1109,7 +1109,7 @@ const RESEARCH_DISCOVERY_LOG: DiscoveryLogEntry[] = [
 const DENTAL_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'Routine operations with high confidence. Scheduling, office policy, basic insurance coverage. Coverage: 49% of dental interactions.',
     color: '#16a34a',
@@ -1261,7 +1261,7 @@ const DENTAL_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Complex workflows with conditional logic and cross-system coordination. Coverage: 33% of interactions.',
     color: '#d97706',
@@ -1571,7 +1571,7 @@ const DENTAL_DISCOVERY_LOG: DiscoveryLogEntry[] = [
 const SAAS_COPILOT_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'In-app actions with predictable outcomes. CRUD operations, report generation, settings updates. Coverage: 58% of interactions.',
     color: '#16a34a',
@@ -1739,7 +1739,7 @@ const SAAS_COPILOT_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Complex workflows requiring multi-step orchestration and state management. Coverage: 32% of interactions.',
     color: '#d97706',
@@ -1916,7 +1916,7 @@ const SAAS_COPILOT_DISCOVERY_LOG: DiscoveryLogEntry[] = [
 const OPS_AGENT_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'Standard batch processing and scheduled operations. Data imports, nightly sync, routine maintenance. Coverage: 52% of interactions.',
     color: '#16a34a',
@@ -2062,7 +2062,7 @@ const OPS_AGENT_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Complex long-running operations with error recovery and state management. Coverage: 40% of interactions.',
     color: '#d97706',
@@ -2327,7 +2327,7 @@ const OPS_AGENT_DISCOVERY_LOG: DiscoveryLogEntry[] = [
 const CODING_AGENT_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'Code generation and syntax tasks. Function stubs, boilerplate, simple refactoring. Coverage: 48% of interactions.',
     color: '#16a34a',
@@ -2486,7 +2486,7 @@ const CODING_AGENT_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Complex code analysis, architectural changes, and multi-file refactoring. Coverage: 42% of interactions.',
     color: '#d97706',
@@ -2727,7 +2727,7 @@ const CODING_AGENT_DISCOVERY_LOG: DiscoveryLogEntry[] = [
 const ONPREM_ASSISTANT_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'Standard secure queries on air-gapped systems. Knowledge lookup, policy retrieval, local inference. Coverage: 56% of interactions.',
     color: '#16a34a',
@@ -2865,7 +2865,7 @@ const ONPREM_ASSISTANT_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Complex compliance workflows and multi-system security operations. Coverage: 36% of interactions.',
     color: '#d97706',
@@ -3109,7 +3109,7 @@ const ONPREM_ASSISTANT_DISCOVERY_LOG: DiscoveryLogEntry[] = [
 const MULTIMODAL_AGENT_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'Single-modality processing and cross-modal retrieval. Text-to-image, image tagging, audio transcription. Coverage: 52% of interactions.',
     color: '#16a34a',
@@ -3268,7 +3268,7 @@ const MULTIMODAL_AGENT_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Cross-modal reasoning and complex multi-modality workflows. Coverage: 38% of interactions.',
     color: '#d97706',
@@ -3543,7 +3543,7 @@ const MULTIMODAL_AGENT_DISCOVERY_LOG: DiscoveryLogEntry[] = [
 const CONSUMER_CHAT_PATTERNS: PatternGroup[] = [
   {
     classification: 'dominant',
-    label: 'Dominant Patterns',
+    label: 'Simple Patterns',
     description:
       'Common conversational interactions at massive scale. Friendly answers, quick responses, no personalization. Coverage: 64% of interactions.',
     color: '#16a34a',
@@ -3695,7 +3695,7 @@ const CONSUMER_CHAT_PATTERNS: PatternGroup[] = [
   },
   {
     classification: 'non-dominant',
-    label: 'Non-Dominant Patterns',
+    label: 'Complex Patterns',
     description:
       'Personalized interactions requiring memory and context. Coverage: 26% of interactions.',
     color: '#d97706',
