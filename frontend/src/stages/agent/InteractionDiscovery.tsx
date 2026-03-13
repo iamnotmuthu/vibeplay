@@ -12,7 +12,6 @@ import {
   Lightbulb,
   Loader2,
 } from 'lucide-react'
-import { AgentTooltip } from '@/components/agent/AgentTooltip'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 import { getCombinatorialPatternsData } from '@/lib/agent/combinatorialPatternsData'
@@ -687,20 +686,12 @@ function PatternCard({
   const tier = TIER_COLOR_MAP[pattern.tier]
   const typeLabel = PATTERN_TYPE_LABELS[pattern.patternType]
 
-  // Derive confidence from pattern confidence %
-  const confidence: 'high' | 'low' = pattern.confidence >= 75 ? 'high' : 'low'
-
   // Status badge color mapping (matches PatternDiscovery exactly)
   const statusBadgeStyle = pattern.tier === 'simple'
     ? { background: 'rgba(16,185,129,0.10)', color: '#059669' }
     : pattern.tier === 'complex'
       ? { background: 'rgba(239,68,68,0.08)', color: '#dc2626' }
       : { background: 'rgba(245,158,11,0.10)', color: '#d97706' }
-
-  // Confidence badge style (matches PatternDiscovery exactly)
-  const confidenceBadgeStyle = confidence === 'high'
-    ? { background: 'rgba(34,197,94,0.12)', color: '#16a34a' }
-    : { background: 'rgba(239,68,68,0.10)', color: '#dc2626' }
 
   return (
     <motion.div
@@ -735,22 +726,6 @@ function PatternCard({
             >
               {typeLabel}
             </span>
-            <div className="flex items-center gap-1 ml-auto shrink-0">
-              <span
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={confidenceBadgeStyle}
-              >
-                {confidence === 'high' ? 'High Confidence' : 'Low Confidence'}
-              </span>
-              <AgentTooltip
-                title="Pattern Confidence Score"
-                content="How reliably the engine can detect and classify this interaction pattern from user input. High scores (75-100%) mean clear intent signals. Lower scores indicate ambiguity that may need clarification or multi-turn dialogue to resolve."
-              >
-                <span className="text-[9px] text-gray-400 font-mono cursor-help">
-                  {pattern.confidence}%
-                </span>
-              </AgentTooltip>
-            </div>
           </div>
 
           {/* Pattern name */}

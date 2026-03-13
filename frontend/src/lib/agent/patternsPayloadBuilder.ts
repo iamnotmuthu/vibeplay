@@ -194,10 +194,11 @@ export function generatePowerSetPatterns(
             ? `${dataDims[0].label} + ${dataDims[1].label}`
             : `${dataDims[0].label} + ${dataDims.length - 1} more`
 
-        const name = `${task.label} via ${dataLabel}`
+        // Include user profile for unique naming across same task×data combos
+        const upDim = upMap.get(up.id)!
+        const name = `${task.label} via ${dataLabel} — ${upDim.label}`
 
         // Generate description
-        const upDim = upMap.get(up.id)!
         const desc = dataDims.length === 1
           ? `${upDim.label} performs ${task.label.toLowerCase()} using ${dataDims[0].label.toLowerCase()} data.`
           : `${upDim.label} performs ${task.label.toLowerCase()} cross-referencing ${dataDims.map((d) => d.label.toLowerCase()).join(', ')}.`
