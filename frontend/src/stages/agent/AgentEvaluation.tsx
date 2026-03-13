@@ -11,6 +11,7 @@ import type { PatternClassification } from '@/store/agentTypes'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 import { getEvaluationData } from '@/lib/agent/evaluationData'
+import { getEvalMetrics, getMetricWhy } from '@/lib/agent/componentTechData'
 import { getPatternDiscoveryData } from '@/lib/agent/patternDiscoveryData'
 import {
   PATTERN_CLASSIFICATION_META,
@@ -226,6 +227,60 @@ function EvalExplainer({ viewMode }: { viewMode: 'business' | 'technical' }) {
 }
 
 
+// ─── Measurement Plan ────────────────────────────────────────────────────
+
+function AgentMeasurementPlan({ tileId, accentColor }: { tileId: string; accentColor: string }) {
+  const metrics = getEvalMetrics(tileId)
+  const why = getMetricWhy(tileId)
+  if (!metrics || !why) return null
+
+  const items = [
+    { label: 'Primary Metric', name: metrics.metric1.name, shortName: metrics.metric1.shortName, description: metrics.metric1.description, why: why.why1, color: accentColor },
+    { label: 'Secondary Metric', name: metrics.metric2.name, shortName: metrics.metric2.shortName, description: metrics.metric2.description, why: why.why2, color: '#6b7280' },
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1, duration: 0.3 }}
+      className="mb-6"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Measurement Plan</span>
+        <div className="flex-1 h-px" style={{ background: '#e5e7eb' }} />
+        <span className="text-[10px] text-gray-400 italic">metrics to be used for evaluation</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {items.map(({ label, name, description, why: whyText, color }) => (
+          <div
+            key={label}
+            className="rounded-xl p-4"
+            style={{
+              background: '#ffffff',
+              border: `1px solid ${color === accentColor ? `${color}40` : '#e5e7eb'}`,
+              borderLeft: `3px solid ${color}`,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span
+                className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                style={{ background: `${color}14`, color, border: `1px solid ${color}30` }}
+              >
+                {label}
+              </span>
+            </div>
+            <p className="text-sm font-bold text-gray-900 mb-1 leading-snug">{name}</p>
+            <p className="text-xs text-gray-600 leading-relaxed mb-2">{description}</p>
+            <p className="text-[11px] text-gray-400 leading-relaxed italic">{whyText}</p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────
 
 export function AgentEvaluation() {
@@ -330,6 +385,11 @@ export function AgentEvaluation() {
       <div className="mb-6">
         <EvalExplainer viewMode={viewMode} />
       </div>
+
+      {/* Measurement Plan */}
+      {activeTileId && (
+        <AgentMeasurementPlan tileId={activeTileId} accentColor={accentColor} />
+      )}
 
       {/* Metrics Bar (doubles as tab selector) */}
       <MetricsBar

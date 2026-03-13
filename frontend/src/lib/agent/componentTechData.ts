@@ -780,3 +780,52 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
 export function getEvalMetrics(tileId: string): TileEvalMetrics | null {
   return TILE_EVAL_METRICS[tileId] ?? null
 }
+
+// ─── Measurement Plan: why each metric was chosen per tile ───────────────
+
+const METRIC_WHY: Record<string, { why1: string; why2: string }> = {
+  'faq-knowledge': {
+    why1: 'End-to-end resolution directly measures user value — an agent that cannot finish requests is not deployable, regardless of response speed.',
+    why2: 'FAQ users expect instant answers. Time to first token is a hard reliability boundary — above 200ms, perceived quality drops sharply.',
+  },
+  'doc-intelligence': {
+    why1: 'Ungrounded claims in document extraction cause direct downstream harm. Hallucination rate is the non-negotiable safety gate before any output is trusted.',
+    why2: 'Retrieving irrelevant chunks is the leading cause of incorrect answers. NDCG@k measures ranking quality to ensure the best evidence reaches generation.',
+  },
+  'saas-copilot': {
+    why1: 'Calling the wrong tool or using incorrect parameters causes real system mutations. Tool selection accuracy is the primary reliability gate before deployment.',
+    why2: 'Multi-step tasks can fail midway. End-to-end completion rate captures full chain reliability — not just individual step accuracy.',
+  },
+  'research-comparison': {
+    why1: 'Research outputs are only valuable if claims are true and traceable. Factual accuracy is the primary gate before any report is considered trustworthy.',
+    why2: 'Missing a key fact can distort the entire comparison. Recall@K ensures important evidence from source documents is never silently dropped.',
+  },
+  'ops-agent': {
+    why1: 'Ops workflows that stall mid-task create more problems than they solve. Full completion without human intervention is the primary deployment criterion.',
+    why2: 'Wasted steps in infrastructure automation waste real compute and time. Trajectory efficiency ensures the agent takes the minimum actions needed to reach the goal.',
+  },
+  'coding-agent': {
+    why1: 'Code that does not run is not useful. pass@1 directly measures whether generated solutions work the first time — without requiring repeated human review.',
+    why2: 'Excessive debug cycles negate the productivity gains of automation. This metric caps the fix loops needed before a solution passes all tests.',
+  },
+  'decision-workflow': {
+    why1: 'Any PII leak or regulatory failure is a blocking defect. Compliance rate is set at 99.5% to enforce near-zero tolerance for safety violations.',
+    why2: 'Over-cautious guardrails that block legitimate requests erode user trust. FRR balances safety with usability — the agent must be both safe and helpful.',
+  },
+  'onprem-assistant': {
+    why1: 'On-prem constraints — limited model size, no cloud fallback — mean the success baseline must be validated under real deployment conditions, not lab settings.',
+    why2: 'Hardware costs and power draw are fixed on-prem. TPS/Watt ensures the solution is economically viable and stays within thermal and VRAM limits.',
+  },
+  'multimodal-agent': {
+    why1: 'Mixed-input tasks have more failure modes than text-only. Success rate across modality combinations is the primary proof that integration works end-to-end.',
+    why2: 'CLIP alignment and FID fidelity together verify that generated or retrieved visual outputs match the intended meaning and quality bar.',
+  },
+  'consumer-chat': {
+    why1: 'Consumer products fail fast on latency. P95 at scale is more demanding than averages — it captures the ceiling that ensures even the slowest 1-in-20 users gets a good experience.',
+    why2: 'Latency and accuracy are necessary but not sufficient. CSAT captures holistic satisfaction — the signal that determines retention and word-of-mouth growth.',
+  },
+}
+
+export function getMetricWhy(tileId: string): { why1: string; why2: string } | null {
+  return METRIC_WHY[tileId] ?? null
+}

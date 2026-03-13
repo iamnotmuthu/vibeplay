@@ -16,7 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { AGENT_TILES, AGENT_DOMAINS, getTilesByDomain } from '@/lib/agent/agentDomainData'
+import { AGENT_DOMAINS, getTilesByDomain } from '@/lib/agent/agentDomainData'
 import type { AgentTile } from '@/store/agentTypes'
 import type { AgentDomain } from '@/store/agentTypes'
 

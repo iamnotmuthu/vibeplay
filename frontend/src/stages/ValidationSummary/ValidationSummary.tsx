@@ -264,6 +264,76 @@ function BreakdownTable({
   )
 }
 
+// ─── Metric definitions for Measurement Plan ──────────────────────────────────
+
+const PREDICTIVE_METRIC_DEFS: Record<string, { description: string; why: string }> = {
+  Recall: {
+    description: 'Proportion of actual positives the model correctly identifies — measures how few real cases are missed.',
+    why: 'Chosen as primary when missing a true positive is more costly than a false alarm — critical for fraud detection, churn risk, and anomaly classification.',
+  },
+  Precision: {
+    description: 'Proportion of predicted positives that are actually correct — measures how trustworthy each positive prediction is.',
+    why: 'Chosen as secondary to ensure positive predictions are reliable enough to act on and to control the false alarm rate.',
+  },
+  MAPE: {
+    description: 'Mean Absolute Percentage Error — average forecast deviation expressed as a percentage of actual values.',
+    why: 'Chosen as primary for forecasting because it is scale-independent and directly interpretable by stakeholders as a % deviation from reality.',
+  },
+  RMSE: {
+    description: 'Root Mean Squared Error — penalizes large forecast errors more than small ones.',
+    why: 'Chosen as secondary to surface and constrain outlier predictions that MAPE alone may underweight due to its percentage-based averaging.',
+  },
+}
+
+function MeasurementPlan({ primaryMetric, secondaryMetric }: { primaryMetric: string; secondaryMetric: string }) {
+  const primary = PREDICTIVE_METRIC_DEFS[primaryMetric]
+  const secondary = PREDICTIVE_METRIC_DEFS[secondaryMetric]
+  if (!primary || !secondary) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.05, duration: 0.3 }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Measurement Plan</span>
+        <div className="flex-1 h-px" style={{ background: '#e5e7eb' }} />
+        <span className="text-[10px] text-gray-400 italic">metrics to be used for evaluation</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {[
+          { label: 'Primary Metric', metric: primaryMetric, def: primary, color: '#3b82f6', borderColor: '#3b82f6' },
+          { label: 'Secondary Metric', metric: secondaryMetric, def: secondary, color: '#6b7280', borderColor: '#d1d5db' },
+        ].map(({ label, metric, def, color, borderColor }) => (
+          <div
+            key={label}
+            className="rounded-xl p-4"
+            style={{
+              background: '#ffffff',
+              border: `1px solid ${borderColor}`,
+              borderLeft: `3px solid ${color}`,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span
+                className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                style={{ background: `${color}12`, color, border: `1px solid ${color}30` }}
+              >
+                {label}
+              </span>
+            </div>
+            <p className="text-base font-bold text-gray-900 mb-1">{metric}</p>
+            <p className="text-xs text-gray-600 leading-relaxed mb-2">{def.description}</p>
+            <p className="text-[11px] text-gray-400 leading-relaxed italic">{def.why}</p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const CATEGORY_BUSINESS_STATEMENTS: Record<string, (count: number) => string> = {
@@ -325,6 +395,10 @@ export function ValidationSummary() {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: '#fafafa' }}>
         <StageExplainer stageId={5} />
+
+        {/* ── Measurement Plan ─────────────────────────────────────────── */}
+        <MeasurementPlan primaryMetric={data.overallMetrics.primaryMetric} secondaryMetric={data.overallMetrics.secondaryMetric} />
+
         {/* Total validation banner */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
