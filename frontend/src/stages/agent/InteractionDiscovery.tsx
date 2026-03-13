@@ -240,7 +240,7 @@ function CombinationMatrix({
                   className="px-1 pb-2 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-center"
                   style={{ minWidth: 72 }}
                 >
-                  <span className="block truncate max-w-[72px]">{labels[dId] ?? dId}</span>
+                  <span className="block">{labels[dId] ?? dId}</span>
                 </th>
               ))}
             </tr>
