@@ -19,7 +19,6 @@ import { getDimensionAnalysisData } from '@/lib/agent/dimensionAnalysisData'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import type {
   PatternTier,
-  CombinationCell,
   DimensionPattern,
 } from '@/store/agentTypes'
 import { PATTERN_TYPE_LABELS } from '@/store/agentTypes'
@@ -81,8 +80,8 @@ const TIER_COLOR_MAP: Record<PatternTier, { color: string; bg: string; border: s
 // ─── Standardized Labels ─────────────────────────────────────────────────────
 
 function getStandardizedPatternLabel(tier: PatternTier, index: number): string {
-  if (tier === 'simple') return `Dominant Pattern ${index + 1}`
-  if (tier === 'complex') return `Non-Dominant Pattern ${index + 1}`
+  if (tier === 'simple') return `Simple Pattern ${index + 1}`
+  if (tier === 'complex') return `Complex Pattern ${index + 1}`
   return `Fuzzy Pattern ${index + 1}`
 }
 
@@ -198,22 +197,68 @@ function TierBreakdownBar({
   )
 }
 
-// ─── Combination Matrix Heatmap ───────────────────────────────────────────────
+// ─── Grouped Bar Chart (replaces Combination Matrix) ─────────────────────────
 
-function CombinationMatrix({
-  matrix,
+interface BarGroup {
+  taskId: string
+  taskLabel: string
+  bars: {
+    dataComboLabel: string
+    segments: { userProfileLabel: string; tier: PatternTier; confidence: number }[]
+  }[]
+}
+
+function GroupedBarChart({
+  patterns,
   taskIds,
-  dataIds,
   labels,
   accentColor,
 }: {
-  matrix: CombinationCell[][]
+  patterns: DimensionPattern[]
   taskIds: string[]
-  dataIds: string[]
   labels: Record<string, string>
   accentColor: string
 }) {
-  const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null)
+  const [hoveredBar, setHoveredBar] = useState<string | null>(null)
+
+  // Build grouped data: Task → unique Data combos → User Profile segments
+  const groups: BarGroup[] = useMemo(() => {
+    return taskIds.map((taskId) => {
+      const taskPatterns = patterns.filter((p) => p.taskDimensionId === taskId)
+      // Group by data combo key
+      const dataMap = new Map<string, DimensionPattern[]>()
+      for (const p of taskPatterns) {
+        const key = p.dataDimensionIds.slice().sort().join('+')
+        if (!dataMap.has(key)) dataMap.set(key, [])
+        dataMap.get(key)!.push(p)
+      }
+
+      const bars = Array.from(dataMap.entries()).map(([_key, comboPatterns]) => {
+        const dataDims = comboPatterns[0].dataDimensionIds
+        const dataComboLabel =
+          dataDims.length === 1
+            ? labels[dataDims[0]] ?? dataDims[0]
+            : dataDims.length === 2
+              ? `${labels[dataDims[0]] ?? dataDims[0]} + ${labels[dataDims[1]] ?? dataDims[1]}`
+              : `${labels[dataDims[0]] ?? dataDims[0]} + ${dataDims.length - 1} more`
+
+        const segments = comboPatterns.map((p) => ({
+          userProfileLabel: labels[p.userProfileDimensionId] ?? p.userProfileDimensionId,
+          tier: p.tier,
+          confidence: p.confidence,
+        }))
+
+        return { dataComboLabel, segments }
+      })
+
+      return { taskId, taskLabel: labels[taskId] ?? taskId, bars }
+    }).filter((g) => g.bars.length > 0)
+  }, [patterns, taskIds, labels])
+
+  // Bar sizing
+  const BAR_H = 18
+  const LABEL_W = 130
+  const MAX_BAR_W = 280
 
   return (
     <motion.div
@@ -225,200 +270,158 @@ function CombinationMatrix({
     >
       <div className="flex items-center gap-2 mb-4">
         <Grid3x3 className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />
-        <h3 className="text-sm font-bold text-gray-900">Combination Matrix</h3>
-        <span className="text-[10px] text-gray-400">Task x Data</span>
+        <h3 className="text-sm font-bold text-gray-900">Profile Distribution</h3>
+        <span className="text-[10px] text-gray-400">Task × Data → User Profiles by Tier</span>
       </div>
 
-      <div className="inline-block min-w-full">
-        <table className="border-collapse" role="table" aria-label="Task by Data dimension combination matrix">
-          <thead>
-            <tr>
-              <th className="w-28 p-0" />
-              {dataIds.map((dId) => (
-                <th
-                  key={dId}
-                  className="px-1 pb-2 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-center"
-                  style={{ minWidth: 72 }}
+      <div className="space-y-1">
+        {groups.map((group) => (
+          <div key={group.taskId}>
+            {/* Task heading */}
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 mt-3 first:mt-0">
+              {group.taskLabel}
+            </div>
+
+            {group.bars.map((bar, bi) => {
+              const barKey = `${group.taskId}-${bi}`
+              const isHovered = hoveredBar === barKey
+
+              return (
+                <div
+                  key={bi}
+                  className="flex items-center gap-2 mb-1"
+                  onMouseEnter={() => setHoveredBar(barKey)}
+                  onMouseLeave={() => setHoveredBar(null)}
                 >
-                  <span className="block">{labels[dId] ?? dId}</span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {taskIds.map((fId, rowIdx) => (
-              <tr key={fId}>
-                <td className="pr-2 py-1 text-[10px] font-semibold text-gray-600 text-right whitespace-nowrap">
-                  {labels[fId] ?? fId}
-                </td>
-                {dataIds.map((dId, colIdx) => {
-                  const cell = matrix[rowIdx]?.[colIdx]
-                  if (!cell) return <td key={dId} className="p-1"><div className="w-full h-10 rounded bg-gray-50" /></td>
+                  {/* Data combo label */}
+                  <div
+                    className="text-[9px] text-gray-500 text-right shrink-0 truncate"
+                    style={{ width: LABEL_W }}
+                    title={bar.dataComboLabel}
+                  >
+                    {bar.dataComboLabel}
+                  </div>
 
-                  const tier = TIER_COLOR_MAP[cell.dominantTier]
-                  const isHovered = hoveredCell?.row === rowIdx && hoveredCell?.col === colIdx
-
-                  return (
-                    <td key={dId} className="p-1">
-                      <div
-                        className="relative w-full h-10 rounded flex items-center justify-center cursor-default transition-shadow"
-                        style={{
-                          background: cell.isValid ? tier.bg : '#f9fafb',
-                          border: `1px solid ${cell.isValid ? tier.border : '#e5e7eb'}`,
-                          boxShadow: isHovered && cell.isValid ? `0 0 0 2px ${tier.color}40` : 'none',
-                        }}
-                        onMouseEnter={() => setHoveredCell({ row: rowIdx, col: colIdx })}
-                        onMouseLeave={() => setHoveredCell(null)}
-                        role="cell"
-                        aria-label={
-                          cell.isValid
-                            ? `${labels[fId]} + ${labels[dId]}: ${cell.patternCount} patterns, ${cell.dominantTier} tier`
-                            : `${labels[fId]} + ${labels[dId]}: no valid patterns`
-                        }
-                      >
-                        {cell.isValid ? (
+                  {/* Stacked bar: each segment = one user profile */}
+                  <div className="flex gap-[2px] relative" style={{ maxWidth: MAX_BAR_W }}>
+                    {bar.segments.map((seg, si) => {
+                      const tier = TIER_COLOR_MAP[seg.tier]
+                      const w = Math.max(12, (seg.confidence / 100) * (MAX_BAR_W / bar.segments.length))
+                      return (
+                        <motion.div
+                          key={si}
+                          initial={{ width: 0, opacity: 0 }}
+                          animate={{ width: w, opacity: 1 }}
+                          transition={{ duration: 0.4, delay: 0.05 * si }}
+                          className="rounded-sm relative group cursor-default"
+                          style={{
+                            height: BAR_H,
+                            background: tier.activeBg,
+                            border: `1px solid ${tier.border}`,
+                          }}
+                          title={`${seg.userProfileLabel} — ${seg.tier === 'simple' ? 'Dominant' : seg.tier === 'complex' ? 'Non-Dominant' : 'Fuzzy'} (${seg.confidence}%)`}
+                        >
+                          {/* Tiny profile initial inside each segment */}
                           <span
-                            className="text-xs font-bold"
+                            className="absolute inset-0 flex items-center justify-center text-[7px] font-bold"
                             style={{ color: tier.color }}
                           >
-                            {cell.patternCount}
+                            {seg.userProfileLabel.slice(0, 2).toUpperCase()}
                           </span>
-                        ) : (
-                          <span className="text-[10px] text-gray-300">&mdash;</span>
-                        )}
+                        </motion.div>
+                      )
+                    })}
 
-                        {/* Hover tooltip */}
-                        {isHovered && cell.isValid && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="absolute z-10 top-full left-1/2 -translate-x-1/2 mt-1 p-2 rounded-lg border bg-white shadow-lg text-[10px] whitespace-nowrap"
-                            style={{ borderColor: tier.border }}
-                          >
-                            <p className="font-bold text-gray-900 mb-0.5">
-                              {cell.patternCount} pattern{cell.patternCount > 1 ? 's' : ''}
-                            </p>
-                            <p className="text-gray-500">
-                              Tier: <span style={{ color: tier.color }} className="font-semibold">
-                                {cell.dominantTier === 'simple' ? 'Dominant' : cell.dominantTier === 'complex' ? 'Non-Dominant' : 'Fuzzy'}
+                    {/* Hover detail popup */}
+                    {isHovered && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="absolute z-20 left-0 top-full mt-1 p-2 rounded-lg border bg-white shadow-lg text-[10px] whitespace-nowrap"
+                        style={{ borderColor: '#e5e7eb' }}
+                      >
+                        <p className="font-bold text-gray-900 mb-1">
+                          {bar.dataComboLabel}
+                        </p>
+                        {bar.segments.map((seg, si) => {
+                          const tier = TIER_COLOR_MAP[seg.tier]
+                          return (
+                            <div key={si} className="flex items-center gap-2 mb-0.5">
+                              <span
+                                className="w-2 h-2 rounded-full inline-block shrink-0"
+                                style={{ background: tier.color }}
+                              />
+                              <span className="text-gray-600">{seg.userProfileLabel}</span>
+                              <span style={{ color: tier.color }} className="font-semibold ml-auto pl-3">
+                                {seg.tier === 'simple' ? 'Dominant' : seg.tier === 'complex' ? 'Non-Dominant' : 'Fuzzy'}
                               </span>
-                            </p>
-                            <p className="text-gray-500">
-                              Profiles: {cell.userProfileDimensionIds.length}
-                            </p>
-                          </motion.div>
-                        )}
-                      </div>
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                              <span className="text-gray-400 ml-1">{seg.confidence}%</span>
+                            </div>
+                          )
+                        })}
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {/* Count badge */}
+                  <span className="text-[9px] text-gray-400 tabular-nums shrink-0">
+                    {bar.segments.length} profile{bar.segments.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        ))}
       </div>
 
-      {/* Matrix legend */}
+      {/* Legend */}
       <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100">
         {TIER_TABS.map((tier) => (
           <div key={tier.id} className="flex items-center gap-1.5">
             <div
-              className="w-4 h-4 rounded"
-              style={{ background: tier.inactiveBg, border: `1px solid ${tier.border}` }}
+              className="w-4 h-3 rounded-sm"
+              style={{ background: tier.activeBg, border: `1px solid ${tier.border}` }}
               aria-hidden="true"
             />
-            <span className="text-[10px] text-gray-500">{tier.label.replace(' Patterns', '')}</span>
+            <span className="text-[10px] text-gray-500">
+              {tier.id === 'simple' ? 'Dominant' : tier.id === 'complex' ? 'Non-Dominant' : 'Fuzzy'}
+            </span>
           </div>
         ))}
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded bg-gray-50 border border-gray-200" aria-hidden="true" />
-          <span className="text-[10px] text-gray-400">Invalid</span>
-        </div>
       </div>
     </motion.div>
   )
 }
 
-// ─── Dimension Explosion Animation ───────────────────────────────────────────
+// ─── Dimensional Sunburst (replaces Dimension Connections) ──────────────────
 
-interface ExplosionNode {
+interface SunburstArc {
+  ring: 0 | 1 | 2 // 0=task (inner), 1=data combo (middle), 2=user profile (outer)
   id: string
   label: string
-  column: 0 | 1 | 2
-  y: number // 0-1 normalised position within column
+  startAngle: number
+  endAngle: number
+  tier: PatternTier | null // null for parent arcs that aggregate
+  count: number // how many patterns
+  parentId?: string // for middle/outer ring linking
 }
 
-interface ExplosionPath {
-  from: string // taskDimensionId
-  through: string // dataDimensionId
-  to: string // userProfileDimensionId
-  tier: PatternTier
-}
-
-function DimensionExplosion({
+function DimensionalSunburst({
   patterns,
   taskIds,
-  dataIds,
-  userProfileIds,
   labels,
   accentColor,
 }: {
   patterns: DimensionPattern[]
   taskIds: string[]
-  dataIds: string[]
-  userProfileIds: string[]
   labels: Record<string, string>
   accentColor: string
 }) {
+  const [hoveredArc, setHoveredArc] = useState<string | null>(null)
   const [hasAnimated, setHasAnimated] = useState(false)
-  const [visibleCount, setVisibleCount] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Build unique user profile IDs from patterns if userProfileIds is sparse
-  const allUserProfileIds = useMemo(() => {
-    if (userProfileIds.length > 0) return userProfileIds
-    const set = new Set<string>()
-    for (const p of patterns) set.add(p.userProfileDimensionId)
-    return Array.from(set)
-  }, [userProfileIds, patterns])
-
-  // Build node positions
-  const nodes = useMemo(() => {
-    const result: ExplosionNode[] = []
-    taskIds.forEach((id, i) => {
-      result.push({ id, label: labels[id] ?? id, column: 0, y: taskIds.length > 1 ? i / (taskIds.length - 1) : 0.5 })
-    })
-    dataIds.forEach((id, i) => {
-      result.push({ id, label: labels[id] ?? id, column: 1, y: dataIds.length > 1 ? i / (dataIds.length - 1) : 0.5 })
-    })
-    allUserProfileIds.forEach((id, i) => {
-      result.push({ id, label: labels[id] ?? id, column: 2, y: allUserProfileIds.length > 1 ? i / (allUserProfileIds.length - 1) : 0.5 })
-    })
-    return result
-  }, [taskIds, dataIds, allUserProfileIds, labels])
-
-  // Build unique paths from patterns (each pattern = Task → Data(s) → UserProfile)
-  const paths = useMemo(() => {
-    const result: ExplosionPath[] = []
-    const seen = new Set<string>()
-    for (const p of patterns) {
-      for (const dId of p.dataDimensionIds) {
-        const key = `${p.taskDimensionId}→${dId}→${p.userProfileDimensionId}`
-        if (!seen.has(key)) {
-          seen.add(key)
-          result.push({
-            from: p.taskDimensionId,
-            through: dId,
-            to: p.userProfileDimensionId,
-            tier: p.tier,
-          })
-        }
-      }
-    }
-    return result
-  }, [patterns])
-
-  // Trigger animation on scroll into view
+  // Trigger animation on scroll
   useEffect(() => {
     if (hasAnimated || !containerRef.current) return
     const observer = new IntersectionObserver(
@@ -434,35 +437,184 @@ function DimensionExplosion({
     return () => observer.disconnect()
   }, [hasAnimated])
 
-  // Staggered path reveal
-  useEffect(() => {
-    if (!hasAnimated) return
-    if (visibleCount >= paths.length) return
-    const timer = setTimeout(() => {
-      setVisibleCount((c) => Math.min(c + 1, paths.length))
-    }, 60)
-    return () => clearTimeout(timer)
-  }, [hasAnimated, visibleCount, paths.length])
+  // Build sunburst arcs: Task → DataCombo → UserProfile
+  const arcs = useMemo(() => {
+    const result: SunburstArc[] = []
+    const TAU = Math.PI * 2
+    const total = patterns.length || 1
 
-  // Layout constants
-  const SVG_W = 680
-  const SVG_H = Math.max(200, Math.max(taskIds.length, dataIds.length, allUserProfileIds.length) * 56 + 40)
-  const COL_X = [60, SVG_W / 2, SVG_W - 60]
-  const PADDING_Y = 28
+    // Group by task
+    const taskGroups = new Map<string, DimensionPattern[]>()
+    for (const tid of taskIds) taskGroups.set(tid, [])
+    for (const p of patterns) {
+      const arr = taskGroups.get(p.taskDimensionId)
+      if (arr) arr.push(p)
+    }
 
-  const getNodePos = useCallback(
-    (id: string): { x: number; y: number } => {
-      const node = nodes.find((n) => n.id === id)
-      if (!node) return { x: 0, y: 0 }
-      const x = COL_X[node.column]
-      const usableH = SVG_H - PADDING_Y * 2
-      const y = PADDING_Y + node.y * usableH
-      return { x, y }
+    let taskAngle = 0
+    for (const [taskId, taskPatterns] of taskGroups) {
+      if (taskPatterns.length === 0) continue
+      const taskSpan = (taskPatterns.length / total) * TAU
+      const taskStart = taskAngle
+      const taskEnd = taskAngle + taskSpan
+
+      // Dominant tier for task level = majority tier
+      const tierCounts = { simple: 0, complex: 0, fuzzy: 0 }
+      for (const p of taskPatterns) tierCounts[p.tier]++
+      const dominantTier = (Object.entries(tierCounts).sort((a, b) => b[1] - a[1])[0][0]) as PatternTier
+
+      result.push({
+        ring: 0,
+        id: `task-${taskId}`,
+        label: labels[taskId] ?? taskId,
+        startAngle: taskStart,
+        endAngle: taskEnd,
+        tier: dominantTier,
+        count: taskPatterns.length,
+      })
+
+      // Group by data combo within this task
+      const dataGroups = new Map<string, DimensionPattern[]>()
+      for (const p of taskPatterns) {
+        const key = p.dataDimensionIds.slice().sort().join('+')
+        if (!dataGroups.has(key)) dataGroups.set(key, [])
+        dataGroups.get(key)!.push(p)
+      }
+
+      let dataAngle = taskStart
+      for (const [dataKey, dataPatterns] of dataGroups) {
+        const dataSpan = (dataPatterns.length / total) * TAU
+        const dataStart = dataAngle
+        const dataEnd = dataAngle + dataSpan
+
+        const dTierCounts = { simple: 0, complex: 0, fuzzy: 0 }
+        for (const p of dataPatterns) dTierCounts[p.tier]++
+        const dDominantTier = (Object.entries(dTierCounts).sort((a, b) => b[1] - a[1])[0][0]) as PatternTier
+
+        const dataDims = dataPatterns[0].dataDimensionIds
+        const dataLabel =
+          dataDims.length === 1
+            ? labels[dataDims[0]] ?? dataDims[0]
+            : dataDims.length === 2
+              ? `${labels[dataDims[0]] ?? dataDims[0]} + ${labels[dataDims[1]] ?? dataDims[1]}`
+              : `${labels[dataDims[0]] ?? dataDims[0]} +${dataDims.length - 1}`
+
+        result.push({
+          ring: 1,
+          id: `data-${taskId}-${dataKey}`,
+          label: dataLabel,
+          startAngle: dataStart,
+          endAngle: dataEnd,
+          tier: dDominantTier,
+          count: dataPatterns.length,
+          parentId: `task-${taskId}`,
+        })
+
+        // User profiles within this data combo
+        let upAngle = dataStart
+        for (const p of dataPatterns) {
+          const upSpan = (1 / total) * TAU
+          result.push({
+            ring: 2,
+            id: `up-${p.id}`,
+            label: labels[p.userProfileDimensionId] ?? p.userProfileDimensionId,
+            startAngle: upAngle,
+            endAngle: upAngle + upSpan,
+            tier: p.tier,
+            count: 1,
+            parentId: `data-${taskId}-${dataKey}`,
+          })
+          upAngle += upSpan
+        }
+
+        dataAngle += dataSpan
+      }
+
+      taskAngle += taskSpan
+    }
+
+    return result
+  }, [patterns, taskIds, labels])
+
+  // SVG layout — doubled from original
+  const SIZE = 640
+  const CX = SIZE / 2
+  const CY = SIZE / 2
+  const RINGS = [
+    { inner: 68, outer: 138 },  // Task (innermost)
+    { inner: 144, outer: 224 }, // Data combo (middle)
+    { inner: 230, outer: 296 }, // User Profile (outer)
+  ]
+
+  // Per-ring color palette: Task=blue, Data=purple, UserProfile=teal
+  const RING_PALETTE = [
+    {
+      base: '#3b82f6',
+      simple:  { fill: '#dbeafe', stroke: '#3b82f6' },
+      complex: { fill: '#eff6ff', stroke: '#93c5fd' },
+      fuzzy:   { fill: '#f5f9ff', stroke: '#bfdbfe' },
+      hovered: { fill: '#bfdbfe', stroke: '#2563eb' },
     },
-    [nodes, SVG_H],
-  )
+    {
+      base: '#8b5cf6',
+      simple:  { fill: '#ede9fe', stroke: '#8b5cf6' },
+      complex: { fill: '#f5f3ff', stroke: '#c4b5fd' },
+      fuzzy:   { fill: '#faf8ff', stroke: '#ddd6fe' },
+      hovered: { fill: '#ddd6fe', stroke: '#7c3aed' },
+    },
+    {
+      base: '#0ea5e9',
+      simple:  { fill: '#e0f2fe', stroke: '#0ea5e9' },
+      complex: { fill: '#f0f9ff', stroke: '#7dd3fc' },
+      fuzzy:   { fill: '#f8fcff', stroke: '#bae6fd' },
+      hovered: { fill: '#bae6fd', stroke: '#0284c7' },
+    },
+  ]
 
-  const tierColor = (tier: PatternTier) => TIER_COLOR_MAP[tier].color
+  function getArcColors(ring: 0 | 1 | 2, tier: PatternTier | null, isHovered: boolean) {
+    const p = RING_PALETTE[ring]
+    if (isHovered) return p.hovered
+    if (!tier) return { fill: `${p.base}18`, stroke: `${p.base}50` }
+    return p[tier]
+  }
+
+  function arcPath(
+    innerR: number,
+    outerR: number,
+    startAngle: number,
+    endAngle: number,
+  ): string {
+    // Offset by -PI/2 so 0 is top
+    const s = startAngle - Math.PI / 2
+    const e = endAngle - Math.PI / 2
+    const gap = 0.008 // tiny gap between arcs
+
+    const sA = s + gap
+    const eA = e - gap
+    if (eA <= sA) return ''
+
+    const x1 = CX + innerR * Math.cos(sA)
+    const y1 = CY + innerR * Math.sin(sA)
+    const x2 = CX + outerR * Math.cos(sA)
+    const y2 = CY + outerR * Math.sin(sA)
+    const x3 = CX + outerR * Math.cos(eA)
+    const y3 = CY + outerR * Math.sin(eA)
+    const x4 = CX + innerR * Math.cos(eA)
+    const y4 = CY + innerR * Math.sin(eA)
+
+    const largeArc = eA - sA > Math.PI ? 1 : 0
+
+    return [
+      `M ${x1} ${y1}`,
+      `L ${x2} ${y2}`,
+      `A ${outerR} ${outerR} 0 ${largeArc} 1 ${x3} ${y3}`,
+      `L ${x4} ${y4}`,
+      `A ${innerR} ${innerR} 0 ${largeArc} 0 ${x1} ${y1}`,
+      'Z',
+    ].join(' ')
+  }
+
+  const hoveredData = arcs.find((a) => a.id === hoveredArc)
 
   return (
     <motion.div
@@ -470,163 +622,205 @@ function DimensionExplosion({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2, duration: 0.4 }}
-      className="rounded-xl border bg-white p-5 overflow-x-auto"
+      className="rounded-xl border bg-white p-5"
       style={{ borderColor: `${accentColor}15` }}
     >
       <div className="flex items-center gap-2 mb-3">
         <ArrowRight className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />
-        <h3 className="text-sm font-bold text-gray-900">Dimension Connections</h3>
+        <h3 className="text-sm font-bold text-gray-900">Dimensional Sunburst</h3>
         <span className="text-[10px] text-gray-400">Task → Data → User Profile</span>
-        {hasAnimated && (
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="ml-auto text-[10px] font-mono tabular-nums"
-            style={{ color: accentColor }}
+        <span
+          className="ml-auto text-[10px] font-mono tabular-nums"
+          style={{ color: accentColor }}
+        >
+          {patterns.length} patterns
+        </span>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-start gap-4">
+        {/* SVG sunburst — stable plain paths avoid hover jitter */}
+        <svg
+          viewBox={`0 0 ${SIZE} ${SIZE}`}
+          className="w-full max-w-[600px] mx-auto"
+          role="img"
+          aria-label={`Sunburst chart showing ${patterns.length} patterns across ${taskIds.length} tasks`}
+        >
+          {/* Entrance animation wrapper */}
+          <motion.g
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: hasAnimated ? 1 : 0, scale: hasAnimated ? 1 : 0.85 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            style={{ transformOrigin: `${CX}px ${CY}px` }}
           >
-            {visibleCount}/{paths.length} paths
-          </motion.span>
-        )}
-      </div>
+            {/* Arcs by ring */}
+            {arcs.map((arc) => {
+              const ring = RINGS[arc.ring]
+              const d = arcPath(ring.inner, ring.outer, arc.startAngle, arc.endAngle)
+              if (!d) return null
 
-      {/* Column headers */}
-      <div className="flex justify-between px-2 mb-1">
-        {['Task', 'Data', 'User Profile'].map((label) => (
-          <span key={label} className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-            {label}
-          </span>
-        ))}
-      </div>
+              const isHovered = hoveredArc === arc.id
+              const isParentOfHovered = hoveredData?.parentId === arc.id
+              const dimmed = !!hoveredArc && !isHovered && !isParentOfHovered
+              const colors = getArcColors(arc.ring as 0 | 1 | 2, arc.tier, isHovered)
 
-      <svg
-        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-        className="w-full"
-        style={{ maxHeight: SVG_H }}
-        role="img"
-        aria-label={`Dimension connection diagram showing ${paths.length} pattern paths between ${taskIds.length} task, ${dataIds.length} data, and ${allUserProfileIds.length} user profile dimensions`}
-      >
-        {/* Column lines (subtle guides) */}
-        {COL_X.map((x, i) => (
-          <line
-            key={i}
-            x1={x}
-            y1={PADDING_Y - 8}
-            x2={x}
-            y2={SVG_H - PADDING_Y + 8}
-            stroke="#e5e7eb"
-            strokeWidth={1}
-            strokeDasharray="4 4"
-          />
-        ))}
-
-        {/* Paths — animated in one by one */}
-        {paths.slice(0, visibleCount).map((path, i) => {
-          const from = getNodePos(path.from)
-          const through = getNodePos(path.through)
-          const to = getNodePos(path.to)
-          const color = tierColor(path.tier)
-
-          // Bezier curves between columns
-          const midX1 = (from.x + through.x) / 2
-          const midX2 = (through.x + to.x) / 2
-          const d1 = `M ${from.x} ${from.y} C ${midX1} ${from.y}, ${midX1} ${through.y}, ${through.x} ${through.y}`
-          const d2 = `M ${through.x} ${through.y} C ${midX2} ${through.y}, ${midX2} ${to.y}, ${to.x} ${to.y}`
-
-          return (
-            <g key={`${path.from}-${path.through}-${path.to}`}>
-              <motion.path
-                d={d1}
-                fill="none"
-                stroke={color}
-                strokeWidth={1.5}
-                strokeOpacity={0.35}
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.3, delay: i * 0.02 }}
-              />
-              <motion.path
-                d={d2}
-                fill="none"
-                stroke={color}
-                strokeWidth={1.5}
-                strokeOpacity={0.35}
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.3, delay: i * 0.02 + 0.15 }}
-              />
-            </g>
-          )
-        })}
-
-        {/* Nodes — dimension labels on the columns */}
-        {nodes.map((node) => {
-          const pos = getNodePos(node.id)
-          // Count how many visible paths touch this node
-          const touchCount = paths
-            .slice(0, visibleCount)
-            .filter(
-              (p) => p.from === node.id || p.through === node.id || p.to === node.id,
-            ).length
-          const isActive = touchCount > 0
-          const nodeColor = isActive ? accentColor : '#9ca3af'
-
-          return (
-            <g key={node.id}>
-              {/* Pulse ring when active */}
-              {isActive && (
-                <motion.circle
-                  cx={pos.x}
-                  cy={pos.y}
-                  r={18}
-                  fill="none"
-                  stroke={accentColor}
-                  strokeWidth={1}
-                  strokeOpacity={0.2}
-                  initial={{ r: 8, opacity: 0.5 }}
-                  animate={{ r: 18, opacity: 0 }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeOut' }}
+              return (
+                <path
+                  key={arc.id}
+                  d={d}
+                  fill={colors.fill}
+                  stroke={colors.stroke}
+                  strokeWidth={isHovered ? 1.5 : 0.5}
+                  opacity={dimmed ? 0.3 : 1}
+                  style={{
+                    transition: 'fill 0.12s, stroke 0.12s, opacity 0.12s, stroke-width 0.08s',
+                    cursor: 'default',
+                  }}
+                  onMouseEnter={() => setHoveredArc(arc.id)}
+                  onMouseLeave={() => setHoveredArc(null)}
                 />
-              )}
-              <motion.circle
-                cx={pos.x}
-                cy={pos.y}
-                r={6}
-                fill={isActive ? nodeColor : '#e5e7eb'}
-                stroke={isActive ? nodeColor : '#d1d5db'}
-                strokeWidth={1.5}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.3, type: 'spring' }}
-              />
-              {/* Label */}
-              <text
-                x={node.column === 0 ? pos.x - 12 : node.column === 2 ? pos.x + 12 : pos.x}
-                y={pos.y + 4}
-                textAnchor={node.column === 0 ? 'end' : node.column === 2 ? 'start' : 'middle'}
-                dy={node.column === 1 ? -12 : 0}
-                className="text-[9px] font-medium"
-                fill={isActive ? '#374151' : '#9ca3af'}
-              >
-                {node.label.length > 18 ? node.label.slice(0, 16) + '…' : node.label}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
+              )
+            })}
 
-      {/* Path tier legend */}
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
-        {TIER_TABS.map((tier) => {
-          const count = paths.filter((p) => p.tier === tier.id).length
-          return (
-            <div key={tier.id} className="flex items-center gap-1.5">
-              <div className="w-6 h-0.5 rounded" style={{ background: tier.color }} aria-hidden="true" />
-              <span className="text-[10px] text-gray-500">
-                {tier.label.replace(' Patterns', '')}: {count}
-              </span>
+            {/* Task ring labels (ring=0, arc big enough) */}
+            {arcs
+              .filter((a) => a.ring === 0 && a.endAngle - a.startAngle > 0.35)
+              .map((arc) => {
+                const mid = (arc.startAngle + arc.endAngle) / 2 - Math.PI / 2
+                const r = (RINGS[0].inner + RINGS[0].outer) / 2
+                const x = CX + r * Math.cos(mid)
+                const y = CY + r * Math.sin(mid)
+                const angle = (mid * 180) / Math.PI
+                const flip = angle > 90 || angle < -90
+                return (
+                  <text
+                    key={`lbl-${arc.id}`}
+                    x={x}
+                    y={y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={10}
+                    fontWeight="700"
+                    fill={RING_PALETTE[0].base}
+                    style={{ pointerEvents: 'none' }}
+                    transform={`rotate(${flip ? angle + 180 : angle}, ${x}, ${y})`}
+                  >
+                    {arc.label.length > 16 ? arc.label.slice(0, 14) + '…' : arc.label}
+                  </text>
+                )
+              })}
+
+            {/* Data ring labels (ring=1, arc big enough) */}
+            {arcs
+              .filter((a) => a.ring === 1 && a.endAngle - a.startAngle > 0.45)
+              .map((arc) => {
+                const mid = (arc.startAngle + arc.endAngle) / 2 - Math.PI / 2
+                const r = (RINGS[1].inner + RINGS[1].outer) / 2
+                const x = CX + r * Math.cos(mid)
+                const y = CY + r * Math.sin(mid)
+                const angle = (mid * 180) / Math.PI
+                const flip = angle > 90 || angle < -90
+                return (
+                  <text
+                    key={`lbl-${arc.id}`}
+                    x={x}
+                    y={y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={9}
+                    fontWeight="600"
+                    fill={RING_PALETTE[1].base}
+                    style={{ pointerEvents: 'none' }}
+                    transform={`rotate(${flip ? angle + 180 : angle}, ${x}, ${y})`}
+                  >
+                    {arc.label.length > 18 ? arc.label.slice(0, 16) + '…' : arc.label}
+                  </text>
+                )
+              })}
+          </motion.g>
+
+          {/* Center label — outside animation group so it's always visible */}
+          <text x={CX} y={CY - 10} textAnchor="middle" fontSize={22} fontWeight="700" fill="#1e293b">
+            {patterns.length}
+          </text>
+          <text x={CX} y={CY + 14} textAnchor="middle" fontSize={12} fill="#9ca3af">
+            patterns
+          </text>
+        </svg>
+
+        {/* Hover tooltip panel */}
+        <div className="min-w-[170px] pt-2 hidden sm:block shrink-0">
+          {hoveredData ? (
+            <motion.div
+              key={hoveredData.id}
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.15 }}
+              className="p-3 rounded-lg border bg-white shadow-sm text-[11px]"
+              style={{ borderColor: RING_PALETTE[hoveredData.ring as 0|1|2].base + '40' }}
+            >
+              <div
+                className="text-[9px] font-bold uppercase tracking-widest mb-1"
+                style={{ color: RING_PALETTE[hoveredData.ring as 0|1|2].base }}
+              >
+                {hoveredData.ring === 0 ? 'Task' : hoveredData.ring === 1 ? 'Data Source' : 'User Profile'}
+              </div>
+              <p className="font-bold text-gray-900 mb-1">{hoveredData.label}</p>
+              {hoveredData.tier && (
+                <p className="text-gray-500">
+                  Pattern type:{' '}
+                  <span className="font-semibold capitalize" style={{ color: hoveredData.tier === 'simple' ? '#16a34a' : hoveredData.tier === 'complex' ? '#dc2626' : '#d97706' }}>
+                    {hoveredData.tier === 'simple' ? 'Simple' : hoveredData.tier === 'complex' ? 'Complex' : 'Fuzzy'}
+                  </span>
+                </p>
+              )}
+              <p className="text-gray-500 mt-0.5">
+                {hoveredData.count} pattern{hoveredData.count !== 1 ? 's' : ''}
+              </p>
+            </motion.div>
+          ) : (
+            <div className="p-3 rounded-lg border border-dashed border-gray-200 text-[10px] text-gray-400 text-center">
+              Hover over arcs to explore dimensions
             </div>
-          )
-        })}
+          )}
+
+          {/* Ring legend */}
+          <div className="mt-3 space-y-2">
+            {[
+              { label: 'Task', sublabel: 'Inner ring', color: RING_PALETTE[0].base },
+              { label: 'Data Source', sublabel: 'Middle ring', color: RING_PALETTE[1].base },
+              { label: 'User Profile', sublabel: 'Outer ring', color: RING_PALETTE[2].base },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-1.5">
+                <div
+                  className="w-3 h-3 rounded-sm shrink-0"
+                  style={{ background: item.color + '30', border: `1.5px solid ${item.color}` }}
+                />
+                <div>
+                  <span className="text-[10px] font-semibold text-gray-700">{item.label}</span>
+                  <span className="text-[9px] text-gray-400 ml-1">{item.sublabel}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tier legend */}
+          <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+            <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1.5">Pattern Type</p>
+            {[
+              { id: 'simple', label: 'Simple', color: '#16a34a', fill: '#dcfce7' },
+              { id: 'complex', label: 'Complex', color: '#dc2626', fill: '#fee2e2' },
+              { id: 'fuzzy', label: 'Fuzzy', color: '#d97706', fill: '#fef3c7' },
+            ].map((t) => {
+              const count = arcs.filter((a) => a.ring === 2 && a.tier === t.id).length
+              return (
+                <div key={t.id} className="flex items-center gap-1.5">
+                  <div className="w-3 h-2 rounded-sm" style={{ background: t.fill, border: `1px solid ${t.color}50` }} />
+                  <span className="text-[10px] text-gray-500">{t.label}: <span className="font-mono font-semibold">{count}</span></span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </motion.div>
   )
@@ -1058,6 +1252,35 @@ export function InteractionDiscovery() {
         </div>
       )}
 
+      {/* Tier breakdown bar — shown after animation completes */}
+      {phase === 'complete' && (
+        <TierBreakdownBar
+          breakdown={data.tierBreakdown}
+          total={data.validPatterns}
+          accentColor={accentColor}
+        />
+      )}
+
+      {/* Dimensional sunburst — Task → Data → User Profile rings */}
+      {phase === 'complete' && (
+        <DimensionalSunburst
+          patterns={data.patterns}
+          taskIds={data.taskDimensions}
+          labels={labels}
+          accentColor={accentColor}
+        />
+      )}
+
+      {/* Grouped bar chart — profile distribution per task×data combo */}
+      {phase === 'complete' && (
+        <GroupedBarChart
+          patterns={data.patterns}
+          taskIds={data.taskDimensions}
+          labels={labels}
+          accentColor={accentColor}
+        />
+      )}
+
       {/* ── Content panel for active section ── */}
       <AnimatePresence mode="wait">
         {activeSection && (
@@ -1107,37 +1330,6 @@ export function InteractionDiscovery() {
         )}
       </AnimatePresence>
 
-      {/* Tier breakdown bar — shown after animation completes */}
-      {phase === 'complete' && (
-        <TierBreakdownBar
-          breakdown={data.tierBreakdown}
-          total={data.validPatterns}
-          accentColor={accentColor}
-        />
-      )}
-
-      {/* Combination matrix heatmap — shown after animation completes */}
-      {phase === 'complete' && (
-        <CombinationMatrix
-          matrix={data.matrix}
-          taskIds={data.taskDimensions}
-          dataIds={data.dataDimensions}
-          labels={labels}
-          accentColor={accentColor}
-        />
-      )}
-
-      {/* Dimension explosion — animated connection web — shown after animation completes */}
-      {phase === 'complete' && (
-        <DimensionExplosion
-          patterns={data.patterns}
-          taskIds={data.taskDimensions}
-          dataIds={data.dataDimensions}
-          userProfileIds={data.userProfileDimensions}
-          labels={labels}
-          accentColor={accentColor}
-        />
-      )}
     </div>
   )
 }
