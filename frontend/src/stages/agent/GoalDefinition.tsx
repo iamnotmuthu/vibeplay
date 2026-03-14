@@ -6,13 +6,14 @@ import {
   Database,
   ChevronDown,
   ChevronUp,
-  Bot,
   AlertTriangle,
   ArrowDown,
-  Sparkles,
+  ArrowUp,
+  ArrowRight,
+  MessageSquare,
 } from 'lucide-react'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
-import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
+import { AGENT_TILE_MAP, AGENT_DOMAINS, getTilesByDomain } from '@/lib/agent/agentDomainData'
 import { getGoalData } from '@/lib/agent/goalData'
 
 // ─── Typing Animation Hook ──────────────────────────────────────────────────
@@ -29,7 +30,6 @@ function useTypingAnimation(
   const indexRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Reset when text changes
   useEffect(() => {
     setDisplayed('')
     setDone(false)
@@ -37,33 +37,21 @@ function useTypingAnimation(
     indexRef.current = 0
   }, [text])
 
-  // Typing effect
   useEffect(() => {
     if (!enabled || !text) return
-
     const tick = () => {
       const next = Math.min(indexRef.current + burstSize, text.length)
       setDisplayed(text.slice(0, next))
       indexRef.current = next
-
-      if (next >= text.length) {
-        setDone(true)
-        return
-      }
+      if (next >= text.length) { setDone(true); return }
       timerRef.current = setTimeout(tick, speed)
     }
-
-    timerRef.current = setTimeout(tick, 200) // initial delay
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
+    timerRef.current = setTimeout(tick, 200)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [text, enabled, speed, burstSize])
 
-  // Blinking cursor
   useEffect(() => {
     if (done) {
-      // Keep cursor visible for 1s after done, then hide
       const t = setTimeout(() => setShowCursor(false), 1000)
       return () => clearTimeout(t)
     }
@@ -76,51 +64,42 @@ function useTypingAnimation(
 
 // ─── Blinking Cursor ─────────────────────────────────────────────────────────
 
-function TypingCursor({
-  visible,
-  color,
-}: {
-  visible: boolean
-  color: string
-}) {
+function TypingCursor({ visible, color }: { visible: boolean; color: string }) {
   return (
     <span
       className="inline-block w-[2px] h-[1.15em] align-text-bottom ml-0.5 rounded-full"
-      style={{
-        background: color,
-        opacity: visible ? 0.9 : 0,
-        transition: 'opacity 0.08s',
-      }}
+      style={{ background: color, opacity: visible ? 0.9 : 0, transition: 'opacity 0.08s' }}
       aria-hidden="true"
     />
   )
 }
 
-// ─── Sonar Pulse Animation ──────────────────────────────────────────────────
+// ─── Persistent Blinking Cursor ──────────────────────────────────────────────
+
+function useBlinkingCursor() {
+  const [visible, setVisible] = useState(true)
+  useEffect(() => {
+    const interval = setInterval(() => setVisible((v) => !v), 530)
+    return () => clearInterval(interval)
+  }, [])
+  return visible
+}
+
+// ─── Sonar Pulse ─────────────────────────────────────────────────────────────
 
 function SonarPulse({ color }: { color: string }) {
   return (
     <div className="relative flex items-center justify-center w-full py-6">
-      {/* Concentric rings */}
       {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
           className="absolute rounded-full"
-          style={{
-            border: `1.5px solid ${color}`,
-            width: 24 + i * 28,
-            height: 24 + i * 28,
-          }}
+          style={{ border: `1.5px solid ${color}`, width: 24 + i * 28, height: 24 + i * 28 }}
           initial={{ opacity: 0.7, scale: 0.6 }}
           animate={{ opacity: 0, scale: 1.2 }}
-          transition={{
-            duration: 1.2,
-            delay: i * 0.25,
-            ease: 'easeOut',
-          }}
+          transition={{ duration: 1.2, delay: i * 0.25, ease: 'easeOut' }}
         />
       ))}
-      {/* Center dot */}
       <motion.div
         className="w-3 h-3 rounded-full"
         style={{ background: color }}
@@ -132,53 +111,211 @@ function SonarPulse({ color }: { color: string }) {
   )
 }
 
-// ─── Decompose Goal Button ──────────────────────────────────────────────────
+// ─── Hero Section ─────────────────────────────────────────────────────────────
 
-function DecomposeButton({
-  onClick,
-  color,
+function GoalHero() {
+  return (
+    <div
+      className="rounded-2xl px-6 py-7 text-center"
+      style={{
+        background: 'linear-gradient(160deg, #1e1b4b 0%, #4c1d95 50%, #7c3aed 100%)',
+      }}
+    >
+      <h1 className="text-2xl font-black text-white mb-2 tracking-tight">
+        What should your agent do?
+      </h1>
+      <p className="text-sm text-white/60 max-w-md mx-auto leading-relaxed">
+        Pick an example below or describe your goal — VibeModel will compose the
+        right agent architecture from scratch.
+      </p>
+    </div>
+  )
+}
+
+// ─── Prompt Input Box ─────────────────────────────────────────────────────────
+
+function PromptInputBox({
+  text,
+  phase,
+  typingCursorVisible,
+  idleCursorVisible,
+  onSend,
+  onInputClick,
+  accentColor,
 }: {
-  onClick: () => void
-  color: string
+  text: string
+  phase: GoalPhase
+  typingCursorVisible: boolean
+  idleCursorVisible: boolean
+  onSend: () => void
+  onInputClick: () => void
+  accentColor: string
 }) {
+  const isEmpty = !text
+  const sendActive = phase === 'awaiting-send'
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="flex justify-center"
+      transition={{ delay: 0.1, duration: 0.3 }}
+      className="rounded-xl border bg-white shadow-sm overflow-hidden"
+      style={{ borderColor: sendActive ? `${accentColor}50` : '#e5e7eb' }}
     >
-      <motion.button
-        onClick={onClick}
-        whileHover={{ scale: 1.03, y: -1 }}
-        whileTap={{ scale: 0.97 }}
-        className="flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-white cursor-pointer overflow-hidden relative"
-        style={{
-          background: `linear-gradient(135deg, ${color}, ${color}cc)`,
-          boxShadow: `0 2px 16px ${color}30, 0 2px 8px rgba(0,0,0,0.08)`,
-          border: `1px solid ${color}40`,
-        }}
+      {/* Text area */}
+      <div
+        className="px-4 pt-4 pb-2 min-h-[80px] cursor-default select-none"
+        onClick={onInputClick}
+        role="textbox"
+        aria-readonly="true"
+        aria-label="Agent goal input"
+        aria-multiline="true"
       >
-        {/* Shimmer */}
-        <motion.div
-          className="absolute inset-0"
+        {isEmpty ? (
+          <p className="text-sm text-gray-400 leading-relaxed">
+            Describe what you want to automate…
+            <TypingCursor visible={idleCursorVisible} color="#9ca3af" />
+          </p>
+        ) : (
+          <p className="text-sm text-gray-800 leading-relaxed">
+            {text}
+            {(phase === 'typing' || phase === 'awaiting-send') && (
+              <TypingCursor
+                visible={phase === 'typing' ? typingCursorVisible : idleCursorVisible}
+                color={accentColor}
+              />
+            )}
+          </p>
+        )}
+      </div>
+
+      {/* Bottom bar with send button */}
+      <div className="px-3 pb-3 flex items-center justify-between">
+        <span className="text-[10px] text-gray-300 select-none">
+          {isEmpty ? 'Pick a prompt below to get started' : `${text.length} chars`}
+        </span>
+        <motion.button
+          disabled={!sendActive}
+          onClick={sendActive ? onSend : undefined}
+          whileTap={sendActive ? { scale: 0.92 } : {}}
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
           style={{
-            background:
-              'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%)',
-            backgroundSize: '200% 100%',
+            background: sendActive ? accentColor : '#e5e7eb',
+            cursor: sendActive ? 'pointer' : 'default',
+            boxShadow: sendActive ? `0 2px 8px ${accentColor}40` : 'none',
           }}
-          animate={{ backgroundPosition: ['-100% 0', '300% 0'] }}
-          transition={{ repeat: Infinity, duration: 2.5, ease: 'linear' }}
-          aria-hidden="true"
-        />
-        <Sparkles className="w-4 h-4 relative z-10" aria-hidden="true" />
-        <span className="relative z-10">Decompose Goal</span>
-      </motion.button>
+          aria-label="Send goal"
+        >
+          <ArrowUp className="w-4 h-4 text-white" aria-hidden="true" />
+        </motion.button>
+      </div>
     </motion.div>
   )
 }
 
-// ─── Decomposition Card ───────────────────────────────────────────────────
+// ─── Demo Toast ───────────────────────────────────────────────────────────────
+
+function DemoToast({ visible }: { visible: boolean }) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.2 }}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs text-amber-700 bg-amber-50"
+          style={{ borderColor: '#fcd34d' }}
+          role="status"
+          aria-live="polite"
+        >
+          <MessageSquare className="w-3 h-3 shrink-0" aria-hidden="true" />
+          Demo mode — pick an example prompt below to get started
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+// ─── Example Prompts Section ──────────────────────────────────────────────────
+
+function ExamplePromptsSection({ onSelect }: { onSelect: (tileId: string) => void }) {
+  const [activeDomainId, setActiveDomainId] = useState(AGENT_DOMAINS[0].id)
+  const tiles = getTilesByDomain(activeDomainId)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ delay: 0.15, duration: 0.3 }}
+    >
+      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+        Example Prompts
+      </p>
+
+      {/* Domain tabs — horizontal scroll */}
+      <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none">
+        {AGENT_DOMAINS.map((domain) => {
+          const isActive = activeDomainId === domain.id
+          return (
+            <button
+              key={domain.id}
+              onClick={() => setActiveDomainId(domain.id)}
+              className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-150 cursor-pointer"
+              style={{
+                background: isActive ? domain.color : 'transparent',
+                color: isActive ? '#ffffff' : '#6b7280',
+                border: `1px solid ${isActive ? domain.color : '#e5e7eb'}`,
+              }}
+            >
+              {domain.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Prompt cards */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeDomainId}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.18 }}
+          className="mt-3 space-y-2"
+        >
+          {tiles.map((tile) => (
+            <motion.button
+              key={tile.id}
+              onClick={() => onSelect(tile.id)}
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full text-left rounded-xl border bg-white p-4 group transition-shadow hover:shadow-sm cursor-pointer"
+              style={{ borderColor: `${tile.color}30`, borderLeft: `3px solid ${tile.color}` }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 mb-1">{tile.label}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                    {tile.description}
+                  </p>
+                </div>
+                <ArrowRight
+                  className="w-4 h-4 shrink-0 mt-0.5 transition-transform group-hover:translate-x-0.5"
+                  style={{ color: tile.color }}
+                  aria-hidden="true"
+                />
+              </div>
+            </motion.button>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ─── Decomposition Card ───────────────────────────────────────────────────────
 
 function DecompCard({
   icon,
@@ -227,10 +364,7 @@ function DecompCard({
           <div className="space-y-1 mt-1.5">
             {items.map((item) => (
               <div key={item} className="flex items-center gap-2">
-                <div
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: color }}
-                />
+                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
                 <span className="text-xs text-gray-700">{item}</span>
               </div>
             ))}
@@ -238,18 +372,13 @@ function DecompCard({
         </div>
         {reasoning ? (
           <div className="shrink-0 text-gray-300">
-            {expanded ? (
-              <ChevronUp className="w-4 h-4" aria-hidden="true" />
-            ) : (
-              <ChevronDown className="w-4 h-4" aria-hidden="true" />
-            )}
+            {expanded ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
           </div>
         ) : (
           <div className="shrink-0 w-4" />
         )}
       </button>
 
-      {/* L2: Reasoning panel */}
       <AnimatePresence>
         {expanded && reasoning && (
           <motion.div
@@ -278,7 +407,7 @@ function DecompCard({
   )
 }
 
-// ─── Key Risk Callout ─────────────────────────────────────────────────────
+// ─── Key Risk Callout ─────────────────────────────────────────────────────────
 
 function KeyRiskCallout({ risk, delay }: { risk: string; delay: number }) {
   return (
@@ -297,43 +426,16 @@ function KeyRiskCallout({ risk, delay }: { risk: string; delay: number }) {
   )
 }
 
-// ─── Stage Explainer ──────────────────────────────────────────────────────
-
-function GoalExplainer({ viewMode }: { viewMode: 'business' | 'technical' }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="rounded-xl border border-blue-100 bg-blue-50/50 p-4"
-    >
-      <div className="flex items-start gap-3">
-        <Target className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" aria-hidden="true" />
-        <p className="text-sm text-gray-700 leading-relaxed">
-          {viewMode === 'business'
-            ? 'Write a job description for your agent. Define what the agent should accomplish, and the platform breaks that goal into the specific actions, data sources, and oversight rules it needs. Every downstream decision flows from this.'
-            : 'The goal statement is decomposed into execution phases, data dependencies, and trust boundaries. Actions are classified by autonomy tier (autonomous, supervised, escalation). Data sources are typed (text, tabular, structured DB, API) to drive retrieval strategy. The resulting goal graph feeds instruction generation, capability mapping, and architecture composition.'}
-        </p>
-      </div>
-    </motion.div>
-  )
-}
-
-// ─── Scroll Affordance ────────────────────────────────────────────────────
+// ─── Scroll Affordance ────────────────────────────────────────────────────────
 
 function ScrollAffordance() {
   const [visible, setVisible] = useState(true)
-
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 100) setVisible(false)
-    }
+    const handleScroll = () => { if (window.scrollY > 100) setVisible(false) }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
   if (!visible) return null
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -354,160 +456,113 @@ function ScrollAffordance() {
   )
 }
 
-// ─── Persistent Blinking Cursor ─────────────────────────────────────────────
+// ─── Phase Type ───────────────────────────────────────────────────────────────
 
-function useBlinkingCursor() {
-  const [visible, setVisible] = useState(true)
-  useEffect(() => {
-    const interval = setInterval(() => setVisible((v) => !v), 530)
-    return () => clearInterval(interval)
-  }, [])
-  return visible
-}
+type GoalPhase = 'idle' | 'typing' | 'awaiting-send' | 'pulsing' | 'revealed'
 
-// ─── Phase State Machine ─────────────────────────────────────────────────
-
-type GoalPhase = 'typing' | 'awaiting-decompose' | 'pulsing' | 'revealed'
-
-// Animation timing constants
 const SONAR_DURATION_MS = 1400
 
-// ─── Main Component ───────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function GoalDefinition() {
   const activeTileId = useAgentPlaygroundStore((s) => s.activeTileId)
   const viewMode = useAgentPlaygroundStore((s) => s.viewMode)
+  const selectTile = useAgentPlaygroundStore((s) => s.selectTile)
 
-  const tile = activeTileId ? AGENT_TILE_MAP[activeTileId] : null
-  const goalData = activeTileId ? getGoalData(activeTileId) : null
-  const accentColor = tile?.color ?? '#f59e0b'
-
-  const [phase, setPhase] = useState<GoalPhase>('typing')
-  const prevTileRef = useRef(activeTileId)
+  const [phase, setPhase] = useState<GoalPhase>('idle')
+  const [selectedTileId, setSelectedTileId] = useState<string | null>(null)
+  const [showDemoToast, setShowDemoToast] = useState(false)
   const sonarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const decompRef = useRef<HTMLDivElement>(null)
 
-  // Reset phase when tile changes — clear any pending sonar timer
-  useEffect(() => {
-    if (activeTileId !== prevTileRef.current) {
-      if (sonarTimerRef.current) {
-        clearTimeout(sonarTimerRef.current)
-        sonarTimerRef.current = null
-      }
-      setPhase('typing')
-      prevTileRef.current = activeTileId
-    }
-  }, [activeTileId])
-
-  // Cleanup sonar timer on unmount
-  useEffect(() => {
-    return () => {
-      if (sonarTimerRef.current) clearTimeout(sonarTimerRef.current)
-    }
-  }, [])
-
+  // Resolve the active tile from either local state or store
+  const tileId = selectedTileId ?? activeTileId
+  const tile = tileId ? AGENT_TILE_MAP[tileId] : null
+  const goalData = tileId ? getGoalData(tileId) : null
+  const accentColor = tile?.color ?? '#7c3aed'
   const goalText = goalData?.goalStatement ?? ''
+
+  const idleCursorVisible = useBlinkingCursor()
 
   const { displayed, done, showCursor } = useTypingAnimation(
     goalText,
     phase === 'typing',
   )
-  const idleCursorVisible = useBlinkingCursor()
 
-  // When typing finishes, show the decompose button
+  // Typing complete → awaiting-send
   useEffect(() => {
-    if (done && phase === 'typing') {
-      setPhase('awaiting-decompose')
-    }
+    if (done && phase === 'typing') setPhase('awaiting-send')
   }, [done, phase])
 
-  const handleDecompose = useCallback(() => {
-    // Guard: only trigger from awaiting-decompose phase
-    if (phase !== 'awaiting-decompose') return
+  // Cleanup sonar timer on unmount
+  useEffect(() => () => { if (sonarTimerRef.current) clearTimeout(sonarTimerRef.current) }, [])
+
+  // Reset when tile changes from store (navigating back)
+  useEffect(() => {
+    setPhase('idle')
+    setSelectedTileId(null)
+  }, [activeTileId])
+
+  // Handle prompt card click
+  const handleSelectPrompt = useCallback((tileId: string) => {
+    selectTile(tileId)
+    setSelectedTileId(tileId)
+    setPhase('typing')
+    setShowDemoToast(false)
+  }, [selectTile])
+
+  // Handle send
+  const handleSend = useCallback(() => {
+    if (phase !== 'awaiting-send') return
     setPhase('pulsing')
     sonarTimerRef.current = setTimeout(() => {
       sonarTimerRef.current = null
       setPhase('revealed')
+      // Scroll decomposition into view after a short delay
+      setTimeout(() => {
+        decompRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 150)
     }, SONAR_DURATION_MS)
   }, [phase])
 
-  if (!tile || !goalData) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-8">
-        <p className="text-sm text-gray-400">No tile selected.</p>
-      </div>
-    )
-  }
+  // Demo toast when user clicks input in idle
+  const handleInputClick = useCallback(() => {
+    if (phase === 'idle' || phase === 'typing') {
+      setShowDemoToast(true)
+      setTimeout(() => setShowDemoToast(false), 3000)
+    }
+  }, [phase])
 
-  const { decomposition, businessSummary, technicalSummary, keyRisk } = goalData
+  // Displayed text for the input box
+  const inputText = phase === 'typing' ? displayed : (phase !== 'idle' ? goalText : '')
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-5">
-      {/* Stage explainer */}
-      <GoalExplainer viewMode={viewMode} />
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+      {/* Hero */}
+      <GoalHero />
 
-      {/* Goal statement — chat input style with typing animation */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.3 }}
-        className="rounded-xl border bg-white p-4"
-        style={{ borderColor: `${accentColor}25` }}
-      >
-        <div className="flex items-center gap-2 mb-2.5">
-          <Bot className="w-3.5 h-3.5" style={{ color: accentColor }} aria-hidden="true" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-            Agent Goal
-          </span>
-        </div>
+      {/* Demo toast */}
+      <DemoToast visible={showDemoToast} />
 
-        {/* Chat input box */}
-        <div
-          className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3.5 min-h-[64px] flex items-start"
-          role="textbox"
-          aria-readonly="true"
-          aria-label="Agent goal statement"
-          aria-multiline="true"
-        >
-          <p className="text-sm text-gray-800 leading-relaxed w-full">
-            {phase === 'typing' ? (
-              <>
-                {displayed}
-                <TypingCursor visible={showCursor} color={accentColor} />
-              </>
-            ) : phase === 'awaiting-decompose' ? (
-              <>
-                {goalText}
-                <TypingCursor visible={idleCursorVisible} color={accentColor} />
-              </>
-            ) : (
-              goalText
-            )}
-          </p>
-        </div>
+      {/* Input box */}
+      <PromptInputBox
+        text={inputText}
+        phase={phase}
+        typingCursorVisible={showCursor}
+        idleCursorVisible={idleCursorVisible}
+        onSend={handleSend}
+        onInputClick={handleInputClick}
+        accentColor={accentColor}
+      />
 
-        {/* Progress bar */}
-        <motion.div
-          role="progressbar"
-          aria-valuenow={phase !== 'typing' ? 100 : Math.round((displayed.length / Math.max(goalText.length, 1)) * 100)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Goal typing progress"
-          initial={{ width: 0 }}
-          animate={{ width: phase !== 'typing' ? '100%' : `${(displayed.length / Math.max(goalText.length, 1)) * 100}%` }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="h-0.5 rounded-full mt-2.5"
-          style={{ background: `${accentColor}30` }}
-        />
-      </motion.div>
-
-      {/* Phase: awaiting-decompose — show the Decompose Goal button */}
-      <AnimatePresence mode="wait">
-        {phase === 'awaiting-decompose' && (
-          <DecomposeButton onClick={handleDecompose} color={accentColor} />
+      {/* Example prompts — only in idle phase */}
+      <AnimatePresence>
+        {phase === 'idle' && (
+          <ExamplePromptsSection onSelect={handleSelectPrompt} />
         )}
       </AnimatePresence>
 
-      {/* Phase: pulsing — sonar animation */}
+      {/* Sonar pulse */}
       <AnimatePresence>
         {phase === 'pulsing' && (
           <motion.div
@@ -521,28 +576,29 @@ export function GoalDefinition() {
         )}
       </AnimatePresence>
 
-      {/* Phase: revealed — summary + risk + decomposition cards */}
+      {/* Decomposition — revealed after send */}
       <AnimatePresence>
-        {phase === 'revealed' && (
+        {phase === 'revealed' && goalData && (
           <motion.div
+            ref={decompRef}
             key="revealed-content"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
             className="space-y-5"
           >
-            {/* Summary line */}
+            {/* Summary */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.3 }}
               className="text-xs text-gray-500 leading-relaxed"
             >
-              {viewMode === 'business' ? businessSummary : technicalSummary}
+              {viewMode === 'business' ? goalData.businessSummary : goalData.technicalSummary}
             </motion.p>
 
-            {/* Key risk callout */}
-            <KeyRiskCallout risk={keyRisk} delay={0.2} />
+            {/* Risk callout */}
+            <KeyRiskCallout risk={goalData.keyRisk} delay={0.2} />
 
             {/* Decomposition cards */}
             <div className="space-y-3">
@@ -558,36 +614,36 @@ export function GoalDefinition() {
               <DecompCard
                 icon={<Target className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />}
                 label="What the agent does"
-                items={decomposition.primaryActions}
+                items={goalData.decomposition.primaryActions}
                 color={accentColor}
                 delay={0.35}
-                reasoning={decomposition.reasoning}
+                reasoning={goalData.decomposition.reasoning}
               />
               <DecompCard
                 icon={<Zap className="w-4 h-4" style={{ color: '#8b5cf6' }} aria-hidden="true" />}
                 label="When it needs help"
-                items={decomposition.secondaryActions}
+                items={goalData.decomposition.secondaryActions}
                 color="#8b5cf6"
                 delay={0.4}
               />
               <DecompCard
                 icon={<Database className="w-4 h-4" style={{ color: '#0369a1' }} aria-hidden="true" />}
                 label="Main data it uses"
-                items={decomposition.primaryData}
+                items={goalData.decomposition.primaryData}
                 color="#0369a1"
                 delay={0.45}
               />
               <DecompCard
                 icon={<Database className="w-4 h-4" style={{ color: '#6b7280' }} aria-hidden="true" />}
                 label="Additional context"
-                items={decomposition.supportingData}
+                items={goalData.decomposition.supportingData}
                 color="#6b7280"
                 delay={0.5}
               />
             </div>
 
-            {/* Trust boundary hints — technical mode only */}
-            {viewMode === 'technical' && decomposition.trustBoundaryHints && (
+            {/* Trust boundaries — technical mode */}
+            {viewMode === 'technical' && goalData.decomposition.trustBoundaryHints && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -598,33 +654,21 @@ export function GoalDefinition() {
                   Trust Boundaries
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-green-400" />
-                      <span className="text-[10px] font-bold text-green-700">Autonomous</span>
+                  {[
+                    { label: 'Autonomous', color: '#16a34a', dot: 'bg-green-400', items: goalData.decomposition.trustBoundaryHints.autonomous },
+                    { label: 'Supervised', color: '#d97706', dot: 'bg-amber-400', items: goalData.decomposition.trustBoundaryHints.supervised },
+                    { label: 'Escalation', color: '#dc2626', dot: 'bg-red-400', items: goalData.decomposition.trustBoundaryHints.escalation },
+                  ].map(({ label, color, dot, items }) => (
+                    <div key={label} className="space-y-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-2 h-2 rounded-full ${dot}`} />
+                        <span className="text-[10px] font-bold" style={{ color }}>{label}</span>
+                      </div>
+                      {items.map((item) => (
+                        <p key={item} className="text-[10px] text-gray-500 pl-3.5">{item}</p>
+                      ))}
                     </div>
-                    {decomposition.trustBoundaryHints.autonomous.map((item) => (
-                      <p key={item} className="text-[10px] text-gray-500 pl-3.5">{item}</p>
-                    ))}
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-amber-400" />
-                      <span className="text-[10px] font-bold text-amber-700">Supervised</span>
-                    </div>
-                    {decomposition.trustBoundaryHints.supervised.map((item) => (
-                      <p key={item} className="text-[10px] text-gray-500 pl-3.5">{item}</p>
-                    ))}
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-red-400" />
-                      <span className="text-[10px] font-bold text-red-700">Escalation</span>
-                    </div>
-                    {decomposition.trustBoundaryHints.escalation.map((item) => (
-                      <p key={item} className="text-[10px] text-gray-500 pl-3.5">{item}</p>
-                    ))}
-                  </div>
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -632,7 +676,6 @@ export function GoalDefinition() {
         )}
       </AnimatePresence>
 
-      {/* Mobile scroll affordance */}
       <ScrollAffordance />
     </div>
   )
