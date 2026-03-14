@@ -197,6 +197,7 @@ const EVAL_METRIC_COLORS: { color: string; bg: string }[] = [
 // ─── Measurement Plan (target only — tests haven't run yet) ──────────────
 
 function AgentMeasurementPlan({ tileId }: { tileId: string }) {
+  const [collapsed, setCollapsed] = useState(true)
   const metrics = getEvalMetrics(tileId)
   const why = getMetricWhy(tileId)
   if (!metrics || !why) return null
@@ -215,11 +216,29 @@ function AgentMeasurementPlan({ tileId }: { tileId: string }) {
       transition={{ delay: 0.1, duration: 0.3 }}
       className="mb-6"
     >
-      <div className="flex items-center gap-2 mb-3">
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center gap-2 w-full mb-3 cursor-pointer hover:opacity-80 transition-opacity"
+        aria-expanded={!collapsed}
+      >
         <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Measurement Plan</span>
         <div className="flex-1 h-px" style={{ background: '#e5e7eb' }} />
-        <span className="text-[10px] text-gray-400 italic">how we will evaluate the agent</span>
-      </div>
+        <span className="text-[10px] text-gray-400 italic mr-1">how we will evaluate the agent</span>
+        {collapsed
+          ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" aria-hidden="true" />
+          : <ChevronUp className="w-3.5 h-3.5 text-gray-400 shrink-0" aria-hidden="true" />
+        }
+      </button>
+
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {items.map(({ label, metric, why: whyText }, idx) => {
           const mc = EVAL_METRIC_COLORS[idx] || EVAL_METRIC_COLORS[0]
@@ -262,6 +281,9 @@ function AgentMeasurementPlan({ tileId }: { tileId: string }) {
           )
         })}
       </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
