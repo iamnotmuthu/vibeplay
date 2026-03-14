@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Target,
@@ -11,10 +11,45 @@ import {
   ArrowUp,
   ArrowRight,
   MessageSquare,
+  Monitor,
+  Landmark,
+  HeartPulse,
+  Truck,
+  Shield,
+  ShoppingCart,
+  Factory,
+  Film,
+  Users,
+  Megaphone,
+  ArrowLeft,
+  Sparkles,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { AGENT_TILE_MAP, AGENT_DOMAINS, getTilesByDomain } from '@/lib/agent/agentDomainData'
 import { getGoalData } from '@/lib/agent/goalData'
+
+// ─── Icon registry ──────────────────────────────────────────────────────
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  Monitor,
+  Landmark,
+  HeartPulse,
+  Truck,
+  Shield,
+  ShoppingCart,
+  Factory,
+  Film,
+  Users,
+  Megaphone,
+}
+
+const COMPLEXITY_DOTS: Record<string, number> = {
+  simple: 1,
+  moderate: 2,
+  'moderate-complex': 3,
+  complex: 4,
+}
 
 // ─── Typing Animation Hook ──────────────────────────────────────────────────
 
@@ -118,13 +153,13 @@ function GoalHero() {
     <div
       className="rounded-2xl px-6 py-7 text-center"
       style={{
-        background: 'linear-gradient(160deg, #1e1b4b 0%, #4c1d95 50%, #7c3aed 100%)',
+        background: 'linear-gradient(160deg, #7c3aed 0%, #a78bfa 50%, #c4b5fd 100%)',
       }}
     >
       <h1 className="text-2xl font-black text-white mb-2 tracking-tight">
         What should your agent do?
       </h1>
-      <p className="text-sm text-white/60 max-w-md mx-auto leading-relaxed">
+      <p className="text-sm text-white/80 max-w-md mx-auto leading-relaxed">
         Pick an example below or describe your goal — VibeModel will compose the
         right agent architecture from scratch.
       </p>
@@ -166,7 +201,6 @@ function PromptInputBox({
       <div
         className="px-4 pt-4 pb-2 min-h-[80px] cursor-default select-none"
         onClick={onInputClick}
-        role="textbox"
         aria-readonly="true"
         aria-label="Agent goal input"
         aria-multiline="true"
@@ -237,11 +271,192 @@ function DemoToast({ visible }: { visible: boolean }) {
   )
 }
 
+// ─── Domain Card (Step 1) ───────────────────────────────────────────────────
+
+function DomainCardStep1({
+  domain,
+  tileCount,
+  index,
+  onClick,
+}: {
+  domain: typeof AGENT_DOMAINS[0]
+  tileCount: number
+  index: number
+  onClick: () => void
+}) {
+  const Icon = ICON_MAP[domain.icon] ?? Sparkles
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.05 }}
+      whileHover={{ scale: 1.02, y: -3 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="relative group cursor-pointer text-left rounded-2xl p-5 flex flex-col bg-white w-full"
+      style={{
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+      }}
+      onMouseEnter={(e) => {
+        ;(e.currentTarget as HTMLElement).style.borderColor = `${domain.color}50`
+        ;(e.currentTarget as HTMLElement).style.boxShadow = `0 12px 40px -12px ${domain.color}20, 0 4px 12px rgba(0,0,0,0.06)`
+      }}
+      onMouseLeave={(e) => {
+        ;(e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb'
+        ;(e.currentTarget as HTMLElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'
+      }}
+    >
+      {/* Icon + Count badge */}
+      <div className="flex items-start justify-between mb-4">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center"
+          style={{
+            background: `linear-gradient(135deg, ${domain.color}15, ${domain.color}05)`,
+            border: `1px solid ${domain.color}25`,
+          }}
+        >
+          <Icon className="w-6 h-6" style={{ color: domain.color }} />
+        </div>
+        <span
+          className="text-xs font-bold px-2.5 py-1 rounded-full"
+          style={{
+            background: `${domain.color}10`,
+            color: domain.color,
+            border: `1px solid ${domain.color}25`,
+          }}
+        >
+          {tileCount} {tileCount === 1 ? 'agent' : 'agents'}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1">
+        <h3 className="text-base font-bold text-gray-900 mb-1">{domain.label}</h3>
+        <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">
+          {domain.tagline}
+        </p>
+      </div>
+
+      {/* CTA */}
+      <div className="mt-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        <span className="text-xs font-bold" style={{ color: domain.color }}>Explore</span>
+        <ArrowRight className="w-3.5 h-3.5" style={{ color: domain.color }} />
+      </div>
+    </motion.button>
+  )
+}
+
+// ─── Agent Tile Card (Step 2) ───────────────────────────────────────────────
+
+function AgentTileCardStep2({
+  tile,
+  index,
+  onClick,
+}: {
+  tile: typeof AGENT_TILE_MAP[keyof typeof AGENT_TILE_MAP]
+  index: number
+  onClick: () => void
+}) {
+  const Icon = ICON_MAP[tile.iconName] ?? Sparkles
+  const dotCount = COMPLEXITY_DOTS[tile.complexity] ?? 1
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.05 }}
+      whileHover={{ scale: 1.02, y: -3 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="relative group cursor-pointer text-left rounded-2xl p-5 flex flex-col bg-white w-full"
+      style={{
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+      }}
+      onMouseEnter={(e) => {
+        ;(e.currentTarget as HTMLElement).style.borderColor = `${tile.color}50`
+        ;(e.currentTarget as HTMLElement).style.boxShadow = `0 12px 40px -12px ${tile.color}20, 0 4px 12px rgba(0,0,0,0.06)`
+      }}
+      onMouseLeave={(e) => {
+        ;(e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb'
+        ;(e.currentTarget as HTMLElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)'
+      }}
+    >
+      {/* Icon + Complexity dots */}
+      <div className="flex items-start justify-between mb-4">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center"
+          style={{
+            background: `linear-gradient(135deg, ${tile.color}15, ${tile.color}05)`,
+            border: `1px solid ${tile.color}25`,
+          }}
+        >
+          <Icon className="w-6 h-6" style={{ color: tile.color }} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="flex gap-0.5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  background: i < dotCount ? tile.color : '#e5e7eb',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1">
+        <h3 className="text-base font-bold text-gray-900 mb-2 leading-snug">
+          {tile.label}
+        </h3>
+        <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">
+          {tile.description}
+        </p>
+      </div>
+
+      {/* Domain badge + CTA */}
+      <div className="mt-3 flex items-center justify-between">
+        <span
+          className="text-xs font-bold uppercase tracking-widest px-2 py-1 rounded-full"
+          style={{
+            background: `${tile.color}10`,
+            color: tile.color,
+          }}
+        >
+          {tile.badge}
+        </span>
+        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <span className="text-xs font-bold" style={{ color: tile.color }}>Start</span>
+          <ArrowRight className="w-3.5 h-3.5" style={{ color: tile.color }} />
+        </div>
+      </div>
+    </motion.button>
+  )
+}
+
 // ─── Example Prompts Section ──────────────────────────────────────────────────
 
-function ExamplePromptsSection({ onSelect }: { onSelect: (tileId: string) => void }) {
-  const [activeDomainId, setActiveDomainId] = useState(AGENT_DOMAINS[0].id)
-  const tiles = getTilesByDomain(activeDomainId)
+function ExamplePromptsSection({ onSelect, onBrowseAll }: { onSelect: (tileId: string) => void; onBrowseAll: () => void }) {
+  const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null)
+
+  // Only show domains that have tiles
+  const activeDomains = useMemo(
+    () => AGENT_DOMAINS.filter((d) => getTilesByDomain(d.id).length > 0),
+    []
+  )
+
+  const filteredTiles = useMemo(
+    () => (selectedDomainId ? getTilesByDomain(selectedDomainId) : []),
+    [selectedDomainId]
+  )
 
   return (
     <motion.div
@@ -250,67 +465,109 @@ function ExamplePromptsSection({ onSelect }: { onSelect: (tileId: string) => voi
       exit={{ opacity: 0, y: -6 }}
       transition={{ delay: 0.15, duration: 0.3 }}
     >
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
-        Example Prompts
-      </p>
-
-      {/* Domain tabs — horizontal scroll */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none">
-        {AGENT_DOMAINS.map((domain) => {
-          const isActive = activeDomainId === domain.id
-          return (
-            <button
-              key={domain.id}
-              onClick={() => setActiveDomainId(domain.id)}
-              className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-150 cursor-pointer"
-              style={{
-                background: isActive ? domain.color : 'transparent',
-                color: isActive ? '#ffffff' : '#6b7280',
-                border: `1px solid ${isActive ? domain.color : '#e5e7eb'}`,
-              }}
-            >
-              {domain.label}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Prompt cards */}
       <AnimatePresence mode="wait">
-        <motion.div
-          key={activeDomainId}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.18 }}
-          className="mt-3 space-y-2"
-        >
-          {tiles.map((tile) => (
+        {selectedDomainId === null ? (
+          /* ── Step 1: Domain Cards ── */
+          <motion.div
+            key="domains"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {activeDomains.map((domain, i) => {
+                const tiles = getTilesByDomain(domain.id)
+                return (
+                  <DomainCardStep1
+                    key={domain.id}
+                    domain={domain}
+                    tileCount={tiles.length}
+                    index={i}
+                    onClick={() => setSelectedDomainId(domain.id)}
+                  />
+                )
+              })}
+            </div>
+          </motion.div>
+        ) : (
+          /* ── Step 2: Agent Tiles ── */
+          <motion.div
+            key="tiles"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4"
+          >
+            {/* Back button */}
             <motion.button
-              key={tile.id}
-              onClick={() => onSelect(tile.id)}
-              whileHover={{ x: 2 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full text-left rounded-xl border bg-white p-4 group transition-shadow hover:shadow-sm cursor-pointer"
-              style={{ borderColor: `${tile.color}30`, borderLeft: `3px solid ${tile.color}` }}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={() => setSelectedDomainId(null)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-gray-50"
+              style={{ color: '#6b7280' }}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 mb-1">{tile.label}</p>
-                  <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                    {tile.description}
-                  </p>
-                </div>
-                <ArrowRight
-                  className="w-4 h-4 shrink-0 mt-0.5 transition-transform group-hover:translate-x-0.5"
-                  style={{ color: tile.color }}
-                  aria-hidden="true"
-                />
-              </div>
+              <ArrowLeft className="w-4 h-4" />
+              All domains
             </motion.button>
-          ))}
-        </motion.div>
+
+            {/* Domain header */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {(() => {
+                const domain = AGENT_DOMAINS.find((d) => d.id === selectedDomainId)
+                const Icon = domain ? ICON_MAP[domain.icon] ?? Sparkles : Sparkles
+                return domain ? (
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: `linear-gradient(135deg, ${domain.color}15, ${domain.color}05)`,
+                        border: `1px solid ${domain.color}25`,
+                      }}
+                    >
+                      <Icon className="w-5 h-5" style={{ color: domain.color }} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900">{domain.label}</h3>
+                      <p className="text-sm text-gray-500">{filteredTiles.length} agent scenarios</p>
+                    </div>
+                  </div>
+                ) : null
+              })()}
+            </motion.div>
+
+            {/* Agent tiles grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {filteredTiles.map((tile, i) => (
+                <AgentTileCardStep2
+                  key={tile.id}
+                  tile={tile}
+                  index={i}
+                  onClick={() => onSelect(tile.id)}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
+
+      {/* Browse all agents fallback */}
+      {selectedDomainId === null && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={onBrowseAll}
+            className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+          >
+            Browse all agents by industry
+          </button>
+        </div>
+      )}
     </motion.div>
   )
 }
@@ -468,6 +725,7 @@ export function GoalDefinition() {
   const activeTileId = useAgentPlaygroundStore((s) => s.activeTileId)
   const viewMode = useAgentPlaygroundStore((s) => s.viewMode)
   const selectTile = useAgentPlaygroundStore((s) => s.selectTile)
+  const resetToTiles = useAgentPlaygroundStore((s) => s.resetToTiles)
 
   const [phase, setPhase] = useState<GoalPhase>('idle')
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null)
@@ -558,9 +816,14 @@ export function GoalDefinition() {
       {/* Example prompts — only in idle phase */}
       <AnimatePresence>
         {phase === 'idle' && (
-          <ExamplePromptsSection onSelect={handleSelectPrompt} />
+          <ExamplePromptsSection onSelect={handleSelectPrompt} onBrowseAll={() => resetToTiles()} />
         )}
       </AnimatePresence>
+
+      {/* Screen reader announcement for phase */}
+      <div className="sr-only" aria-live="polite">
+        {phase === 'pulsing' ? 'Analyzing your goal...' : phase === 'revealed' ? 'Analysis complete' : ''}
+      </div>
 
       {/* Sonar pulse */}
       <AnimatePresence>

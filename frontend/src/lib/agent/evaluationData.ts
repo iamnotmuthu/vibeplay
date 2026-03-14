@@ -1196,7 +1196,7 @@ const codingCoverageGaps: CoverageGap[] = [{ cluster: 'P', dimension: 'E', gapDe
 
 const codingDecisionPaths: DecisionPath[] = [{ id: 'coding-dp-001', query: 'React button?', patternType: 'simple', steps: [{ stepNumber: 1, action: 'C', detail: 'Classify', componentUsed: 'request-classification' }, { stepNumber: 2, action: 'R', detail: 'Retrieve', componentUsed: 'rag' }, { stepNumber: 3, action: 'G', detail: 'Generate', componentUsed: 'response-generation' }], finalAnswer: 'const Button = () => <button/>', confidence: 0.87 }]
 
-const onpremOverview: EvaluationOverview = { totalPatterns: 10, patternsHandled: 8, handlingByType: { simple: 98, hopping: 92, aggregator: 85, branch: 78, reasoning: 60 }, overallConfidence: 85, dominantRate: 97, nonDominantRate: 85, fuzzyRate: 52 }
+const onpremOverview: EvaluationOverview = { totalPatterns: 11, patternsHandled: 9, handlingByType: { simple: 98, hopping: 92, aggregator: 85, branch: 78, reasoning: 60 }, overallConfidence: 85, dominantRate: 97, nonDominantRate: 85, fuzzyRate: 52 }
 
 const onpremScenarios: ScenarioTest[] = [
 { id: 'onprem-001', query: 'Install Linux?', patternType: 'simple', expectedAnswer: 'apt-get install, systemctl', agentAnswer: 'apt-get install, systemctl', result: 'pass', testedComponents: ['request-classification', 'rag', 'response-generation'] },

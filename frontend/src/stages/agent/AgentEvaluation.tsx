@@ -5,59 +5,56 @@ import {
   ChevronUp,
   ShieldCheck,
   MessageSquare,
-  ArrowRight,
-  Eye,
-  EyeOff,
 } from 'lucide-react'
-import type { PatternClassification, DiscoveredPattern, ScenarioTest, IntentType } from '@/store/agentTypes'
+import type { PatternClassification, DiscoveredPattern, ScenarioTest, DimensionPattern } from '@/store/agentTypes'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
-import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 import { getEvaluationData } from '@/lib/agent/evaluationData'
 import { getEvalMetrics, getMetricWhy } from '@/lib/agent/componentTechData'
-import { getPatternDiscoveryData } from '@/lib/agent/patternDiscoveryData'
+import { getCombinatorialPatternsData } from '@/lib/agent/combinatorialPatternsData'
 import { PATTERN_CLASSIFICATION_META } from '@/store/agentTypes'
 
-// ─── Intent Type Visual Config ──────────────────────────────────────────
+// ─── Map combinatorial tier → classification ────────────────────────────
 
-const INTENT_META: Record<IntentType, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
-  explicit: {
-    label: 'Explicit',
-    color: '#0369a1',
-    bg: '#f0f9ff',
-    border: '#bae6fd',
-    icon: <Eye className="w-3 h-3" aria-hidden="true" />,
-  },
-  implicit: {
-    label: 'Implicit',
-    color: '#7c3aed',
-    bg: '#f5f3ff',
-    border: '#ddd6fe',
-    icon: <EyeOff className="w-3 h-3" aria-hidden="true" />,
-  },
+const TIER_TO_CLASSIFICATION: Record<string, PatternClassification> = {
+  simple: 'dominant',
+  complex: 'non-dominant',
+  fuzzy: 'fuzzy',
+}
+
+function mapDimensionToDiscovered(dp: DimensionPattern, idx: number): DiscoveredPattern {
+  return {
+    id: dp.id,
+    patternType: dp.patternType,
+    classification: TIER_TO_CLASSIFICATION[dp.tier] || 'fuzzy',
+    label: dp.name,
+    description: dp.description,
+    exampleQuestions: dp.exampleQuestions,
+    coveragePct: dp.confidence,
+    inferenceNote: dp.inferenceNotes,
+    ambiguityNote: dp.ambiguityNotes,
+    activatedComponents: dp.activatedComponents ?? [],
+    importanceRank: idx + 1,
+  }
+}
+
+interface PatternGroup {
+  classification: PatternClassification
+  patterns: DiscoveredPattern[]
 }
 
 // ─── Metrics Bar (tab selector) ─────────────────────────────────────────
 
-const SUBTITLES: Record<PatternClassification, string> = {
-  dominant: 'High-confidence patterns',
-  'non-dominant': 'Multi-step complexity',
-  fuzzy: 'Ambiguous confidence',
-}
 
 function MetricsBar({
-  totalPatterns,
   dominantCount,
   nonDominantCount,
   fuzzyCount,
-  accentColor,
   activeTab,
   onTabChange,
 }: {
-  totalPatterns: number
   dominantCount: number
   nonDominantCount: number
   fuzzyCount: number
-  accentColor: string
   activeTab: PatternClassification
   onTabChange: (tab: PatternClassification) => void
 }) {
@@ -76,10 +73,6 @@ function MetricsBar({
       role="tablist"
       aria-label="Pattern Classifications"
     >
-      {/* Summary line */}
-      <p className="text-[11px] text-gray-400 mb-3">
-        <span className="font-semibold" style={{ color: accentColor }}>{totalPatterns}</span> total patterns evaluated
-      </p>
 
       {/* Colored tab tiles */}
       <div className="grid grid-cols-3 gap-3">
@@ -104,9 +97,6 @@ function MetricsBar({
                 {count}
               </div>
               <div className="text-sm font-semibold text-gray-700 mt-1">{meta.label}</div>
-              <div className="text-[10px] mt-0.5" style={{ color: `${meta.color}99` }}>
-                {SUBTITLES[classification]}
-              </div>
             </motion.button>
           )
         })}
@@ -115,63 +105,7 @@ function MetricsBar({
   )
 }
 
-// ─── Resolution Flow (horizontal: Query → Pattern → Components → Output) ─
-
-function ResolutionFlow({ pattern }: { pattern: DiscoveredPattern }) {
-  const steps = [
-    {
-      label: 'Query',
-      content: pattern.exampleQuestions[0] ?? 'User query',
-      color: '#3b82f6',
-    },
-    {
-      label: 'Pattern',
-      content: pattern.label,
-      color: '#8b5cf6',
-    },
-    {
-      label: 'Components',
-      content: pattern.activatedComponents.slice(0, 4).join(' → '),
-      color: '#059669',
-    },
-    {
-      label: 'Output',
-      content: 'Resolved response',
-      color: '#ea580c',
-    },
-  ]
-
-  return (
-    <div className="flex items-stretch gap-1 overflow-x-auto pb-1">
-      {steps.map((step, i) => (
-        <div key={step.label} className="flex items-center gap-1 min-w-0">
-          <div
-            className="rounded-lg px-3 py-2 min-w-[120px] max-w-[180px]"
-            style={{
-              background: `${step.color}08`,
-              border: `1px solid ${step.color}25`,
-            }}
-          >
-            <p
-              className="text-[9px] font-bold uppercase tracking-widest mb-0.5"
-              style={{ color: step.color }}
-            >
-              {step.label}
-            </p>
-            <p className="text-[11px] text-gray-700 leading-snug truncate">
-              {step.content}
-            </p>
-          </div>
-          {i < steps.length - 1 && (
-            <ArrowRight className="w-3.5 h-3.5 text-gray-300 shrink-0" aria-hidden="true" />
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ─── Expanded Pattern Detail (flow + questions) ─────────────────────────
+// ─── Expanded Pattern Detail (questions) ────────────────────────────────
 
 function PatternDetail({ pattern }: { pattern: DiscoveredPattern }) {
   return (
@@ -182,28 +116,17 @@ function PatternDetail({ pattern }: { pattern: DiscoveredPattern }) {
       transition={{ duration: 0.2 }}
       className="overflow-hidden"
     >
-      <div className="px-4 pb-4 pt-1 space-y-3">
-        {/* Resolution Flow */}
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">
-            Resolution Flow
-          </p>
-          <ResolutionFlow pattern={pattern} />
-        </div>
-
-        {/* Example Questions */}
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">
-            Example User Questions
-          </p>
-          <div className="space-y-1.5">
-            {pattern.exampleQuestions.map((q, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <MessageSquare className="w-3 h-3 text-gray-400 mt-0.5 shrink-0" aria-hidden="true" />
-                <p className="text-xs text-gray-700 leading-relaxed">{q}</p>
-              </div>
-            ))}
-          </div>
+      <div className="px-4 pb-4 pt-1">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">
+          Example User Questions
+        </p>
+        <div className="space-y-1.5">
+          {pattern.exampleQuestions.map((q, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <MessageSquare className="w-3 h-3 text-gray-400 mt-0.5 shrink-0" aria-hidden="true" />
+              <p className="text-xs text-gray-700 leading-relaxed">{q}</p>
+            </div>
+          ))}
         </div>
       </div>
     </motion.div>
@@ -222,8 +145,6 @@ function PatternRow({
   delay: number
 }) {
   const [expanded, setExpanded] = useState(false)
-  const intentType = pattern.intentType ?? 'explicit'
-  const intentVis = INTENT_META[intentType]
 
   return (
     <motion.div
@@ -238,21 +159,7 @@ function PatternRow({
         aria-expanded={expanded}
       >
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <p className="text-sm font-bold text-gray-900">{pattern.label}</p>
-            {/* Intent type badge */}
-            <span
-              className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
-              style={{
-                background: intentVis.bg,
-                color: intentVis.color,
-                border: `1px solid ${intentVis.border}`,
-              }}
-            >
-              {intentVis.icon}
-              {intentVis.label}
-            </span>
-          </div>
+          <p className="text-sm font-bold text-gray-900 mb-0.5">{pattern.label}</p>
           <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
             {pattern.description}
           </p>
@@ -278,93 +185,27 @@ function PatternRow({
   )
 }
 
-// ─── Intent Sub-Section (collapsible group within a tab) ────────────────
+// ─── Metric color system (maximally distinct — same as SolutionArchitecture) ──
 
-function IntentSubSection({
-  intentType,
-  patterns,
-  validationCounts,
-  baseDelay,
-}: {
-  intentType: IntentType
-  patterns: DiscoveredPattern[]
-  validationCounts: Map<string, number>
-  baseDelay: number
-}) {
-  const [collapsed, setCollapsed] = useState(false)
-  const vis = INTENT_META[intentType]
+const EVAL_METRIC_COLORS: { color: string; bg: string }[] = [
+  { color: '#059669', bg: '#ecfdf5' }, // emerald — primary
+  { color: '#2563eb', bg: '#eff6ff' }, // blue — secondary
+  { color: '#d97706', bg: '#fffbeb' }, // amber — tertiary
+  { color: '#9333ea', bg: '#faf5ff' }, // purple — quaternary
+]
 
-  if (patterns.length === 0) return null
+// ─── Measurement Plan (target only — tests haven't run yet) ──────────────
 
-  return (
-    <div className="space-y-2">
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center gap-2 w-full text-left cursor-pointer hover:opacity-80 transition-opacity py-1"
-        aria-expanded={!collapsed}
-      >
-        <div
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-          style={{ background: vis.bg, border: `1px solid ${vis.border}` }}
-        >
-          {vis.icon}
-          <span
-            className="text-[10px] font-bold uppercase tracking-widest"
-            style={{ color: vis.color }}
-          >
-            {vis.label} Patterns
-          </span>
-          <span
-            className="text-[10px] font-bold ml-1"
-            style={{ color: vis.color }}
-          >
-            ({patterns.length})
-          </span>
-        </div>
-        <div className="flex-1 h-px bg-gray-200" />
-        {collapsed ? (
-          <ChevronDown className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
-        ) : (
-          <ChevronUp className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
-        )}
-      </button>
-
-      <AnimatePresence>
-        {!collapsed && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-2 overflow-hidden"
-          >
-            {patterns.map((pattern, i) => (
-              <PatternRow
-                key={pattern.id}
-                pattern={pattern}
-                validationCount={validationCounts.get(pattern.id) ?? 0}
-                delay={baseDelay + i * 0.04}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-// ─── Measurement Plan (4 metrics) ───────────────────────────────────────
-
-function AgentMeasurementPlan({ tileId, accentColor }: { tileId: string; accentColor: string }) {
+function AgentMeasurementPlan({ tileId }: { tileId: string }) {
   const metrics = getEvalMetrics(tileId)
   const why = getMetricWhy(tileId)
   if (!metrics || !why) return null
 
   const items = [
-    { label: 'Primary Metric', name: metrics.metric1.name, shortName: metrics.metric1.shortName, description: metrics.metric1.description, why: why.why1, color: accentColor },
-    { label: 'Secondary Metric', name: metrics.metric2.name, shortName: metrics.metric2.shortName, description: metrics.metric2.description, why: why.why2, color: '#6b7280' },
-    { label: 'Tertiary Metric', name: metrics.metric3.name, shortName: metrics.metric3.shortName, description: metrics.metric3.description, why: why.why3, color: '#0369a1' },
-    { label: 'Quaternary Metric', name: metrics.metric4.name, shortName: metrics.metric4.shortName, description: metrics.metric4.description, why: why.why4, color: '#7c3aed' },
+    { label: 'Primary Metric', metric: metrics.metric1, why: why.why1 },
+    { label: 'Secondary Metric', metric: metrics.metric2, why: why.why2 },
+    { label: 'Tertiary Metric', metric: metrics.metric3, why: why.why3 },
+    { label: 'Quaternary Metric', metric: metrics.metric4, why: why.why4 },
   ]
 
   return (
@@ -377,33 +218,49 @@ function AgentMeasurementPlan({ tileId, accentColor }: { tileId: string; accentC
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Measurement Plan</span>
         <div className="flex-1 h-px" style={{ background: '#e5e7eb' }} />
-        <span className="text-[10px] text-gray-400 italic">metrics to be used for evaluation</span>
+        <span className="text-[10px] text-gray-400 italic">how we will evaluate the agent</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {items.map(({ label, name, description, why: whyText, color }) => (
-          <div
-            key={label}
-            className="rounded-xl p-4"
-            style={{
-              background: '#ffffff',
-              border: `1px solid ${color === accentColor ? `${color}40` : '#e5e7eb'}`,
-              borderLeft: `3px solid ${color}`,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-            }}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-                style={{ background: `${color}14`, color, border: `1px solid ${color}30` }}
-              >
-                {label}
-              </span>
-            </div>
-            <p className="text-sm font-bold text-gray-900 mb-1 leading-snug">{name}</p>
-            <p className="text-xs text-gray-600 leading-relaxed mb-2">{description}</p>
-            <p className="text-[11px] text-gray-400 leading-relaxed italic">{whyText}</p>
-          </div>
-        ))}
+        {items.map(({ label, metric, why: whyText }, idx) => {
+          const mc = EVAL_METRIC_COLORS[idx] || EVAL_METRIC_COLORS[0]
+
+          return (
+            <motion.div
+              key={label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 + idx * 0.1, duration: 0.35, ease: 'easeOut' }}
+              className="rounded-xl p-4"
+              style={{
+                background: '#ffffff',
+                border: `1px solid ${mc.color}25`,
+                borderLeft: `3px solid ${mc.color}`,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                  style={{ background: `${mc.color}14`, color: mc.color, border: `1px solid ${mc.color}30` }}
+                >
+                  {label}
+                </span>
+              </div>
+              <p className="text-sm font-bold text-gray-900 mb-1 leading-snug">{metric.name}</p>
+              <p className="text-xs text-gray-600 leading-relaxed mb-2">{metric.description}</p>
+
+              {/* Target value — the only measurable shown pre-test */}
+              <div className="flex items-baseline gap-1.5 mb-2 px-2.5 py-1.5 rounded-lg" style={{ background: mc.bg }}>
+                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: mc.color }}>Target</span>
+                <span className="text-sm font-bold text-gray-900 tabular-nums">
+                  {metric.target} {metric.unit}
+                </span>
+              </div>
+
+              <p className="text-[11px] text-gray-400 leading-relaxed italic">{whyText}</p>
+            </motion.div>
+          )
+        })}
       </div>
     </motion.div>
   )
@@ -415,31 +272,31 @@ export function AgentEvaluation() {
   const activeTileId = useAgentPlaygroundStore((s) => s.activeTileId)
   const [activeTab, setActiveTab] = useState<PatternClassification>('dominant')
 
-  const tileInfo = activeTileId ? AGENT_TILE_MAP[activeTileId] : null
-  const accentColor = tileInfo?.color || '#06b6d4'
-
   // Get evaluation & discovery data
   const evalData = useMemo(
     () => getEvaluationData(activeTileId || ''),
     [activeTileId]
   )
-  const overview = evalData?.overview ?? {
-    totalPatterns: 0,
-    patternsHandled: 0,
-    handlingByType: { simple: 0, hopping: 0, aggregator: 0, branch: 0, reasoning: 0 },
-    overallConfidence: 0,
-    dominantRate: 0,
-    nonDominantRate: 0,
-    fuzzyRate: 0,
-  }
   const scenarios = evalData?.scenarios ?? []
 
-  const discoveryData = useMemo(
-    () => getPatternDiscoveryData(activeTileId || ''),
-    [activeTileId]
-  )
-
-  const groups = discoveryData?.groups ?? []
+  // Use the SAME combinatorial patterns as the Patterns stage
+  const groups: PatternGroup[] = useMemo(() => {
+    const payload = getCombinatorialPatternsData(activeTileId || '')
+    if (!payload) return []
+    const byClassification = new Map<PatternClassification, DiscoveredPattern[]>()
+    payload.patterns.forEach((dp, idx) => {
+      const mapped = mapDimensionToDiscovered(dp, idx)
+      const existing = byClassification.get(mapped.classification) ?? []
+      existing.push(mapped)
+      byClassification.set(mapped.classification, existing)
+    })
+    const result: PatternGroup[] = []
+    for (const cls of ['dominant', 'non-dominant', 'fuzzy'] as PatternClassification[]) {
+      const patterns = byClassification.get(cls) ?? []
+      if (patterns.length > 0) result.push({ classification: cls, patterns })
+    }
+    return result
+  }, [activeTileId])
 
   // Filter scenarios by classification group's pattern types
   const scenariosByClassification = useMemo(() => {
@@ -485,20 +342,6 @@ export function AgentEvaluation() {
     return counts
   }, [activeGroup, activeTab, scenariosByClassification])
 
-  // Split active group patterns by intent type
-  const { explicitPatterns, implicitPatterns } = useMemo(() => {
-    if (!activeGroup) return { explicitPatterns: [], implicitPatterns: [] }
-    const explicit: DiscoveredPattern[] = []
-    const implicit: DiscoveredPattern[] = []
-    for (const p of activeGroup.patterns) {
-      if (p.intentType === 'implicit') {
-        implicit.push(p)
-      } else {
-        explicit.push(p)
-      }
-    }
-    return { explicitPatterns: explicit, implicitPatterns: implicit }
-  }, [activeGroup])
 
   return (
     <motion.div
@@ -525,16 +368,14 @@ export function AgentEvaluation() {
 
       {/* Measurement Plan (4 metrics) */}
       {activeTileId && (
-        <AgentMeasurementPlan tileId={activeTileId} accentColor={accentColor} />
+        <AgentMeasurementPlan tileId={activeTileId} />
       )}
 
       {/* Metrics Bar (doubles as tab selector) */}
       <MetricsBar
-        totalPatterns={overview.totalPatterns}
         dominantCount={dominantCount}
         nonDominantCount={nonDominantCount}
         fuzzyCount={fuzzyCount}
-        accentColor={accentColor}
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
@@ -559,21 +400,17 @@ export function AgentEvaluation() {
                   </p>
                 </div>
 
-                {/* Explicit patterns sub-section */}
-                <IntentSubSection
-                  intentType="explicit"
-                  patterns={explicitPatterns}
-                  validationCounts={patternValidationCounts}
-                  baseDelay={0.05}
-                />
-
-                {/* Implicit patterns sub-section */}
-                <IntentSubSection
-                  intentType="implicit"
-                  patterns={implicitPatterns}
-                  validationCounts={patternValidationCounts}
-                  baseDelay={0.05 + explicitPatterns.length * 0.04}
-                />
+                {/* Patterns flat list */}
+                <div className="space-y-2">
+                  {activeGroup.patterns.map((pattern, i) => (
+                    <PatternRow
+                      key={pattern.id}
+                      pattern={pattern}
+                      validationCount={patternValidationCounts.get(pattern.id) ?? 0}
+                      delay={0.05 + i * 0.04}
+                    />
+                  ))}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronDown,
@@ -23,7 +23,6 @@ import {
   Lightbulb,
   ArrowRight,
   Tag,
-  HardDrive,
   Workflow,
 } from 'lucide-react'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
@@ -37,7 +36,7 @@ import {
   getOrchestrationPatterns,
   getArchFlowData,
 } from '@/lib/agent/compositionData'
-import type { ArchFlowNode } from '@/lib/agent/compositionData'
+import type { MetaPattern } from '@/lib/agent/compositionData'
 import type { TechComponent, CategoryTechMapping, EvalMetric, PatternBreakdown } from '@/lib/agent/componentTechData'
 
 // ─── Category visual config ─────────────────────────────────────────────
@@ -59,6 +58,7 @@ const CATEGORY_VISUALS: Record<string, CategoryVisual> = {
   'retrieval-rag':          { icon: <Search className="w-4 h-4" aria-hidden="true" />,         color: '#065f46', bg: '#d1fae5', border: '#6ee7b7' },
   'tool-execution':         { icon: <Zap className="w-4 h-4" aria-hidden="true" />,            color: '#991b1b', bg: '#fee2e2', border: '#fecaca' },
   'response-gen':           { icon: <MessageSquare className="w-4 h-4" aria-hidden="true" />,  color: '#3f6212', bg: '#ecfccb', border: '#bef264' },
+  'response-generation':    { icon: <MessageSquare className="w-4 h-4" aria-hidden="true" />,  color: '#3f6212', bg: '#ecfccb', border: '#bef264' },
   'personalization-policy': { icon: <Shield className="w-4 h-4" aria-hidden="true" />,         color: '#854d0e', bg: '#fef9c3', border: '#fde047' },
   'output-delivery':        { icon: <Cog className="w-4 h-4" aria-hidden="true" />,            color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' },
 }
@@ -98,13 +98,38 @@ function CategoryCard({
   category,
   delay,
   viewMode,
+  tileId,
 }: {
   category: CategoryTechMapping
   delay: number
   viewMode: 'business' | 'technical'
+  tileId?: string | null
 }) {
   const [expanded, setExpanded] = useState(false)
   const vis = CATEGORY_VISUALS[category.categoryId] ?? CATEGORY_VISUALS['output-delivery']
+
+  // Get arch data for this category if tileId provided
+  const archFlowData = tileId ? getArchFlowData(tileId) : null
+  const metaPatterns = tileId ? getMetaPatterns(tileId) : []
+  const mpLookup = new Map<string, MetaPattern>()
+  if (metaPatterns.length > 0) {
+    for (const mp of metaPatterns) {
+      mpLookup.set(mp.id, mp)
+    }
+  }
+
+  const archNode = archFlowData?.nodes.find(n => n.categoryId === category.categoryId)
+  const driverPatterns = archNode
+    ? archNode.metaPatternIds.map(pid => mpLookup.get(pid)).filter(Boolean) as MetaPattern[]
+    : []
+
+  // Get memory config for this category
+  const memConfigs = tileId ? getMemoryConfig(tileId) : []
+  const memoryTypes = memConfigs.filter(m => m.usedBy.some(c => c === category.categoryLabel || c === category.categoryId))
+
+  // Get orchestration patterns for this category
+  const orchPatterns = tileId ? getOrchestrationPatterns(tileId) : []
+  const relatedOrchPatterns = orchPatterns.filter(p => p.components.some(c => c === category.categoryId || c === category.categoryLabel))
 
   return (
     <motion.div
@@ -157,7 +182,7 @@ function CategoryCard({
         </div>
       </button>
 
-      {/* Expanded: show note and role details */}
+      {/* Expanded: show note, role details, meta patterns, memory, and orchestration */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -167,7 +192,7 @@ function CategoryCard({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-3.5 pt-0 space-y-2">
+            <div className="px-4 pb-3.5 pt-0 space-y-3">
               {category.note && (
                 <div
                   className="rounded-lg px-3 py-2 text-xs text-gray-600 leading-relaxed"
@@ -185,6 +210,66 @@ function CategoryCard({
                   </div>
                 ))}
               </div>
+
+              {/* Meta Pattern Drivers */}
+              {driverPatterns.length > 0 && (
+                <div className="pt-1 border-t border-gray-100">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Selected because of
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {driverPatterns.map((dp) => (
+                      <span
+                        key={dp.id}
+                        className="text-[9px] font-medium px-2 py-0.5 rounded-md"
+                        style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+                      >
+                        {dp.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Memory Types */}
+              {memoryTypes.length > 0 && (
+                <div className="pt-1 border-t border-gray-100">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Memory types used
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {memoryTypes.map((mem) => {
+                      const mc = MEMORY_COLORS[mem.type] ?? MEMORY_COLORS['short-term']
+                      return (
+                        <span
+                          key={mem.type}
+                          className="text-[9px] font-medium px-2 py-0.5 rounded-md"
+                          style={{ background: mc.bg, color: mc.color, border: `1px solid ${mc.border}` }}
+                        >
+                          {mem.label}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Orchestration Patterns */}
+              {relatedOrchPatterns.length > 0 && (
+                <div className="pt-1 border-t border-gray-100">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Orchestration patterns
+                  </p>
+                  <div className="space-y-1.5">
+                    {relatedOrchPatterns.map((pat) => (
+                      <div key={pat.id} className="text-xs text-gray-600">
+                        <div className="font-semibold text-gray-700">{pat.problem}</div>
+                        <div className="text-[10px] text-gray-500">→ {pat.solution}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -338,67 +423,145 @@ const PATTERN_BARS: {
   { key: 'fuzzy', label: 'Fuzzy Patterns', color: '#f59e0b', bgClass: 'bg-amber-500', textClass: 'text-amber-600' },
 ]
 
-// ─── Evaluation Metric Card (MAPE/RMSE horizontal bar style) ────────────
+// ─── Metric color system (maximally distinct) ───────────────────────────
+
+const METRIC_COLORS: Record<string, { color: string; bg: string; light: string }> = {
+  primary:    { color: '#059669', bg: '#ecfdf5', light: '#d1fae5' }, // emerald
+  secondary:  { color: '#2563eb', bg: '#eff6ff', light: '#dbeafe' }, // blue
+  tertiary:   { color: '#d97706', bg: '#fffbeb', light: '#fef3c7' }, // amber
+  quaternary: { color: '#9333ea', bg: '#faf5ff', light: '#f3e8ff' }, // purple
+}
+
+// ─── Evaluation Metric Card (with baseline → actual → target bar) ────────
 
 function EvalMetricCard({
   metric,
   metricLabel,
+  metricColorKey,
   delay,
 }: {
   metric: EvalMetric
-  metricLabel: string // "Primary Metric" | "Secondary Metric"
+  metricLabel: string
+  metricColorKey: string
   delay: number
 }) {
+  const mColor = METRIC_COLORS[metricColorKey] || METRIC_COLORS.primary
+
+  // Calculate bar positions relative to target
+  const parseNum = (v: string) => parseFloat(v.replace(/[^0-9.\-]/g, '')) || 0
+  const actualNum = parseNum(metric.actual)
+  const targetNum = parseNum(metric.target)
+  const rangeMax = Math.max(actualNum, targetNum) * 1.15 || 1
+  const actualPct = Math.min(100, (actualNum / rangeMax) * 100)
+  const targetPct = Math.min(100, (targetNum / rangeMax) * 100)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.5, ease: 'easeOut' }}
-      className="rounded-xl border border-gray-200 bg-white p-5"
+      className="rounded-xl border bg-white p-4"
       style={{
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+        borderColor: `${mColor.color}25`,
+        borderLeftWidth: '3px',
+        borderLeftColor: mColor.color,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}
     >
-      {/* Metric name + label */}
-      <div className="mb-4">
-        <h4 className="text-sm font-bold text-gray-900 mb-0.5 flex items-center gap-1.5">
-          {metric.shortName}
-          <div className="group relative">
-            <Info className="w-3 h-3 text-gray-300 cursor-help" aria-hidden="true" />
-            <div className="absolute left-0 top-5 w-56 p-2.5 rounded-lg bg-gray-900 text-white text-xs leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none shadow-lg font-normal">
-              {metric.description}
+      {/* Header */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-0.5">
+          <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
+            {metric.shortName}
+            <div className="group relative">
+              <Info className="w-3 h-3 text-gray-300 cursor-help" aria-hidden="true" />
+              <div className="absolute left-0 top-5 w-56 p-2.5 rounded-lg bg-gray-900 text-white text-xs leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 pointer-events-none shadow-lg font-normal">
+                {metric.description}
+              </div>
             </div>
-          </div>
-        </h4>
-        <p className="text-xs text-blue-600 font-medium">{metricLabel}</p>
+          </h4>
+          {metric.passed ? (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+              <Check className="w-3 h-3" aria-hidden="true" /> PASS
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">FAIL</span>
+          )}
+        </div>
+        <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: mColor.color }}>
+          {metricLabel}
+        </p>
       </div>
 
-      {/* Horizontal bars per pattern */}
-      <div className="space-y-3">
+      {/* Target value */}
+      <div className="flex items-baseline gap-1.5 mb-3">
+        <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Target</span>
+        <span className="text-sm font-bold text-gray-900 tabular-nums">
+          {metric.target} {metric.unit}
+        </span>
+      </div>
+
+      {/* Progress bar: actual vs target */}
+      <div className="relative h-6 mb-1">
+        {/* Track */}
+        <div className="absolute top-2.5 left-0 right-0 h-2 rounded-full bg-gray-100" />
+
+        {/* Actual bar */}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${actualPct}%` }}
+          transition={{ duration: 0.8, delay: delay + 0.15, ease: 'easeOut' }}
+          className="absolute top-2.5 left-0 h-2 rounded-full"
+          style={{ background: mColor.color }}
+        />
+
+        {/* Target marker */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: delay + 0.4 }}
+          className="absolute top-1 w-0.5 h-4 rounded-full"
+          style={{ left: `${targetPct}%`, background: '#1f2937' }}
+        />
+        <motion.span
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: delay + 0.5 }}
+          className="absolute text-[8px] font-bold text-gray-500 uppercase"
+          style={{ left: `${targetPct}%`, top: '-2px', transform: 'translateX(-50%)' }}
+        >
+          Target
+        </motion.span>
+      </div>
+
+      {/* Actual value */}
+      <div className="flex items-center gap-1.5 mt-1">
+        <div className="w-2.5 h-2.5 rounded-sm" style={{ background: mColor.color }} />
+        <span className="text-[9px] text-gray-600 font-medium">Actual: {metric.actual}{metric.unit ? ` ${metric.unit}` : ''}</span>
+      </div>
+
+      {/* Pattern breakdown bars */}
+      <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
         {PATTERN_BARS.map((bar, i) => {
           const value = metric.breakdown[bar.key]
           return (
-            <div key={bar.key} className="flex items-center gap-3">
-              <span className="text-[11px] text-gray-600 w-[130px] shrink-0 truncate">
+            <div key={bar.key} className="flex items-center gap-2.5">
+              <span className="text-[10px] text-gray-500 w-[110px] shrink-0 truncate">
                 {bar.label}
               </span>
-              <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: '#f3f4f6' }}>
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-gray-100">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${value}%` }}
-                  transition={{
-                    duration: 0.8,
-                    ease: 'easeOut',
-                    delay: delay + 0.15 + i * 0.08,
-                  }}
+                  transition={{ duration: 0.7, ease: 'easeOut', delay: delay + 0.3 + i * 0.06 }}
                   className={`h-full rounded-full ${bar.bgClass}`}
                 />
               </div>
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: delay + 0.4 + i * 0.08 }}
-                className={`text-xs font-bold tabular-nums w-8 text-right ${bar.textClass}`}
+                transition={{ delay: delay + 0.5 + i * 0.06 }}
+                className={`text-[10px] font-bold tabular-nums w-6 text-right ${bar.textClass}`}
               >
                 {value}
               </motion.span>
@@ -538,11 +701,313 @@ function AssemblyStrip({
   )
 }
 
-// ─── Meta Patterns Section ──────────────────────────────────────────────
+// ─── Memory Colors ──────────────────────────────────────────────────
 
-function MetaPatternsSection({ tileId }: { tileId: string }) {
+const MEMORY_COLORS: Record<string, { color: string; bg: string; border: string }> = {
+  'short-term': { color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  'long-term': { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  episodic: { color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+}
+
+// ─── Architecture Layer Config ──────────────────────────────────────
+
+interface ArchitectureLayer {
+  id: string
+  label: string
+  color: string
+  accent: string
+  bg: string
+  border: string
+  categories: string[]
+}
+
+const ARCHITECTURE_LAYERS: ArchitectureLayer[] = [
+  { id: 'input', label: 'INPUT LAYER', color: '#0ea5e9', accent: '#0369a1', bg: '#f0f9ff', border: '#bae6fd', categories: ['input-api', 'session-context'] },
+  { id: 'brain', label: 'BRAIN LAYER', color: '#4338ca', accent: '#312e81', bg: '#eef2ff', border: '#c7d2fe', categories: ['orchestrator', 'planning-llm', 'task-decomposition'] },
+  { id: 'execution', label: 'EXECUTION LAYER', color: '#059669', accent: '#065f46', bg: '#ecfdf5', border: '#a7f3d0', categories: ['tool-data-access', 'retrieval-rag', 'tool-execution'] },
+  { id: 'output', label: 'OUTPUT LAYER', color: '#ea580c', accent: '#92400e', bg: '#fff7ed', border: '#fed7aa', categories: ['response-generation', 'personalization-policy', 'output-delivery'] },
+]
+
+// Category ID mapping: compositionData categoryId → componentTechData categoryId
+const CATEGORY_ID_MAPPING: Record<string, string> = {
+  'input-api': 'input-api',
+  'session-context': 'session',
+  'orchestrator': 'orchestrator',
+  'planning-llm': 'planning',
+  'task-decomposition': 'taskDecomp',
+  'tool-data-access': 'toolAccess',
+  'retrieval-rag': 'retrieval',
+  'tool-execution': 'toolExec',
+  'response-generation': 'responseGen',
+  'personalization-policy': 'personalization',
+  'output-delivery': 'output',
+}
+
+// ─── Composition DNA Section (Split-Panel Interactive) ──────────────
+
+interface ConnectionInfo {
+  patternId: string
+  patternLabel: string
+  categoryId: string
+  reason: string
+}
+
+// Cross-fade cubic-bezier from vibemodel.ai
+const SLIDE_TRANSITION = { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const }
+const AUTOPLAY_INTERVAL = 5000 // 5 seconds
+
+function ReverseComponentView({
+  categoryId,
+  flowData,
+  componentToPatterns,
+  getLayerForCategory,
+  getTechRole,
+  onClose,
+}: {
+  categoryId: string
+  flowData: ReturnType<typeof getArchFlowData>
+  componentToPatterns: Map<string, ConnectionInfo[]>
+  getLayerForCategory: (catId: string) => typeof ARCHITECTURE_LAYERS[number] | undefined
+  getTechRole: (catId: string) => string | null
+  onClose: () => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Focus on mount so keyboard users can interact
+  useEffect(() => {
+    containerRef.current?.focus()
+  }, [])
+
+  if (!flowData) return null
+  const node = flowData.nodes.find(n => n.categoryId === categoryId)
+  const vis = CATEGORY_VISUALS[categoryId] ?? CATEGORY_VISUALS['output-delivery']
+  const allReasons = componentToPatterns.get(categoryId) || []
+  const layer = getLayerForCategory(categoryId)
+  const techRole = getTechRole(categoryId)
+
+  return (
+    <motion.div
+      ref={containerRef}
+      initial={{ opacity: 0, y: 30, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 30, scale: 0.97 }}
+      transition={SLIDE_TRANSITION}
+      className="absolute inset-0 p-5 bg-white z-20 overflow-y-auto outline-none"
+      style={{ willChange: 'opacity, transform' }}
+      tabIndex={-1}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
+    >
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: vis.bg, color: vis.color }}>
+            {vis.icon}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: vis.color }}>
+                {node?.categoryLabel}
+              </span>
+              {layer && (
+                <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full" style={{ background: `${layer.accent}10`, color: layer.accent }}>
+                  {layer.label.replace(' LAYER', '')}
+                </span>
+              )}
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">
+              {node?.selectedComponent}
+            </h3>
+            {techRole && (
+              <p className="text-xs text-gray-500">({techRole})</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400">
+          Why this component was selected ({allReasons.length} patterns)
+        </p>
+        {allReasons.map((cr, ri) => (
+          <motion.div
+            key={cr.patternId}
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: ri * 0.06, duration: 0.2 }}
+            className="rounded-lg border border-indigo-100 p-3"
+            style={{ background: 'linear-gradient(90deg, rgba(67,56,202,0.03) 0%, transparent 100%)' }}
+          >
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5" style={{ background: '#eef2ff' }}>
+                <Tag className="w-3 h-3 text-indigo-500" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-[12px] font-bold text-indigo-800">
+                  {cr.patternLabel}
+                </p>
+                <p className="text-[11px] text-gray-600 mt-0.5 leading-snug">
+                  {cr.reason}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+function CompositionDNASection({ tileId }: { tileId: string }) {
+  const flowData = getArchFlowData(tileId)
+  const techStack = getTechStack(tileId)
   const patterns = getMetaPatterns(tileId)
-  if (patterns.length === 0) return null
+
+  const [activePatternIdx, setActivePatternIdx] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+  const [hoveredComponentCatId, setHoveredComponentCatId] = useState<string | null>(null)
+  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const patternCountRef = useRef(0)
+  const patternItemRefs = useRef<Map<number, HTMLDivElement>>(new Map())
+  const leftColumnRef = useRef<HTMLDivElement>(null)
+
+  if (!flowData || !techStack || patterns.length === 0) return null
+
+  // ── Data: Only patterns that have component connections for this tile ──
+  const { connectedPatterns, patternToComponents, componentToPatterns } = useMemo(() => {
+    const p2c = new Map<string, ConnectionInfo[]>()
+    const c2p = new Map<string, ConnectionInfo[]>()
+    const nodeCatIds = new Set(flowData.nodes.map(n => n.categoryId))
+
+    for (const pattern of patterns) {
+      const connections: ConnectionInfo[] = []
+      for (const [catId, reason] of Object.entries(pattern.componentStrengths)) {
+        if (nodeCatIds.has(catId) && reason) {
+          const conn: ConnectionInfo = {
+            patternId: pattern.id,
+            patternLabel: pattern.label,
+            categoryId: catId,
+            reason,
+          }
+          connections.push(conn)
+          const existing = c2p.get(catId) || []
+          if (!existing.some(e => e.patternId === conn.patternId)) {
+            existing.push(conn)
+            c2p.set(catId, existing)
+          }
+        }
+      }
+      if (connections.length > 0) {
+        p2c.set(pattern.id, connections)
+      }
+    }
+
+    const connected = patterns.filter(p => p2c.has(p.id))
+    return { connectedPatterns: connected, patternToComponents: p2c, componentToPatterns: c2p }
+  }, [patterns, flowData])
+
+  // ── Tech role lookup ──
+  const techByCategory = useMemo(() => {
+    const lookup = new Map<string, CategoryTechMapping>()
+    for (const cat of techStack.categories) lookup.set(cat.categoryId, cat)
+    return lookup
+  }, [techStack])
+
+  const getTechRole = useCallback((categoryId: string): string | null => {
+    const mappedId = CATEGORY_ID_MAPPING[categoryId] || categoryId
+    const techCat = techByCategory.get(mappedId)
+    return techCat?.technologies[0]?.role || null
+  }, [techByCategory])
+
+  // ── Active pattern (clamped) ──
+  const safeIdx = Math.min(activePatternIdx, connectedPatterns.length - 1)
+  const activePattern = connectedPatterns[safeIdx] || connectedPatterns[0]
+  const activeConnections = activePattern ? (patternToComponents.get(activePattern.id) || []) : []
+
+  // ── Which pattern IDs are highlighted when hovering a component ──
+  const reverseHighlightPatternIds = useMemo(() => {
+    if (!hoveredComponentCatId) return null
+    const conns = componentToPatterns.get(hoveredComponentCatId) || []
+    return new Set(conns.map(c => c.patternId))
+  }, [hoveredComponentCatId, componentToPatterns])
+
+  // Keep ref in sync so interval callback never stales
+  patternCountRef.current = connectedPatterns.length
+
+  // ── Autoplay timer ──
+  const startAutoplay = useCallback(() => {
+    if (autoplayRef.current) clearInterval(autoplayRef.current)
+    autoplayRef.current = setInterval(() => {
+      setActivePatternIdx(prev => (prev + 1) % (patternCountRef.current || 1))
+    }, AUTOPLAY_INTERVAL)
+  }, [])
+
+  const stopAutoplay = useCallback(() => {
+    if (autoplayRef.current) {
+      clearInterval(autoplayRef.current)
+      autoplayRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isPaused && connectedPatterns.length > 1) {
+      startAutoplay()
+    } else {
+      stopAutoplay()
+    }
+    return () => stopAutoplay()
+  }, [isPaused, connectedPatterns.length, startAutoplay, stopAutoplay])
+
+  // Reset on tile change
+  useEffect(() => {
+    setActivePatternIdx(0)
+    setIsPaused(false)
+    setHoveredComponentCatId(null)
+  }, [tileId])
+
+  // Scroll active pattern into view WITHIN the left column only (never page-level scroll)
+  useEffect(() => {
+    const el = patternItemRefs.current.get(safeIdx)
+    const container = leftColumnRef.current
+    if (!el || !container) return
+    const elTop = el.offsetTop
+    const elBottom = elTop + el.offsetHeight
+    const containerTop = container.scrollTop
+    const containerBottom = containerTop + container.clientHeight
+    if (elTop < containerTop) {
+      container.scrollTo({ top: elTop - 8, behavior: 'smooth' })
+    } else if (elBottom > containerBottom) {
+      container.scrollTo({ top: elBottom - container.clientHeight + 8, behavior: 'smooth' })
+    }
+  }, [safeIdx])
+
+  // ── Handlers ──
+  const handlePatternEnter = useCallback((idx: number) => {
+    setIsPaused(true)
+    stopAutoplay()
+    setActivePatternIdx(idx)
+    setHoveredComponentCatId(null)
+  }, [stopAutoplay])
+
+  const handlePatternLeave = useCallback(() => {
+    setIsPaused(false)
+  }, [])
+
+  const handleComponentEnter = useCallback((catId: string) => {
+    setIsPaused(true)
+    stopAutoplay()
+    setHoveredComponentCatId(catId)
+  }, [stopAutoplay])
+
+  const handleComponentLeave = useCallback(() => {
+    setHoveredComponentCatId(null)
+    setIsPaused(false)
+  }, [])
+
+  // ── Find which layer a category belongs to ──
+  const getLayerForCategory = useCallback((catId: string) => {
+    return ARCHITECTURE_LAYERS.find(l => l.categories.includes(catId))
+  }, [])
+
+  if (connectedPatterns.length === 0) return null
 
   return (
     <motion.div
@@ -551,304 +1016,419 @@ function MetaPatternsSection({ tileId }: { tileId: string }) {
       transition={{ delay: 0.1, duration: 0.3 }}
       className="space-y-3"
     >
+      {/* Section header */}
       <div className="flex items-center gap-2">
-        <Tag className="w-4 h-4 text-indigo-500" aria-hidden="true" />
+        <Workflow className="w-4 h-4 text-indigo-500" aria-hidden="true" />
         <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
-          Meta Patterns Detected
+          Composition DNA
         </span>
         <div className="flex-1 h-px bg-gray-200" />
         <span className="text-[10px] text-gray-400 italic">
-          derived from interaction patterns
+          hover patterns to explore
         </span>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {patterns.map((mp, i) => (
-          <motion.div
-            key={mp.id}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.15 + i * 0.05, duration: 0.2 }}
-            className="group relative"
-          >
-            <div
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-default"
-              style={{
-                background: '#eef2ff',
-                color: '#4338ca',
-                border: '1px solid #c7d2fe',
-              }}
-            >
-              {mp.label}
+
+      {/* Screen reader */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {activePattern ? `Active pattern: ${activePattern.label}. Influences ${activeConnections.length} components.` : ''}
+      </div>
+
+      {/* ═══ Split Panel ═══ */}
+      <div
+        className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+        style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] min-h-[480px]">
+
+          {/* ─── LEFT COLUMN: Pattern Nav ─── */}
+          <div className="flex flex-col border-r border-gray-100">
+            {/* Sticky header */}
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-white shrink-0">
+              <Tag className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                Detected Patterns ({connectedPatterns.length})
+              </span>
             </div>
-            {/* Tooltip */}
-            <div className="absolute left-0 top-full mt-1 w-56 p-2.5 rounded-lg bg-gray-900 text-white text-xs leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20 pointer-events-none shadow-lg font-normal">
-              {mp.description}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  )
-}
 
-// ─── Architecture Flow Diagram ──────────────────────────────────────────
+            {/* Pattern list — scrollable within column only */}
+            <div ref={leftColumnRef} className="flex flex-col gap-1 p-4 overflow-y-auto max-h-[480px]">
+            {connectedPatterns.map((mp, idx) => {
+              const isActive = safeIdx === idx && !hoveredComponentCatId
+              const isReverseHighlighted = reverseHighlightPatternIds?.has(mp.id) ?? false
+              const isDimmed = hoveredComponentCatId !== null && !isReverseHighlighted
 
-const GROUP_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  'agent-core': { label: 'Agent Core', color: '#4338ca', bg: '#eef2ff', border: '#c7d2fe' },
-  retrieval: { label: 'Retrieval Pipeline', color: '#065f46', bg: '#ecfdf5', border: '#a7f3d0' },
-  model: { label: 'Model Layer', color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-  memory: { label: 'Memory Architecture', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff' },
-  output: { label: 'Output Layer', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
-}
-
-function ArchitectureFlowSection({ tileId }: { tileId: string }) {
-  const flowData = getArchFlowData(tileId)
-  if (!flowData) return null
-
-  // Group nodes
-  const grouped = new Map<string, ArchFlowNode[]>()
-  for (const node of flowData.nodes) {
-    const list = grouped.get(node.group) ?? []
-    list.push(node)
-    grouped.set(node.group, list)
-  }
-
-  const groupOrder = ['agent-core', 'retrieval', 'memory', 'output'] as const
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2, duration: 0.3 }}
-      className="space-y-3"
-    >
-      <div className="flex items-center gap-2">
-        <Workflow className="w-4 h-4 text-blue-500" aria-hidden="true" />
-        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
-          Composed Architecture
-        </span>
-        <div className="flex-1 h-px bg-gray-200" />
-      </div>
-
-      {/* Flow diagram */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-        {/* Model choices */}
-        <div className="flex flex-wrap gap-2 mb-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Models:</span>
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
-            {flowData.modelChoices.embedding} (Embedding)
-          </span>
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
-            {flowData.modelChoices.primary} (Primary)
-          </span>
-          {flowData.modelChoices.secondary && (
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
-              {flowData.modelChoices.secondary} (Secondary)
-            </span>
-          )}
-        </div>
-
-        {/* Grouped flow */}
-        <div className="space-y-3">
-          {groupOrder.map((groupKey, gi) => {
-            const nodes = grouped.get(groupKey)
-            if (!nodes || nodes.length === 0) return null
-            const gm = GROUP_META[groupKey]
-
-            return (
-              <div key={groupKey}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-                    style={{ background: gm.bg, color: gm.color, border: `1px solid ${gm.border}` }}
-                  >
-                    {gm.label}
-                  </span>
-                  <div className="flex-1 h-px" style={{ background: gm.border }} />
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {nodes.map((node, ni) => (
-                    <motion.div
-                      key={node.id}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 + gi * 0.1 + ni * 0.04, duration: 0.2 }}
-                      className="flex items-center gap-1"
-                    >
-                      <span
-                        className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold"
-                        style={{ background: gm.bg, color: gm.color, border: `1px solid ${gm.border}` }}
-                      >
-                        {node.label}
-                      </span>
-                      {ni < nodes.length - 1 && (
-                        <ArrowRight className="w-3 h-3 text-gray-300 shrink-0" aria-hidden="true" />
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-                {/* Arrow to next group */}
-                {gi < groupOrder.length - 1 && grouped.get(groupOrder[gi + 1])?.length && (
-                  <div className="flex justify-center py-1">
-                    <ChevronDown className="w-4 h-4 text-gray-300" aria-hidden="true" />
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Agent Ready indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="flex items-center justify-center gap-2 pt-2"
-        >
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
-            Agent Ready
-          </span>
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
-        </motion.div>
-      </div>
-    </motion.div>
-  )
-}
-
-// ─── Memory Architecture Section ────────────────────────────────────────
-
-const MEMORY_COLORS: Record<string, { color: string; bg: string; border: string }> = {
-  'short-term': { color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
-  'long-term': { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  episodic: { color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-}
-
-function MemoryArchitectureSection({ tileId }: { tileId: string }) {
-  const configs = getMemoryConfig(tileId)
-  if (configs.length === 0) return null
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.3 }}
-      className="space-y-3"
-    >
-      <div className="flex items-center gap-2">
-        <HardDrive className="w-4 h-4 text-purple-500" aria-hidden="true" />
-        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
-          Memory Architecture
-        </span>
-        <div className="flex-1 h-px bg-gray-200" />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {configs.map((mem, i) => {
-          const mc = MEMORY_COLORS[mem.type] ?? MEMORY_COLORS['short-term']
-          return (
-            <motion.div
-              key={mem.type}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 + i * 0.08, duration: 0.25 }}
-              className="rounded-xl p-4"
-              style={{
-                background: '#ffffff',
-                border: `1px solid ${mc.border}`,
-                borderLeft: `3px solid ${mc.color}`,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-              }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-                  style={{ background: mc.bg, color: mc.color, border: `1px solid ${mc.border}` }}
+              return (
+                <motion.div
+                  key={mp.id}
+                  ref={(el: HTMLDivElement | null) => { if (el) patternItemRefs.current.set(idx, el); else patternItemRefs.current.delete(idx) }}
+                  onMouseEnter={() => handlePatternEnter(idx)}
+                  onMouseLeave={handlePatternLeave}
+                  onFocus={() => handlePatternEnter(idx)}
+                  onBlur={handlePatternLeave}
+                  animate={{
+                    opacity: isDimmed ? 0.3 : isActive || isReverseHighlighted ? 1 : 0.5,
+                  }}
+                  transition={{ duration: 0.3 }}
+                  className="relative rounded-lg cursor-pointer transition-colors"
+                  style={{
+                    borderLeft: `3px solid ${isActive || isReverseHighlighted ? '#4338ca' : 'transparent'}`,
+                    background: isActive
+                      ? 'linear-gradient(90deg, rgba(67,56,202,0.06) 0%, transparent 100%)'
+                      : isReverseHighlighted
+                        ? 'linear-gradient(90deg, rgba(67,56,202,0.03) 0%, transparent 100%)'
+                        : 'transparent',
+                    boxShadow: isActive ? '0 4px 16px -4px rgba(0,0,0,0.1)' : 'none',
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Pattern: ${mp.label}`}
+                  aria-pressed={isActive}
                 >
-                  {mem.label}
-                </span>
-              </div>
-              <p className="text-xs text-gray-600 leading-relaxed mb-2">{mem.description}</p>
-              <div className="flex items-center gap-2 text-[10px] text-gray-500">
-                <span className="font-semibold">Retention:</span>
-                <span>{mem.retention}</span>
-              </div>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {mem.usedBy.map((comp) => (
-                  <span
-                    key={comp}
-                    className="text-[9px] font-medium px-1.5 py-0.5 rounded-md"
-                    style={{ background: mc.bg, color: mc.color }}
-                  >
-                    {comp}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          )
-        })}
+                  <div className="px-4 py-3">
+                    <h4 className="text-[13px] font-bold text-gray-900 leading-snug">
+                      {mp.label}
+                    </h4>
+                    {/* Show description only when active */}
+                    <AnimatePresence>
+                      {isActive && (
+                        <motion.p
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="text-[11px] text-gray-500 leading-relaxed mt-1 overflow-hidden"
+                        >
+                          {mp.description}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              )
+            })}
+            </div>
+          </div>
+
+          {/* ─── RIGHT COLUMN: Component Slides (cross-fade stack) ─── */}
+          <div className="relative p-5 overflow-hidden" style={{ perspective: '1000px' }}>
+            {/* All slides stacked absolutely — only active one visible */}
+            {connectedPatterns.map((mp, idx) => {
+              const isSlideActive = safeIdx === idx && !hoveredComponentCatId
+              const slideConnections = patternToComponents.get(mp.id) || []
+
+              return (
+                <motion.div
+                  key={mp.id}
+                  animate={{
+                    opacity: isSlideActive ? 1 : 0,
+                    y: isSlideActive ? 0 : 40,
+                    scale: isSlideActive ? 1 : 0.95,
+                  }}
+                  transition={SLIDE_TRANSITION}
+                  className="w-full"
+                  style={{
+                    position: idx === safeIdx ? 'relative' : 'absolute',
+                    top: idx === safeIdx ? undefined : 0,
+                    left: idx === safeIdx ? undefined : 0,
+                    right: idx === safeIdx ? undefined : 0,
+                    pointerEvents: isSlideActive ? 'auto' : 'none',
+                    zIndex: isSlideActive ? 10 : 1,
+                    willChange: 'opacity, transform',
+                  }}
+                >
+                  {/* Slide header */}
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-500">
+                        Pattern Impact
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {mp.label}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                      {mp.description}
+                    </p>
+                  </div>
+
+                  {/* Affected components */}
+                  <div className="space-y-2">
+                    {slideConnections.map((conn) => {
+                      const node = flowData.nodes.find(n => n.categoryId === conn.categoryId)
+                      const vis = CATEGORY_VISUALS[conn.categoryId] ?? CATEGORY_VISUALS['output-delivery']
+                      const layer = getLayerForCategory(conn.categoryId)
+                      const techRole = getTechRole(conn.categoryId)
+                      const isComponentHovered = hoveredComponentCatId === conn.categoryId
+
+                      return (
+                        <motion.div
+                          key={conn.categoryId}
+                          onMouseEnter={() => handleComponentEnter(conn.categoryId)}
+                          onMouseLeave={handleComponentLeave}
+                          animate={{
+                            boxShadow: isComponentHovered
+                              ? `0 0 24px ${vis.color}30`
+                              : '0 1px 3px rgba(0,0,0,0.05)',
+                          }}
+                          transition={{ duration: 0.2 }}
+                          className="rounded-xl border overflow-hidden cursor-pointer"
+                          style={{
+                            borderColor: isComponentHovered ? vis.color : '#e5e7eb',
+                            borderWidth: isComponentHovered ? '2px' : '1px',
+                            background: '#ffffff',
+                          }}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`${node?.categoryLabel}: ${node?.selectedComponent}`}
+                        >
+                          <div className="flex items-start gap-3 p-3">
+                            {/* Icon */}
+                            <div
+                              className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                              style={{ background: vis.bg, color: vis.color }}
+                            >
+                              {vis.icon}
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: vis.color }}>
+                                  {node?.categoryLabel || conn.categoryId}
+                                </span>
+                                {layer && (
+                                  <span
+                                    className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full"
+                                    style={{ background: `${layer.accent}10`, color: layer.accent }}
+                                  >
+                                    {layer.label.replace(' LAYER', '')}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm font-bold text-gray-900">
+                                {node?.selectedComponent || '—'}
+                              </p>
+                              {techRole && (
+                                <p className="text-[10px] text-gray-500 mt-0.5">
+                                  ({techRole})
+                                </p>
+                              )}
+                              {/* The WHY — always visible, this is the star */}
+                              <div className="mt-2 flex items-start gap-1.5 rounded-md px-2.5 py-1.5" style={{ background: '#f8f7ff' }}>
+                                <ArrowRight className="w-3 h-3 text-indigo-400 shrink-0 mt-0.5" aria-hidden="true" />
+                                <p className="text-[11px] text-gray-700 leading-snug">
+                                  {conn.reason}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Reverse direction: when THIS component is hovered, show all driving patterns */}
+                          <AnimatePresence>
+                            {isComponentHovered && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-3 pb-3 pt-1 border-t border-gray-100">
+                                  <p className="text-[8px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                                    All driving patterns for this component
+                                  </p>
+                                  <div className="space-y-1">
+                                    {(componentToPatterns.get(conn.categoryId) || []).map((cp) => (
+                                      <div key={cp.patternId} className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 bg-indigo-400" />
+                                        <div>
+                                          <span className="text-[10px] font-semibold text-indigo-700">
+                                            {cp.patternLabel}
+                                          </span>
+                                          <span className="text-[10px] text-gray-400 mx-1">—</span>
+                                          <span className="text-[10px] text-gray-600 italic">
+                                            {cp.reason}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Component count footer */}
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="text-[10px] text-gray-400">
+                      {slideConnections.length} component{slideConnections.length !== 1 ? 's' : ''} influenced by this pattern
+                    </span>
+                  </div>
+                </motion.div>
+              )
+            })}
+
+            {/* ── Reverse view: when hovering a component, show its full context ── */}
+            <AnimatePresence>
+              {hoveredComponentCatId != null && (
+                <ReverseComponentView
+                  key={`reverse-${hoveredComponentCatId}`}
+                  categoryId={hoveredComponentCatId}
+                  flowData={flowData}
+                  componentToPatterns={componentToPatterns}
+                  getLayerForCategory={getLayerForCategory}
+                  getTechRole={getTechRole}
+                  onClose={handleComponentLeave}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Progress dots (like slide indicators) */}
+        <div className="flex items-center justify-center gap-1.5 py-3 border-t border-gray-100">
+          {connectedPatterns.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => { setActivePatternIdx(idx); setIsPaused(true); setHoveredComponentCatId(null) }}
+              className="p-2 -m-1.5 rounded-full cursor-pointer group"
+              aria-label={`Go to pattern ${idx + 1}`}
+            >
+              <span
+                className="block h-1.5 rounded-full transition-all duration-300"
+                style={{
+                  background: idx === safeIdx && !hoveredComponentCatId ? '#4338ca' : '#d1d5db',
+                  width: idx === safeIdx && !hoveredComponentCatId ? '16px' : '6px',
+                }}
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </motion.div>
   )
 }
 
-// ─── Orchestration Patterns Section ─────────────────────────────────────
 
-function OrchestrationSection({ tileId }: { tileId: string }) {
-  const patterns = getOrchestrationPatterns(tileId)
-  if (patterns.length === 0) return null
+
+// ─── Architecture Diagram ────────────────────────────────────────────────
+
+const DIAGRAM_LAYERS: { id: string; label: string; color: string; accent: string; bg: string; border: string; groups: string[] }[] = [
+  { id: 'input',     label: 'Input Layer',     color: '#0ea5e9', accent: '#0369a1', bg: '#f0f9ff', border: '#bae6fd', groups: ['input-layer'] },
+  { id: 'brain',     label: 'Brain Layer',     color: '#4338ca', accent: '#312e81', bg: '#eef2ff', border: '#c7d2fe', groups: ['context-orchestration'] },
+  { id: 'execution', label: 'Execution Layer', color: '#059669', accent: '#065f46', bg: '#ecfdf5', border: '#a7f3d0', groups: ['execution'] },
+  { id: 'output',    label: 'Output Layer',    color: '#ea580c', accent: '#92400e', bg: '#fff7ed', border: '#fed7aa', groups: ['output'] },
+]
+
+function ArchitectureDiagramSection({ tileId }: { tileId: string }) {
+  const flowData = getArchFlowData(tileId)
+  if (!flowData || flowData.nodes.length === 0) return null
+
+  // Group nodes by layer
+  const layersWithNodes = DIAGRAM_LAYERS.map((layer) => ({
+    ...layer,
+    nodes: flowData.nodes.filter((n) => layer.groups.includes(n.group)),
+  })).filter((l) => l.nodes.length > 0)
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4, duration: 0.3 }}
+      transition={{ delay: 0.15, duration: 0.3 }}
       className="space-y-3"
     >
+      {/* Section header */}
       <div className="flex items-center gap-2">
-        <GitBranch className="w-4 h-4 text-blue-500" aria-hidden="true" />
+        <GitBranch className="w-4 h-4 text-gray-400" aria-hidden="true" />
         <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
-          Orchestration Patterns
+          Architecture Blueprint
         </span>
         <div className="flex-1 h-px bg-gray-200" />
-        <span className="text-[10px] text-gray-400 italic">problem → solution</span>
       </div>
-      <div className="space-y-3">
-        {patterns.map((pat, i) => (
-          <motion.div
-            key={pat.id}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.45 + i * 0.08, duration: 0.25 }}
-            className="rounded-xl border border-gray-200 bg-white overflow-hidden"
-            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
-          >
-            <div className="p-4 space-y-2">
-              {/* Problem */}
-              <div className="flex items-start gap-2">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-red-500 mt-0.5 shrink-0">Problem</span>
-                <p className="text-xs text-gray-700 leading-relaxed">{pat.problem}</p>
-              </div>
-              {/* Solution */}
-              <div className="flex items-start gap-2">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mt-0.5 shrink-0">Solution</span>
-                <p className="text-xs text-gray-700 leading-relaxed">{pat.solution}</p>
-              </div>
-              {/* Components */}
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {pat.components.map((comp) => (
+
+      <div
+        className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+        style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+      >
+        <div className="p-5 space-y-2">
+          {layersWithNodes.map((layer, li) => (
+            <div key={layer.id}>
+              {/* Arrow connector between layers */}
+              {li > 0 && (
+                <div className="flex justify-center py-1">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <div className="w-px h-4 bg-gray-200" />
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                      <path d="M5 6L0 0h10L5 6z" fill="#d1d5db" />
+                    </svg>
+                  </div>
+                </div>
+              )}
+
+              {/* Layer block */}
+              <div
+                className="rounded-xl overflow-hidden"
+                style={{ border: `1px solid ${layer.border}`, background: layer.bg }}
+              >
+                {/* Layer label */}
+                <div
+                  className="px-4 py-2 flex items-center gap-2"
+                  style={{ borderBottom: `1px solid ${layer.border}` }}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: layer.color }}
+                  />
                   <span
-                    key={comp}
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+                    className="text-[10px] font-bold uppercase tracking-widest"
+                    style={{ color: layer.accent }}
                   >
-                    {comp}
+                    {layer.label}
                   </span>
-                ))}
+                </div>
+
+                {/* Nodes row */}
+                <div className={`grid gap-2 p-3 ${layer.nodes.length === 1 ? 'grid-cols-1' : layer.nodes.length === 2 ? 'grid-cols-2' : layer.nodes.length === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'}`}>
+                  {layer.nodes.map((node) => {
+                    const vis = CATEGORY_VISUALS[node.categoryId] ?? CATEGORY_VISUALS['output-delivery']
+                    return (
+                      <div
+                        key={node.id}
+                        className="flex flex-col gap-1.5 rounded-lg p-3 bg-white"
+                        style={{ border: `1px solid ${layer.border}` }}
+                      >
+                        {/* Icon + category */}
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                            style={{ background: vis.bg, color: vis.color }}
+                          >
+                            <span className="scale-75 origin-center">{vis.icon}</span>
+                          </div>
+                          <span
+                            className="text-[9px] font-bold uppercase tracking-wider leading-tight"
+                            style={{ color: vis.color }}
+                          >
+                            {node.categoryLabel}
+                          </span>
+                        </div>
+                        {/* Selected tech */}
+                        <p className="text-xs font-bold text-gray-800 leading-snug pl-0.5">
+                          {node.selectedComponent}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             </div>
-          </motion.div>
-        ))}
+          ))}
+        </div>
       </div>
     </motion.div>
   )
@@ -973,11 +1553,6 @@ export function SolutionArchitecture() {
 
   const tileColor = tile.color
 
-  const totalTechs = techStack.categories.reduce(
-    (sum, c) => sum + c.technologies.length,
-    0
-  )
-
   const laneSummaries = archData.lanes.map((ln) => ({
     label: ln.label,
     trustBoundary: ln.trustBoundary,
@@ -1013,47 +1588,42 @@ export function SolutionArchitecture() {
       {/* Why This Agent Architecture — expandable explainer */}
       <WhyThisArchitectureCard viewMode={viewMode} />
 
-      {/* ═══ New Composition Sections (above existing content) ═══ */}
+      {/* ═══ Composition DNA — unified interactive patterns + architecture ═══ */}
+      {activeTileId && <CompositionDNASection tileId={activeTileId} />}
 
-      {/* Meta Patterns */}
-      {activeTileId && <MetaPatternsSection tileId={activeTileId} />}
-
-      {/* Architecture Flow Diagram */}
-      {activeTileId && <ArchitectureFlowSection tileId={activeTileId} />}
-
-      {/* Memory Architecture */}
-      {activeTileId && <MemoryArchitectureSection tileId={activeTileId} />}
-
-      {/* Orchestration Patterns */}
-      {activeTileId && <OrchestrationSection tileId={activeTileId} />}
+      {/* ═══ Architecture Blueprint Diagram ═══ */}
+      {activeTileId && <ArchitectureDiagramSection tileId={activeTileId} />}
 
       {/* ═══ Existing Content Below ═══ */}
 
-      {/* Component category cards — the primary content */}
-      <div>
-        <motion.h3
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3"
-        >
-          Technology Stack ({totalTechs} components across {techStack.categories.length} categories)
-        </motion.h3>
+      {/* Technology Stack — hidden while iterating on blueprint */}
+      {false && (
+        <div>
+          <motion.h3
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3"
+          >
+            Technology Stack
+          </motion.h3>
 
-        <div className="space-y-3">
-          {techStack.categories.map((cat, i) => (
-            <CategoryCard
-              key={cat.categoryId}
-              category={cat}
-              delay={0.25 + i * 0.04}
-              viewMode={viewMode}
-            />
-          ))}
+          <div className="space-y-3">
+            {techStack?.categories.map((cat, i) => (
+              <CategoryCard
+                key={cat.categoryId}
+                category={cat}
+                delay={0.25 + i * 0.04}
+                viewMode={viewMode}
+                tileId={activeTileId}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Trust lane summary — secondary, collapsible */}
-      <TrustLaneSummary lanes={laneSummaries} delay={0.7} />
+      {/* Trust lane summary — hidden while iterating on blueprint */}
+      {false && <TrustLaneSummary lanes={laneSummaries} delay={0.7} />}
 
       {/* ═══ Build & Evaluate Section ═══ */}
       <motion.div
@@ -1178,18 +1748,22 @@ export function SolutionArchitecture() {
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
             </div>
 
-            {/* Metric cards — MAPE/RMSE style */}
+            {/* Metric cards — all 4 metrics with baseline bar */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <EvalMetricCard
-                metric={evalMetrics.metric1}
-                metricLabel="Primary Metric"
-                delay={0.7}
-              />
-              <EvalMetricCard
-                metric={evalMetrics.metric2}
-                metricLabel="Secondary Metric"
-                delay={0.9}
-              />
+              {([
+                { metric: evalMetrics.metric1, label: 'Primary Metric', key: 'primary' },
+                { metric: evalMetrics.metric2, label: 'Secondary Metric', key: 'secondary' },
+                { metric: evalMetrics.metric3, label: 'Tertiary Metric', key: 'tertiary' },
+                { metric: evalMetrics.metric4, label: 'Quaternary Metric', key: 'quaternary' },
+              ] as const).map((item, i) => (
+                <EvalMetricCard
+                  key={item.key}
+                  metric={item.metric}
+                  metricLabel={item.label}
+                  metricColorKey={item.key}
+                  delay={0.7 + i * 0.15}
+                />
+              ))}
             </div>
 
             {/* Pattern legend */}
