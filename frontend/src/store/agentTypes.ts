@@ -413,6 +413,35 @@ export const PATTERN_CLASSIFICATION_META: Record<PatternClassification, {
   },
 }
 
+// ─── Dimension Family Colors ─────────────────────────────────────────────
+// Unified color system for the three dimension types across ALL stages:
+// Context Definition → Context Dimensions → Patterns.
+// Task = Indigo, Data = Emerald, User Profile = Rose.
+
+export const DIMENSION_COLORS = {
+  task: {
+    primary: '#4f46e5',   // indigo-600
+    light: '#eef2ff',     // indigo-50
+    medium: '#c7d2fe',    // indigo-200
+    dark: '#3730a3',      // indigo-800
+    label: 'Task',
+  },
+  data: {
+    primary: '#059669',   // emerald-600
+    light: '#ecfdf5',     // emerald-50
+    medium: '#a7f3d0',    // emerald-200
+    dark: '#065f46',      // emerald-800
+    label: 'Data Source',
+  },
+  userProfile: {
+    primary: '#e11d48',   // rose-600
+    light: '#fff1f2',     // rose-50
+    medium: '#fecdd3',    // rose-200
+    dark: '#9f1239',      // rose-800
+    label: 'User Profile',
+  },
+} as const
+
 // ─── Cluster (Dimension Analysis — legacy) ───────────────────────────────
 
 export interface Cluster {

@@ -26,7 +26,7 @@ import type {
   Guardrail,
   GuardrailCategory,
 } from '@/store/agentTypes'
-import { GUARDRAIL_CATEGORY_META } from '@/store/agentTypes'
+import { GUARDRAIL_CATEGORY_META, DIMENSION_COLORS } from '@/store/agentTypes'
 
 // ─── Tab Configuration ──────────────────────────────────────────────────────
 
@@ -37,12 +37,13 @@ interface TabDef {
   label: string
   icon: React.ElementType
   goalLink: string // short description of how this tab traces to the goal
+  dimensionColor?: string // unified dimension color (Task=Indigo, Data=Emerald, UserProfile=Rose)
 }
 
 const TABS: TabDef[] = [
-  { id: 'tasks', label: 'Tasks', icon: Target, goalLink: 'What the agent does' },
-  { id: 'data-sources', label: 'Data Sources', icon: Database, goalLink: 'Knowledge it uses' },
-  { id: 'user-profiles', label: 'User Profiles', icon: Users, goalLink: 'Who it serves' },
+  { id: 'tasks', label: 'Tasks', icon: Target, goalLink: 'What the agent does', dimensionColor: DIMENSION_COLORS.task.primary },
+  { id: 'data-sources', label: 'Data Sources', icon: Database, goalLink: 'Knowledge it uses', dimensionColor: DIMENSION_COLORS.data.primary },
+  { id: 'user-profiles', label: 'User Profiles', icon: Users, goalLink: 'Who it serves', dimensionColor: DIMENSION_COLORS.userProfile.primary },
   { id: 'tools', label: 'Tools', icon: Wrench, goalLink: 'Capabilities available' },
   { id: 'guardrails', label: 'Guardrails', icon: Shield, goalLink: 'Boundaries & rules' },
 ]
@@ -149,6 +150,7 @@ function TabBar({
         {tabs.map((tab) => {
           const Icon = tab.icon
           const isActive = activeTab === tab.id
+          const tabColor = tab.dimensionColor ?? accentColor
           return (
             <button
               key={tab.id}
@@ -161,7 +163,7 @@ function TabBar({
               onClick={() => onTabChange(tab.id)}
               className="flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium whitespace-nowrap transition-colors relative shrink-0 cursor-pointer"
               style={{
-                color: isActive ? accentColor : '#9ca3af',
+                color: isActive ? tabColor : '#9ca3af',
               }}
             >
               <Icon className="w-4 h-4" aria-hidden="true" />
@@ -169,8 +171,8 @@ function TabBar({
               <span
                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5"
                 style={{
-                  background: isActive ? `${accentColor}12` : '#f3f4f6',
-                  color: isActive ? accentColor : '#9ca3af',
+                  background: isActive ? `${tabColor}12` : '#f3f4f6',
+                  color: isActive ? tabColor : '#9ca3af',
                 }}
               >
                 {counts[tab.id]}
@@ -179,10 +181,10 @@ function TabBar({
           )
         })}
       </div>
-      {/* Sliding indicator */}
+      {/* Sliding indicator — uses active tab's dimension color when available */}
       <motion.div
         className="absolute bottom-0 h-[2px] rounded-full"
-        style={{ background: accentColor }}
+        style={{ background: (tabs.find((t) => t.id === activeTab)?.dimensionColor) ?? accentColor }}
         animate={{ left: indicatorStyle.left, width: indicatorStyle.width }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       />
@@ -335,10 +337,11 @@ function DataSourceCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
-      className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+      className="rounded-xl border bg-white overflow-hidden"
+      style={{ borderColor: DIMENSION_COLORS.data.medium }}
     >
       <div className="px-4 py-3 flex items-center gap-3">
-        <Database className="w-4 h-4 text-gray-400 shrink-0" aria-hidden="true" />
+        <Database className="w-4 h-4 shrink-0" style={{ color: DIMENSION_COLORS.data.primary }} aria-hidden="true" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-gray-900">{source.name}</p>
@@ -423,9 +426,14 @@ function UserProfileCard({ profile, delay }: { profile: UserProfile; delay: numb
       className="rounded-xl border bg-white overflow-hidden"
       style={{ borderColor: meta.border, background: meta.bg }}
     >
+      {/* Rose dimension accent bar */}
+      <div className="h-[3px]" style={{ background: DIMENSION_COLORS.userProfile.primary }} />
       <div className="p-4">
         <div className="flex items-start justify-between gap-3 mb-3">
-          <p className="text-sm font-bold text-gray-900 flex-1 min-w-0">{profile.category}</p>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Users className="w-4 h-4 shrink-0" style={{ color: DIMENSION_COLORS.userProfile.primary }} aria-hidden="true" />
+            <p className="text-sm font-bold text-gray-900 truncate">{profile.category}</p>
+          </div>
           <div className="flex items-center gap-2 shrink-0">
             <span
               className="text-[9px] font-bold px-2 py-1 rounded-full"
@@ -524,11 +532,15 @@ function TaskCard({ task, delay }: { task: AgentTask; delay: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
-      className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+      className="rounded-xl border bg-white overflow-hidden"
+      style={{ borderColor: DIMENSION_COLORS.task.medium }}
     >
       <div className="p-4">
         <div className="flex items-start justify-between gap-3 mb-2">
-          <p className="text-sm font-bold text-gray-900">{task.label}</p>
+          <div className="flex items-center gap-2 min-w-0">
+            <Target className="w-4 h-4 shrink-0" style={{ color: DIMENSION_COLORS.task.primary }} aria-hidden="true" />
+            <p className="text-sm font-bold text-gray-900 truncate">{task.label}</p>
+          </div>
           <div className="flex items-center gap-2 shrink-0">
             {task.systemSuggested && (
               <span className="text-[9px] font-bold px-2 py-1 rounded-full" style={{ background: '#ede9fe', color: '#5b21b6' }}>
@@ -674,7 +686,7 @@ export function ContextDefinition() {
       <GoalRibbon
         goalStatement={goalStatement}
         tabGoalLink={activeTabDef.goalLink}
-        accentColor={accentColor}
+        accentColor={activeTabDef.dimensionColor ?? accentColor}
       />
 
       {/* Tab content */}

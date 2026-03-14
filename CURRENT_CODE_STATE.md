@@ -84,24 +84,28 @@ Supporting modal: **Monitoring Dashboard** - Production monitoring and observabi
 
 ### 3. ContextDimensions.tsx
 **Location:** `/stages/agent/ContextDimensions.tsx`
-**Stage:** Step 3 of 6 (NEW implementation - Under Development)
-**Purpose:** Dimensional analysis of agent context (planned feature)
+**Stage:** Step 3 of 6 (Complete)
+**Purpose:** Three-dimensional decomposition of agent context into Task, Data, and User Profile dimensions
 
-**Current State:**
-- "Coming Soon" placeholder implementation
-- Shows planned features:
-  - Aspect extraction
-  - Semantic clustering
-  - Dimensional space mapping
-- Disabled button for future functionality
-- Bridges data upload with pattern discovery workflow
+**Key UI Elements:**
+- Three tabs with unified dimension colors: Task (Indigo #4f46e5), Data (Emerald #059669), User Profile (Rose #e11d48)
+- Sliding tab indicator colored per active dimension
+- TaskDimensionCard: confidence badges (High/Medium/Low), intent categories, parent task traceability
+- DataDimensionCard: depth meters (1-5), sub-topics, key entities (emerald badges), connected domains, source attribution
+- UserProfileDimensionCard: behavioral axes — Context (anonymous/known/VIP), Posture (info-seeking/problem-reporting/dispute), Channel (self-service/agent-assisted)
+- Goal traceability ribbon with dimension-specific color
+- Summary stats panel
+- Business/Technical view toggle
+
+**Color System:**
+- Uses shared DIMENSION_COLORS from agentTypes.ts
+- Card borders, icon tints, tab active states, depth meters all use dimension-specific colors
+- Pattern: Task=Indigo, Data=Emerald, UserProfile=Rose — consistent across all 3 stages
 
 **User Interactions:**
-- Currently read-only state
-- Button disabled pending implementation
-
-**Key Data Structures:**
-- Placeholder structure for future dimensional analysis data
+- Switch between Task, Data, and User Profile tabs
+- View dimension cards with confidence/depth indicators
+- Toggle business/technical view for more detail
 
 ---
 
@@ -115,11 +119,17 @@ Supporting modal: **Monitoring Dashboard** - Production monitoring and observabi
   - Dominant Patterns (green — #dcfce7 active, #f0fdf4 inactive, border #16a34a33)
   - Non-Dominant Patterns (red — #fee2e2 active, #fef2f2 inactive, border #dc262633)
   - Fuzzy Patterns (amber — #fef3c7 active, #fffbeb inactive, border #d9770633)
+- Dimensional Sunburst visualization:
+  - 3 concentric rings: Task (inner, Indigo), Data (middle, Emerald), User Profile (outer, Rose)
+  - Uses DIMENSION_COLORS from agentTypes.ts for ring coloring
+  - Debounced hover (30ms in, 80ms out) prevents flicker
+  - Arc segments colored by pattern tier (simple/complex/fuzzy) with dimension-specific tints
+- Tier Breakdown Bar: horizontal stacked bar showing simple/complex/fuzzy distribution per dimension
 - Pattern cards with:
   - Standardized labels ("Dominant Pattern 1", "Non-Dominant Pattern 3", etc.)
   - Confidence badges (High Confidence / Low Confidence)
   - Key signals and description
-  - Dimension DNA strip (Task + Data + User Profile IDs)
+  - Dimension DNA strip with unified colors (Task=Indigo, Data=Emerald, UserProfile=Rose chips)
 - Domain Expert Opportunity callout (amber box with Lightbulb icon) for fuzzy patterns
 - Analysis Modules sidebar with checkmarks (technical view)
 - Business/Technical view toggle

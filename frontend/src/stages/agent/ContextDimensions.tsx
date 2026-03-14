@@ -19,6 +19,7 @@ import type {
   DataDimension,
   UserProfileDimension,
 } from '@/store/agentTypes'
+import { DIMENSION_COLORS } from '@/store/agentTypes'
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
@@ -29,12 +30,13 @@ interface TabDef {
   label: string
   icon: React.ElementType
   goalLink: string
+  dimensionColor: string // unified dimension color
 }
 
 const TABS: TabDef[] = [
-  { id: 'task', label: 'Task Dimensions', icon: Target, goalLink: 'What the agent does' },
-  { id: 'data', label: 'Data Dimensions', icon: Database, goalLink: 'What the agent knows' },
-  { id: 'userprofile', label: 'User Profile Dimensions', icon: Users, goalLink: 'Who the agent serves' },
+  { id: 'task', label: 'Task Dimensions', icon: Target, goalLink: 'What the agent does', dimensionColor: DIMENSION_COLORS.task.primary },
+  { id: 'data', label: 'Data Dimensions', icon: Database, goalLink: 'What the agent knows', dimensionColor: DIMENSION_COLORS.data.primary },
+  { id: 'userprofile', label: 'User Profile Dimensions', icon: Users, goalLink: 'Who the agent serves', dimensionColor: DIMENSION_COLORS.userProfile.primary },
 ]
 
 // ─── Confidence Colors ────────────────────────────────────────────────────────
@@ -98,7 +100,8 @@ const panelVariants: Variants = {
 
 // ─── Depth Meter ──────────────────────────────────────────────────────────────
 
-function DepthMeter({ depth, maxDepth = 5 }: { depth: number; maxDepth?: number }) {
+function DepthMeter({ depth, maxDepth = 5, color }: { depth: number; maxDepth?: number; color?: string }) {
+  const fillColor = color ?? DIMENSION_COLORS.data.primary
   return (
     <div
       className="flex items-center gap-1"
@@ -113,7 +116,7 @@ function DepthMeter({ depth, maxDepth = 5 }: { depth: number; maxDepth?: number 
           key={i}
           className="w-2 h-2 rounded-sm transition-colors"
           style={{
-            background: i < depth ? '#3b82f6' : '#e5e7eb',
+            background: i < depth ? fillColor : '#e5e7eb',
           }}
         />
       ))}
@@ -147,16 +150,15 @@ function GoalRibbon({ text, accentColor }: { text: string; accentColor: string }
 
 function TaskDimensionCard({
   dim,
-  accentColor,
   delay,
   viewMode,
 }: {
   dim: TaskDimension
-  accentColor: string
   delay: number
   viewMode: 'business' | 'technical'
 }) {
   const conf = CONFIDENCE_META[dim.confidence]
+  const dc = DIMENSION_COLORS.task
 
   return (
     <motion.div
@@ -164,15 +166,15 @@ function TaskDimensionCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
       className="rounded-xl border bg-white p-4 overflow-hidden"
-      style={{ borderColor: `${accentColor}15` }}
+      style={{ borderColor: dc.medium }}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: `${accentColor}10` }}
+            style={{ background: dc.light }}
           >
-            <Target className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />
+            <Target className="w-4 h-4" style={{ color: dc.primary }} aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0">
@@ -233,31 +235,31 @@ function TaskDimensionCard({
 
 function DataDimensionCard({
   dim,
-  accentColor,
   delay,
   viewMode,
 }: {
   dim: DataDimension
-  accentColor: string
   delay: number
   viewMode: 'business' | 'technical'
 }) {
+  const dc = DIMENSION_COLORS.data
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
       className="rounded-xl border bg-white p-4 overflow-hidden"
-      style={{ borderColor: `${accentColor}15` }}
+      style={{ borderColor: dc.medium }}
     >
       {/* Header with depth meter */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: `${accentColor}10` }}
+            style={{ background: dc.light }}
           >
-            <BookOpen className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />
+            <BookOpen className="w-4 h-4" style={{ color: dc.primary }} aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0">
@@ -298,7 +300,8 @@ function DataDimensionCard({
             {dim.keyEntities.map((e) => (
               <span
                 key={e}
-                className="text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full"
+                className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                style={{ color: dc.dark, background: dc.light, border: `1px solid ${dc.medium}` }}
               >
                 {e}
               </span>
@@ -371,15 +374,14 @@ function AxisBadge({ meta }: { meta: { label: string; color: string; bg: string;
 
 function UserProfileDimensionCard({
   dim,
-  accentColor,
   delay,
   viewMode,
 }: {
   dim: UserProfileDimension
-  accentColor: string
   delay: number
   viewMode: 'business' | 'technical'
 }) {
+  const dc = DIMENSION_COLORS.userProfile
   const contextMeta = CONTEXT_AXIS_META[dim.contextAxis] ?? CONTEXT_AXIS_META.anonymous
   const postureMeta = POSTURE_AXIS_META[dim.postureAxis] ?? POSTURE_AXIS_META['info-seeking']
   const channelMeta = CHANNEL_AXIS_META[dim.channelAxis] ?? CHANNEL_AXIS_META['self-service']
@@ -390,15 +392,15 @@ function UserProfileDimensionCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
       className="rounded-xl border bg-white p-4 overflow-hidden"
-      style={{ borderColor: `${accentColor}15` }}
+      style={{ borderColor: dc.medium }}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: `${contextMeta.bg}`, border: `1px solid ${contextMeta.border}` }}
+            style={{ background: dc.light, border: `1px solid ${dc.medium}` }}
           >
-            <Users className="w-4 h-4" style={{ color: contextMeta.color }} aria-hidden="true" />
+            <Users className="w-4 h-4" style={{ color: dc.primary }} aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0">
@@ -507,10 +509,10 @@ function TabBar({
       onKeyDown={handleTabKeyDown}
       className="relative flex border-b border-gray-200"
     >
-      {/* Sliding indicator */}
+      {/* Sliding indicator — uses active tab's dimension color */}
       <motion.div
         className="absolute bottom-0 h-[2px] rounded-full"
-        style={{ background: accentColor }}
+        style={{ background: (tabs.find((t) => t.id === activeTab)?.dimensionColor) ?? accentColor }}
         animate={{ left: indicatorStyle.left, width: indicatorStyle.width }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       />
@@ -518,6 +520,7 @@ function TabBar({
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab
         const Icon = tab.icon
+        const tabColor = tab.dimensionColor
         return (
           <button
             key={tab.id}
@@ -530,16 +533,17 @@ function TabBar({
             ref={isActive ? measureIndicator : undefined}
             onClick={() => onTabChange(tab.id)}
             className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold transition-colors relative ${
-              isActive ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'
+              isActive ? '' : 'text-gray-400 hover:text-gray-600'
             }`}
+            style={isActive ? { color: tabColor } : undefined}
           >
             <Icon className="w-3.5 h-3.5" aria-hidden="true" />
             <span>{tab.label}</span>
             <span
               className="min-w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
               style={{
-                background: isActive ? `${accentColor}12` : '#f3f4f6',
-                color: isActive ? accentColor : '#9ca3af',
+                background: isActive ? `${tabColor}12` : '#f3f4f6',
+                color: isActive ? tabColor : '#9ca3af',
               }}
             >
               {counts[tab.id]}
@@ -685,7 +689,7 @@ export function ContextDimensions() {
       />
 
       {/* Goal traceability ribbon */}
-      <GoalRibbon text={activeTabDef.goalLink} accentColor={accentColor} />
+      <GoalRibbon text={activeTabDef.goalLink} accentColor={activeTabDef.dimensionColor} />
 
       {/* Tab panels */}
       <div
@@ -713,7 +717,6 @@ export function ContextDimensions() {
                 <TaskDimensionCard
                   key={dim.id}
                   dim={dim}
-                  accentColor={accentColor}
                   delay={0.05 + i * 0.06}
                   viewMode={viewMode}
                 />
@@ -740,7 +743,6 @@ export function ContextDimensions() {
                 <DataDimensionCard
                   key={dim.id}
                   dim={dim}
-                  accentColor={accentColor}
                   delay={0.05 + i * 0.06}
                   viewMode={viewMode}
                 />
@@ -767,7 +769,6 @@ export function ContextDimensions() {
                 <UserProfileDimensionCard
                   key={dim.id}
                   dim={dim}
-                  accentColor={accentColor}
                   delay={0.05 + i * 0.06}
                   viewMode={viewMode}
                 />

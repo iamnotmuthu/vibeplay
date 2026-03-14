@@ -224,15 +224,15 @@ function DecompCard({
           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
             {label}
           </span>
-          <div className="flex flex-wrap gap-1.5 mt-1">
+          <div className="space-y-1 mt-1.5">
             {items.map((item) => (
-              <span
-                key={item}
-                className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: `${color}10`, color }}
-              >
-                {item}
-              </span>
+              <div key={item} className="flex items-center gap-2">
+                <div
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: color }}
+                />
+                <span className="text-xs text-gray-700">{item}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -433,30 +433,42 @@ export function GoalDefinition() {
       {/* Stage explainer */}
       <GoalExplainer viewMode={viewMode} />
 
-      {/* Goal statement — typing animation with blinking cursor */}
+      {/* Goal statement — chat input style with typing animation */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.3 }}
-        className="rounded-xl border bg-white p-5"
+        className="rounded-xl border bg-white p-4"
         style={{ borderColor: `${accentColor}25` }}
       >
-        <div className="flex items-center gap-2 mb-3">
-          <Bot className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />
+        <div className="flex items-center gap-2 mb-2.5">
+          <Bot className="w-3.5 h-3.5" style={{ color: accentColor }} aria-hidden="true" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
             Agent Goal
           </span>
         </div>
-        <p className="text-lg sm:text-xl font-semibold text-gray-900 leading-relaxed">
-          {phase === 'typing' ? (
-            <>
-              {displayed}
-              <TypingCursor visible={showCursor} color={accentColor} />
-            </>
-          ) : (
-            goalText
-          )}
-        </p>
+
+        {/* Chat input box */}
+        <div
+          className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3.5 min-h-[64px] flex items-start"
+          role="textbox"
+          aria-readonly="true"
+          aria-label="Agent goal statement"
+          aria-multiline="true"
+        >
+          <p className="text-sm text-gray-800 leading-relaxed w-full">
+            {phase === 'typing' ? (
+              <>
+                {displayed}
+                <TypingCursor visible={showCursor} color={accentColor} />
+              </>
+            ) : (
+              goalText
+            )}
+          </p>
+        </div>
+
+        {/* Progress bar */}
         <motion.div
           role="progressbar"
           aria-valuenow={phase !== 'typing' ? 100 : Math.round((displayed.length / Math.max(goalText.length, 1)) * 100)}
@@ -466,7 +478,7 @@ export function GoalDefinition() {
           initial={{ width: 0 }}
           animate={{ width: phase !== 'typing' ? '100%' : `${(displayed.length / Math.max(goalText.length, 1)) * 100}%` }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="h-0.5 rounded-full mt-3"
+          className="h-0.5 rounded-full mt-2.5"
           style={{ background: `${accentColor}30` }}
         />
       </motion.div>

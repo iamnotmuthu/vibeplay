@@ -21,7 +21,7 @@ import type {
   PatternTier,
   DimensionPattern,
 } from '@/store/agentTypes'
-import { PATTERN_TYPE_LABELS } from '@/store/agentTypes'
+import { PATTERN_TYPE_LABELS, DIMENSION_COLORS } from '@/store/agentTypes'
 
 // ─── Tier Definitions ────────────────────────────────────────────────────────
 
@@ -197,203 +197,7 @@ function TierBreakdownBar({
   )
 }
 
-// ─── Grouped Bar Chart (replaces Combination Matrix) ─────────────────────────
-
-interface BarGroup {
-  taskId: string
-  taskLabel: string
-  bars: {
-    dataComboLabel: string
-    segments: { userProfileLabel: string; tier: PatternTier; confidence: number }[]
-  }[]
-}
-
-function GroupedBarChart({
-  patterns,
-  taskIds,
-  labels,
-  accentColor,
-}: {
-  patterns: DimensionPattern[]
-  taskIds: string[]
-  labels: Record<string, string>
-  accentColor: string
-}) {
-  const [hoveredBar, setHoveredBar] = useState<string | null>(null)
-
-  // Build grouped data: Task → unique Data combos → User Profile segments
-  const groups: BarGroup[] = useMemo(() => {
-    return taskIds.map((taskId) => {
-      const taskPatterns = patterns.filter((p) => p.taskDimensionId === taskId)
-      // Group by data combo key
-      const dataMap = new Map<string, DimensionPattern[]>()
-      for (const p of taskPatterns) {
-        const key = p.dataDimensionIds.slice().sort().join('+')
-        if (!dataMap.has(key)) dataMap.set(key, [])
-        dataMap.get(key)!.push(p)
-      }
-
-      const bars = Array.from(dataMap.entries()).map(([_key, comboPatterns]) => {
-        const dataDims = comboPatterns[0].dataDimensionIds
-        const dataComboLabel =
-          dataDims.length === 1
-            ? labels[dataDims[0]] ?? dataDims[0]
-            : dataDims.length === 2
-              ? `${labels[dataDims[0]] ?? dataDims[0]} + ${labels[dataDims[1]] ?? dataDims[1]}`
-              : `${labels[dataDims[0]] ?? dataDims[0]} + ${dataDims.length - 1} more`
-
-        const segments = comboPatterns.map((p) => ({
-          userProfileLabel: labels[p.userProfileDimensionId] ?? p.userProfileDimensionId,
-          tier: p.tier,
-          confidence: p.confidence,
-        }))
-
-        return { dataComboLabel, segments }
-      })
-
-      return { taskId, taskLabel: labels[taskId] ?? taskId, bars }
-    }).filter((g) => g.bars.length > 0)
-  }, [patterns, taskIds, labels])
-
-  // Bar sizing
-  const BAR_H = 18
-  const LABEL_W = 130
-  const MAX_BAR_W = 280
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15, duration: 0.4 }}
-      className="rounded-xl border bg-white p-5 overflow-x-auto"
-      style={{ borderColor: `${accentColor}15` }}
-    >
-      <div className="flex items-center gap-2 mb-4">
-        <Grid3x3 className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />
-        <h3 className="text-sm font-bold text-gray-900">Profile Distribution</h3>
-        <span className="text-[10px] text-gray-400">Task × Data → User Profiles by Tier</span>
-      </div>
-
-      <div className="space-y-1">
-        {groups.map((group) => (
-          <div key={group.taskId}>
-            {/* Task heading */}
-            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 mt-3 first:mt-0">
-              {group.taskLabel}
-            </div>
-
-            {group.bars.map((bar, bi) => {
-              const barKey = `${group.taskId}-${bi}`
-              const isHovered = hoveredBar === barKey
-
-              return (
-                <div
-                  key={bi}
-                  className="flex items-center gap-2 mb-1"
-                  onMouseEnter={() => setHoveredBar(barKey)}
-                  onMouseLeave={() => setHoveredBar(null)}
-                >
-                  {/* Data combo label */}
-                  <div
-                    className="text-[9px] text-gray-500 text-right shrink-0 truncate"
-                    style={{ width: LABEL_W }}
-                    title={bar.dataComboLabel}
-                  >
-                    {bar.dataComboLabel}
-                  </div>
-
-                  {/* Stacked bar: each segment = one user profile */}
-                  <div className="flex gap-[2px] relative" style={{ maxWidth: MAX_BAR_W }}>
-                    {bar.segments.map((seg, si) => {
-                      const tier = TIER_COLOR_MAP[seg.tier]
-                      const w = Math.max(12, (seg.confidence / 100) * (MAX_BAR_W / bar.segments.length))
-                      return (
-                        <motion.div
-                          key={si}
-                          initial={{ width: 0, opacity: 0 }}
-                          animate={{ width: w, opacity: 1 }}
-                          transition={{ duration: 0.4, delay: 0.05 * si }}
-                          className="rounded-sm relative group cursor-default"
-                          style={{
-                            height: BAR_H,
-                            background: tier.activeBg,
-                            border: `1px solid ${tier.border}`,
-                          }}
-                          title={`${seg.userProfileLabel} — ${seg.tier === 'simple' ? 'Dominant' : seg.tier === 'complex' ? 'Non-Dominant' : 'Fuzzy'} (${seg.confidence}%)`}
-                        >
-                          {/* Tiny profile initial inside each segment */}
-                          <span
-                            className="absolute inset-0 flex items-center justify-center text-[7px] font-bold"
-                            style={{ color: tier.color }}
-                          >
-                            {seg.userProfileLabel.slice(0, 2).toUpperCase()}
-                          </span>
-                        </motion.div>
-                      )
-                    })}
-
-                    {/* Hover detail popup */}
-                    {isHovered && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="absolute z-20 left-0 top-full mt-1 p-2 rounded-lg border bg-white shadow-lg text-[10px] whitespace-nowrap"
-                        style={{ borderColor: '#e5e7eb' }}
-                      >
-                        <p className="font-bold text-gray-900 mb-1">
-                          {bar.dataComboLabel}
-                        </p>
-                        {bar.segments.map((seg, si) => {
-                          const tier = TIER_COLOR_MAP[seg.tier]
-                          return (
-                            <div key={si} className="flex items-center gap-2 mb-0.5">
-                              <span
-                                className="w-2 h-2 rounded-full inline-block shrink-0"
-                                style={{ background: tier.color }}
-                              />
-                              <span className="text-gray-600">{seg.userProfileLabel}</span>
-                              <span style={{ color: tier.color }} className="font-semibold ml-auto pl-3">
-                                {seg.tier === 'simple' ? 'Dominant' : seg.tier === 'complex' ? 'Non-Dominant' : 'Fuzzy'}
-                              </span>
-                              <span className="text-gray-400 ml-1">{seg.confidence}%</span>
-                            </div>
-                          )
-                        })}
-                      </motion.div>
-                    )}
-                  </div>
-
-                  {/* Count badge */}
-                  <span className="text-[9px] text-gray-400 tabular-nums shrink-0">
-                    {bar.segments.length} profile{bar.segments.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        ))}
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100">
-        {TIER_TABS.map((tier) => (
-          <div key={tier.id} className="flex items-center gap-1.5">
-            <div
-              className="w-4 h-3 rounded-sm"
-              style={{ background: tier.activeBg, border: `1px solid ${tier.border}` }}
-              aria-hidden="true"
-            />
-            <span className="text-[10px] text-gray-500">
-              {tier.id === 'simple' ? 'Dominant' : tier.id === 'complex' ? 'Non-Dominant' : 'Fuzzy'}
-            </span>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  )
-}
-
-// ─── Dimensional Sunburst (replaces Dimension Connections) ──────────────────
+// ─── Dimensional Sunburst ────────────────────────────────────────────────────
 
 interface SunburstArc {
   ring: 0 | 1 | 2 // 0=task (inner), 1=data combo (middle), 2=user profile (outer)
@@ -418,8 +222,19 @@ function DimensionalSunburst({
   accentColor: string
 }) {
   const [hoveredArc, setHoveredArc] = useState<string | null>(null)
+  const hoveredArcRef = useRef<string | null>(null)
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [hasAnimated, setHasAnimated] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Debounced hover to prevent flicker from rapid mouse movements
+  const handleArcHover = useCallback((id: string | null) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    hoveredArcRef.current = id
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredArc(id)
+    }, id ? 30 : 80) // faster in, slower out
+  }, [])
 
   // Trigger animation on scroll
   useEffect(() => {
@@ -536,38 +351,39 @@ function DimensionalSunburst({
     return result
   }, [patterns, taskIds, labels])
 
-  // SVG layout — doubled from original
-  const SIZE = 640
+  // SVG layout — large sunburst
+  const SIZE = 900
   const CX = SIZE / 2
   const CY = SIZE / 2
   const RINGS = [
-    { inner: 68, outer: 138 },  // Task (innermost)
-    { inner: 144, outer: 224 }, // Data combo (middle)
-    { inner: 230, outer: 296 }, // User Profile (outer)
+    { inner: 90, outer: 185 },   // Task (innermost)
+    { inner: 195, outer: 310 },  // Data combo (middle)
+    { inner: 320, outer: 420 },  // User Profile (outer)
   ]
 
-  // Per-ring color palette: Task=blue, Data=purple, UserProfile=teal
+  // Per-ring color palette using DIMENSION_COLORS:
+  // Ring 0 = Task (Indigo), Ring 1 = Data (Emerald), Ring 2 = User Profile (Rose)
   const RING_PALETTE = [
     {
-      base: '#3b82f6',
-      simple:  { fill: '#dbeafe', stroke: '#3b82f6' },
-      complex: { fill: '#eff6ff', stroke: '#93c5fd' },
-      fuzzy:   { fill: '#f5f9ff', stroke: '#bfdbfe' },
-      hovered: { fill: '#bfdbfe', stroke: '#2563eb' },
+      base: DIMENSION_COLORS.task.primary,
+      simple:  { fill: DIMENSION_COLORS.task.light, stroke: DIMENSION_COLORS.task.primary },
+      complex: { fill: `${DIMENSION_COLORS.task.primary}12`, stroke: DIMENSION_COLORS.task.medium },
+      fuzzy:   { fill: `${DIMENSION_COLORS.task.primary}08`, stroke: `${DIMENSION_COLORS.task.primary}60` },
+      hovered: { fill: DIMENSION_COLORS.task.medium, stroke: DIMENSION_COLORS.task.dark },
     },
     {
-      base: '#8b5cf6',
-      simple:  { fill: '#ede9fe', stroke: '#8b5cf6' },
-      complex: { fill: '#f5f3ff', stroke: '#c4b5fd' },
-      fuzzy:   { fill: '#faf8ff', stroke: '#ddd6fe' },
-      hovered: { fill: '#ddd6fe', stroke: '#7c3aed' },
+      base: DIMENSION_COLORS.data.primary,
+      simple:  { fill: DIMENSION_COLORS.data.light, stroke: DIMENSION_COLORS.data.primary },
+      complex: { fill: `${DIMENSION_COLORS.data.primary}12`, stroke: DIMENSION_COLORS.data.medium },
+      fuzzy:   { fill: `${DIMENSION_COLORS.data.primary}08`, stroke: `${DIMENSION_COLORS.data.primary}60` },
+      hovered: { fill: DIMENSION_COLORS.data.medium, stroke: DIMENSION_COLORS.data.dark },
     },
     {
-      base: '#0ea5e9',
-      simple:  { fill: '#e0f2fe', stroke: '#0ea5e9' },
-      complex: { fill: '#f0f9ff', stroke: '#7dd3fc' },
-      fuzzy:   { fill: '#f8fcff', stroke: '#bae6fd' },
-      hovered: { fill: '#bae6fd', stroke: '#0284c7' },
+      base: DIMENSION_COLORS.userProfile.primary,
+      simple:  { fill: DIMENSION_COLORS.userProfile.medium, stroke: DIMENSION_COLORS.userProfile.primary },
+      complex: { fill: `${DIMENSION_COLORS.userProfile.primary}30`, stroke: DIMENSION_COLORS.userProfile.medium },
+      fuzzy:   { fill: `${DIMENSION_COLORS.userProfile.primary}18`, stroke: `${DIMENSION_COLORS.userProfile.primary}80` },
+      hovered: { fill: DIMENSION_COLORS.userProfile.primary, stroke: DIMENSION_COLORS.userProfile.dark },
     },
   ]
 
@@ -587,7 +403,9 @@ function DimensionalSunburst({
     // Offset by -PI/2 so 0 is top
     const s = startAngle - Math.PI / 2
     const e = endAngle - Math.PI / 2
-    const gap = 0.008 // tiny gap between arcs
+    const span = e - s
+    // Gap proportional to arc span — ensures even tiny outer arcs render
+    const gap = Math.min(0.008, span * 0.06)
 
     const sA = s + gap
     const eA = e - gap
@@ -641,7 +459,7 @@ function DimensionalSunburst({
         {/* SVG sunburst — stable plain paths avoid hover jitter */}
         <svg
           viewBox={`0 0 ${SIZE} ${SIZE}`}
-          className="w-full max-w-[600px] mx-auto"
+          className="w-full max-w-[900px] mx-auto"
           role="img"
           aria-label={`Sunburst chart showing ${patterns.length} patterns across ${taskIds.length} tasks`}
         >
@@ -652,7 +470,7 @@ function DimensionalSunburst({
             transition={{ duration: 0.6, ease: 'easeOut' }}
             style={{ transformOrigin: `${CX}px ${CY}px` }}
           >
-            {/* Arcs by ring */}
+            {/* Arcs by ring — ring 2 arcs have no individual hover (too dense, causes flicker) */}
             {arcs.map((arc) => {
               const ring = RINGS[arc.ring]
               const d = arcPath(ring.inner, ring.outer, arc.startAngle, arc.endAngle)
@@ -660,8 +478,14 @@ function DimensionalSunburst({
 
               const isHovered = hoveredArc === arc.id
               const isParentOfHovered = hoveredData?.parentId === arc.id
-              const dimmed = !!hoveredArc && !isHovered && !isParentOfHovered
-              const colors = getArcColors(arc.ring as 0 | 1 | 2, arc.tier, isHovered)
+              // Ring 2 children highlight when their parent (ring 1) is hovered
+              const isChildOfHovered = arc.ring === 2 && hoveredArc === arc.parentId
+              const highlighted = isHovered || isChildOfHovered
+              const dimmed = !!hoveredArc && !highlighted && !isParentOfHovered
+              const colors = getArcColors(arc.ring as 0 | 1 | 2, arc.tier, highlighted)
+
+              // Ring 2 arcs: no individual hover events (900+ arcs cause flicker)
+              const hasHover = arc.ring !== 2
 
               return (
                 <path
@@ -669,14 +493,14 @@ function DimensionalSunburst({
                   d={d}
                   fill={colors.fill}
                   stroke={colors.stroke}
-                  strokeWidth={isHovered ? 1.5 : 0.5}
+                  strokeWidth={highlighted ? 2 : arc.ring === 2 ? 0.8 : 0.5}
                   opacity={dimmed ? 0.3 : 1}
                   style={{
-                    transition: 'fill 0.12s, stroke 0.12s, opacity 0.12s, stroke-width 0.08s',
-                    cursor: 'default',
+                    transition: 'fill 0.15s ease, stroke 0.15s ease, opacity 0.2s ease, stroke-width 0.1s ease',
+                    cursor: hasHover ? 'pointer' : 'default',
                   }}
-                  onMouseEnter={() => setHoveredArc(arc.id)}
-                  onMouseLeave={() => setHoveredArc(null)}
+                  onMouseEnter={hasHover ? () => handleArcHover(arc.id) : undefined}
+                  onMouseLeave={hasHover ? () => handleArcHover(null) : undefined}
                 />
               )
             })}
@@ -698,13 +522,13 @@ function DimensionalSunburst({
                     y={y}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={10}
+                    fontSize={13}
                     fontWeight="700"
                     fill={RING_PALETTE[0].base}
                     style={{ pointerEvents: 'none' }}
                     transform={`rotate(${flip ? angle + 180 : angle}, ${x}, ${y})`}
                   >
-                    {arc.label.length > 16 ? arc.label.slice(0, 14) + '…' : arc.label}
+                    {arc.label.length > 18 ? arc.label.slice(0, 16) + '…' : arc.label}
                   </text>
                 )
               })}
@@ -726,23 +550,23 @@ function DimensionalSunburst({
                     y={y}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={9}
+                    fontSize={12}
                     fontWeight="600"
                     fill={RING_PALETTE[1].base}
                     style={{ pointerEvents: 'none' }}
                     transform={`rotate(${flip ? angle + 180 : angle}, ${x}, ${y})`}
                   >
-                    {arc.label.length > 18 ? arc.label.slice(0, 16) + '…' : arc.label}
+                    {arc.label.length > 20 ? arc.label.slice(0, 18) + '…' : arc.label}
                   </text>
                 )
               })}
           </motion.g>
 
           {/* Center label — outside animation group so it's always visible */}
-          <text x={CX} y={CY - 10} textAnchor="middle" fontSize={22} fontWeight="700" fill="#1e293b">
+          <text x={CX} y={CY - 14} textAnchor="middle" fontSize={32} fontWeight="700" fill="#1e293b">
             {patterns.length}
           </text>
-          <text x={CX} y={CY + 14} textAnchor="middle" fontSize={12} fill="#9ca3af">
+          <text x={CX} y={CY + 16} textAnchor="middle" fontSize={16} fill="#9ca3af">
             patterns
           </text>
         </svg>
@@ -841,20 +665,29 @@ function DimensionDNA({
 }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded">
+      <span
+        className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+        style={{ color: DIMENSION_COLORS.task.primary, background: DIMENSION_COLORS.task.light, border: `1px solid ${DIMENSION_COLORS.task.medium}` }}
+      >
         {labels[taskId] ?? taskId}
       </span>
       <ArrowRight className="w-2.5 h-2.5 text-gray-300" aria-hidden="true" />
       {dataIds.map((dId, i) => (
         <span key={dId}>
           {i > 0 && <span className="text-gray-300 text-[8px] mx-0.5">+</span>}
-          <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">
+          <span
+            className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+            style={{ color: DIMENSION_COLORS.data.primary, background: DIMENSION_COLORS.data.light, border: `1px solid ${DIMENSION_COLORS.data.medium}` }}
+          >
             {labels[dId] ?? dId}
           </span>
         </span>
       ))}
       <ArrowRight className="w-2.5 h-2.5 text-gray-300" aria-hidden="true" />
-      <span className="text-[9px] font-bold text-violet-600 bg-violet-50 border border-violet-100 px-1.5 py-0.5 rounded">
+      <span
+        className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+        style={{ color: DIMENSION_COLORS.userProfile.primary, background: DIMENSION_COLORS.userProfile.light, border: `1px solid ${DIMENSION_COLORS.userProfile.medium}` }}
+      >
         {labels[userProfileId] ?? userProfileId}
       </span>
     </div>
@@ -1264,16 +1097,6 @@ export function InteractionDiscovery() {
       {/* Dimensional sunburst — Task → Data → User Profile rings */}
       {phase === 'complete' && (
         <DimensionalSunburst
-          patterns={data.patterns}
-          taskIds={data.taskDimensions}
-          labels={labels}
-          accentColor={accentColor}
-        />
-      )}
-
-      {/* Grouped bar chart — profile distribution per task×data combo */}
-      {phase === 'complete' && (
-        <GroupedBarChart
           patterns={data.patterns}
           taskIds={data.taskDimensions}
           labels={labels}
