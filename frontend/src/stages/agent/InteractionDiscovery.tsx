@@ -373,11 +373,11 @@ function DimensionalFlow({
   }, [])
 
   // Build nodes
-  const W = 900
+  const W = 1060
   const H = 500
   const PADDING_TOP = 45
   const PADDING_BOTTOM = 20
-  const COL_X = [120, 450, 780]
+  const COL_X = [140, 515, 880]
 
   const { nodes, taskDataLinks, dataUpLinks, deadTaskDataLinks, deadDataUpLinks } = useMemo(() => {
     const tasks = analysis.taskDimensions
@@ -620,8 +620,8 @@ function DimensionalFlow({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="rounded-2xl overflow-hidden relative"
-      style={{ background: '#0f172a' }}
+      className="rounded-2xl relative"
+      style={{ background: '#0f172a', overflow: 'visible' }}
       ref={containerRef}
     >
       <div className="px-4 py-5">
