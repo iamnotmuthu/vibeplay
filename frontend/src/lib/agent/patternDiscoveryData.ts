@@ -3941,7 +3941,59 @@ const PATTERN_DISCOVERY_DATA: Record<string, InteractionDiscoveryPayload> = {
   'consumer-chat': { groups: CONSUMER_CHAT_PATTERNS, discoveryLog: CONSUMER_CHAT_DISCOVERY_LOG },
 }
 
+// ─── Intent Type Classification ──────────────────────────────────────────
+// Derives whether a pattern is "explicit" (user directly states intent) or
+// "implicit" (intent must be inferred from context). Classification is based
+// on analysis of the example questions: direct questions with clear action
+// words are explicit; vague, comparative, or context-dependent queries are implicit.
+
+import type { IntentType } from '@/store/agentTypes'
+
+const EXPLICIT_SIGNALS = [
+  /^(what|how do|how can|where|when|do you|can i|is there|tell me|show me|give me|list|find|get)/i,
+  /\?$/,
+  /(reset|cancel|return|refund|upgrade|change|update|create|delete|remove|add|set up)/i,
+]
+
+const IMPLICIT_SIGNALS = [
+  /(compare|versus|vs\.|difference|better|worse|recommend|suggest|should i|worth it)/i,
+  /(frustrated|annoyed|confused|lost|stuck|broken|doesn't work|not working|can't find)/i,
+  /(why|what if|suppose|imagine|consider|thinking about|looking at)/i,
+  /(sentiment|mood|tone|context|history|previous|earlier|remember)/i,
+  /(pattern|trend|insight|summary|overview|digest|roundup)/i,
+]
+
+function classifyIntentType(exampleQuestions: string[]): IntentType {
+  let implicitScore = 0
+  let explicitScore = 0
+
+  for (const q of exampleQuestions) {
+    const hasExplicit = EXPLICIT_SIGNALS.some((rx) => rx.test(q))
+    const hasImplicit = IMPLICIT_SIGNALS.some((rx) => rx.test(q))
+
+    if (hasImplicit) implicitScore++
+    if (hasExplicit && !hasImplicit) explicitScore++
+  }
+
+  return implicitScore > explicitScore ? 'implicit' : 'explicit'
+}
+
+function enrichWithIntentType(payload: InteractionDiscoveryPayload): InteractionDiscoveryPayload {
+  return {
+    ...payload,
+    groups: payload.groups.map((group) => ({
+      ...group,
+      patterns: group.patterns.map((pattern) => ({
+        ...pattern,
+        intentType: pattern.intentType ?? classifyIntentType(pattern.exampleQuestions),
+      })),
+    })),
+  }
+}
+
 export function getPatternDiscoveryData(tileId: string | null): InteractionDiscoveryPayload | null {
   if (!tileId) return null
-  return PATTERN_DISCOVERY_DATA[tileId] ?? null
+  const raw = PATTERN_DISCOVERY_DATA[tileId]
+  if (!raw) return null
+  return enrichWithIntentType(raw)
 }

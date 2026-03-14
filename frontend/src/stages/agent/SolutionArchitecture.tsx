@@ -21,12 +21,23 @@ import {
   CheckCircle2,
   TrendingUp,
   Lightbulb,
+  ArrowRight,
+  Tag,
+  HardDrive,
+  Workflow,
 } from 'lucide-react'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 import { getArchitectureData } from '@/lib/agent/architectureData'
 import { getTechStack, getEvalMetrics } from '@/lib/agent/componentTechData'
 import { generateAgentDeploymentPDF } from '@/lib/agent/generateAgentDeploymentPDF'
+import {
+  getMetaPatterns,
+  getMemoryConfig,
+  getOrchestrationPatterns,
+  getArchFlowData,
+} from '@/lib/agent/compositionData'
+import type { ArchFlowNode } from '@/lib/agent/compositionData'
 import type { TechComponent, CategoryTechMapping, EvalMetric, PatternBreakdown } from '@/lib/agent/componentTechData'
 
 // ─── Category visual config ─────────────────────────────────────────────
@@ -287,13 +298,14 @@ function TrustLaneSummary({
 
 // ─── Build Phase Constants ───────────────────────────────────────────────
 
-type BuildPhase = 'idle' | 'assembling' | 'evaluating' | 'complete'
+type BuildPhase = 'idle' | 'analyzing' | 'assembling' | 'evaluating' | 'complete'
 
 const PHASE_LABELS: Record<BuildPhase, string> = {
   idle: '',
-  assembling: 'Assembling agent components\u2026',
+  analyzing: 'Analyzing meta patterns\u2026',
+  assembling: 'Composing architecture from patterns\u2026',
   evaluating: 'Running validation data against architecture\u2026',
-  complete: 'Evaluation complete',
+  complete: 'Architecture composed and validated',
 }
 
 // Ordered category IDs for the assembly animation strip
@@ -523,6 +535,322 @@ function AssemblyStrip({
         })}
       </div>
     </div>
+  )
+}
+
+// ─── Meta Patterns Section ──────────────────────────────────────────────
+
+function MetaPatternsSection({ tileId }: { tileId: string }) {
+  const patterns = getMetaPatterns(tileId)
+  if (patterns.length === 0) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1, duration: 0.3 }}
+      className="space-y-3"
+    >
+      <div className="flex items-center gap-2">
+        <Tag className="w-4 h-4 text-indigo-500" aria-hidden="true" />
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+          Meta Patterns Detected
+        </span>
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-[10px] text-gray-400 italic">
+          derived from interaction patterns
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {patterns.map((mp, i) => (
+          <motion.div
+            key={mp.id}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15 + i * 0.05, duration: 0.2 }}
+            className="group relative"
+          >
+            <div
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-default"
+              style={{
+                background: '#eef2ff',
+                color: '#4338ca',
+                border: '1px solid #c7d2fe',
+              }}
+            >
+              {mp.label}
+            </div>
+            {/* Tooltip */}
+            <div className="absolute left-0 top-full mt-1 w-56 p-2.5 rounded-lg bg-gray-900 text-white text-xs leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20 pointer-events-none shadow-lg font-normal">
+              {mp.description}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Architecture Flow Diagram ──────────────────────────────────────────
+
+const GROUP_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  'agent-core': { label: 'Agent Core', color: '#4338ca', bg: '#eef2ff', border: '#c7d2fe' },
+  retrieval: { label: 'Retrieval Pipeline', color: '#065f46', bg: '#ecfdf5', border: '#a7f3d0' },
+  model: { label: 'Model Layer', color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+  memory: { label: 'Memory Architecture', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff' },
+  output: { label: 'Output Layer', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
+}
+
+function ArchitectureFlowSection({ tileId }: { tileId: string }) {
+  const flowData = getArchFlowData(tileId)
+  if (!flowData) return null
+
+  // Group nodes
+  const grouped = new Map<string, ArchFlowNode[]>()
+  for (const node of flowData.nodes) {
+    const list = grouped.get(node.group) ?? []
+    list.push(node)
+    grouped.set(node.group, list)
+  }
+
+  const groupOrder = ['agent-core', 'retrieval', 'memory', 'output'] as const
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2, duration: 0.3 }}
+      className="space-y-3"
+    >
+      <div className="flex items-center gap-2">
+        <Workflow className="w-4 h-4 text-blue-500" aria-hidden="true" />
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+          Composed Architecture
+        </span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      {/* Flow diagram */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        {/* Model choices */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Models:</span>
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
+            {flowData.modelChoices.embedding} (Embedding)
+          </span>
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
+            {flowData.modelChoices.primary} (Primary)
+          </span>
+          {flowData.modelChoices.secondary && (
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+              {flowData.modelChoices.secondary} (Secondary)
+            </span>
+          )}
+        </div>
+
+        {/* Grouped flow */}
+        <div className="space-y-3">
+          {groupOrder.map((groupKey, gi) => {
+            const nodes = grouped.get(groupKey)
+            if (!nodes || nodes.length === 0) return null
+            const gm = GROUP_META[groupKey]
+
+            return (
+              <div key={groupKey}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                    style={{ background: gm.bg, color: gm.color, border: `1px solid ${gm.border}` }}
+                  >
+                    {gm.label}
+                  </span>
+                  <div className="flex-1 h-px" style={{ background: gm.border }} />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {nodes.map((node, ni) => (
+                    <motion.div
+                      key={node.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 + gi * 0.1 + ni * 0.04, duration: 0.2 }}
+                      className="flex items-center gap-1"
+                    >
+                      <span
+                        className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold"
+                        style={{ background: gm.bg, color: gm.color, border: `1px solid ${gm.border}` }}
+                      >
+                        {node.label}
+                      </span>
+                      {ni < nodes.length - 1 && (
+                        <ArrowRight className="w-3 h-3 text-gray-300 shrink-0" aria-hidden="true" />
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+                {/* Arrow to next group */}
+                {gi < groupOrder.length - 1 && grouped.get(groupOrder[gi + 1])?.length && (
+                  <div className="flex justify-center py-1">
+                    <ChevronDown className="w-4 h-4 text-gray-300" aria-hidden="true" />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Agent Ready indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="flex items-center justify-center gap-2 pt-2"
+        >
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+            Agent Ready
+          </span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
+        </motion.div>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Memory Architecture Section ────────────────────────────────────────
+
+const MEMORY_COLORS: Record<string, { color: string; bg: string; border: string }> = {
+  'short-term': { color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  'long-term': { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  episodic: { color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+}
+
+function MemoryArchitectureSection({ tileId }: { tileId: string }) {
+  const configs = getMemoryConfig(tileId)
+  if (configs.length === 0) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, duration: 0.3 }}
+      className="space-y-3"
+    >
+      <div className="flex items-center gap-2">
+        <HardDrive className="w-4 h-4 text-purple-500" aria-hidden="true" />
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+          Memory Architecture
+        </span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {configs.map((mem, i) => {
+          const mc = MEMORY_COLORS[mem.type] ?? MEMORY_COLORS['short-term']
+          return (
+            <motion.div
+              key={mem.type}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 + i * 0.08, duration: 0.25 }}
+              className="rounded-xl p-4"
+              style={{
+                background: '#ffffff',
+                border: `1px solid ${mc.border}`,
+                borderLeft: `3px solid ${mc.color}`,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                  style={{ background: mc.bg, color: mc.color, border: `1px solid ${mc.border}` }}
+                >
+                  {mem.label}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 leading-relaxed mb-2">{mem.description}</p>
+              <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                <span className="font-semibold">Retention:</span>
+                <span>{mem.retention}</span>
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {mem.usedBy.map((comp) => (
+                  <span
+                    key={comp}
+                    className="text-[9px] font-medium px-1.5 py-0.5 rounded-md"
+                    style={{ background: mc.bg, color: mc.color }}
+                  >
+                    {comp}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Orchestration Patterns Section ─────────────────────────────────────
+
+function OrchestrationSection({ tileId }: { tileId: string }) {
+  const patterns = getOrchestrationPatterns(tileId)
+  if (patterns.length === 0) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4, duration: 0.3 }}
+      className="space-y-3"
+    >
+      <div className="flex items-center gap-2">
+        <GitBranch className="w-4 h-4 text-blue-500" aria-hidden="true" />
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+          Orchestration Patterns
+        </span>
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-[10px] text-gray-400 italic">problem → solution</span>
+      </div>
+      <div className="space-y-3">
+        {patterns.map((pat, i) => (
+          <motion.div
+            key={pat.id}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.45 + i * 0.08, duration: 0.25 }}
+            className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+          >
+            <div className="p-4 space-y-2">
+              {/* Problem */}
+              <div className="flex items-start gap-2">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-red-500 mt-0.5 shrink-0">Problem</span>
+                <p className="text-xs text-gray-700 leading-relaxed">{pat.problem}</p>
+              </div>
+              {/* Solution */}
+              <div className="flex items-start gap-2">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mt-0.5 shrink-0">Solution</span>
+                <p className="text-xs text-gray-700 leading-relaxed">{pat.solution}</p>
+              </div>
+              {/* Components */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {pat.components.map((comp) => (
+                  <span
+                    key={comp}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                    style={{ background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe' }}
+                  >
+                    {comp}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
   )
 }
 
@@ -762,45 +1090,51 @@ export function SolutionArchitecture() {
 
   const startBuild = useCallback(() => {
     if (buildPhase !== 'idle') return
-    setBuildPhase('assembling')
+    setBuildPhase('analyzing')
     setAssemblyCount(0)
+    setScanProgress(0)
 
-    // Phase 1: Assembly — icons appear one by one over ~1.5s
-    const assemblyInterval = setInterval(() => {
-      setAssemblyCount((prev) => {
-        if (prev >= ASSEMBLY_ORDER.length) {
-          clearInterval(assemblyInterval)
-          return prev
-        }
-        return prev + 1
-      })
-    }, 130)
-
-    // Phase 2: Evaluating — starts after assembly completes (~1.5s)
+    // Phase 1: Analyzing meta patterns (~1s)
     setTimeout(() => {
-      clearInterval(assemblyInterval)
-      setAssemblyCount(ASSEMBLY_ORDER.length)
-      setBuildPhase('evaluating')
-      setScanProgress(0)
+      setBuildPhase('assembling')
 
-      // Scan animation runs for ~1.5s
-      const scanInterval = setInterval(() => {
-        setScanProgress((prev) => {
-          if (prev >= 1) {
-            clearInterval(scanInterval)
-            return 1
+      // Phase 2: Assembly — icons appear one by one over ~1.5s
+      const assemblyInterval = setInterval(() => {
+        setAssemblyCount((prev) => {
+          if (prev >= ASSEMBLY_ORDER.length) {
+            clearInterval(assemblyInterval)
+            return prev
           }
-          return prev + 0.03
+          return prev + 1
         })
-      }, 50)
+      }, 130)
 
-      // Phase 3: Complete — after evaluation scan
+      // Phase 3: Evaluating — starts after assembly completes (~1.5s)
       setTimeout(() => {
-        clearInterval(scanInterval)
-        setScanProgress(1)
-        setBuildPhase('complete')
-      }, 1800)
-    }, 1700)
+        clearInterval(assemblyInterval)
+        setAssemblyCount(ASSEMBLY_ORDER.length)
+        setBuildPhase('evaluating')
+        setScanProgress(0)
+
+        // Scan animation runs for ~1.5s
+        const scanInterval = setInterval(() => {
+          setScanProgress((prev) => {
+            if (prev >= 1) {
+              clearInterval(scanInterval)
+              return 1
+            }
+            return prev + 0.03
+          })
+        }, 50)
+
+        // Phase 4: Complete — after evaluation scan
+        setTimeout(() => {
+          clearInterval(scanInterval)
+          setScanProgress(1)
+          setBuildPhase('complete')
+        }, 1800)
+      }, 1700)
+    }, 1000)
   }, [buildPhase])
 
   if (!tile || !archData || !techStack) return null
@@ -837,7 +1171,7 @@ export function SolutionArchitecture() {
         transition={{ duration: 0.4 }}
       >
         <h2 className="text-2xl font-bold text-gray-900 mb-1">
-          Solution Architecture
+          Agent Composition
         </h2>
         <p className="text-sm text-gray-500">
           {techStack.architectureNote}
@@ -846,6 +1180,22 @@ export function SolutionArchitecture() {
 
       {/* Why This Agent Architecture — expandable explainer */}
       <WhyThisArchitectureCard viewMode={viewMode} />
+
+      {/* ═══ New Composition Sections (above existing content) ═══ */}
+
+      {/* Meta Patterns */}
+      {activeTileId && <MetaPatternsSection tileId={activeTileId} />}
+
+      {/* Architecture Flow Diagram */}
+      {activeTileId && <ArchitectureFlowSection tileId={activeTileId} />}
+
+      {/* Memory Architecture */}
+      {activeTileId && <MemoryArchitectureSection tileId={activeTileId} />}
+
+      {/* Orchestration Patterns */}
+      {activeTileId && <OrchestrationSection tileId={activeTileId} />}
+
+      {/* ═══ Existing Content Below ═══ */}
 
       {/* Agent Composition info card with pipeline strip */}
       <AgentCompositionCard />
@@ -955,11 +1305,13 @@ export function SolutionArchitecture() {
                 }}
                 animate={{
                   width:
-                    buildPhase === 'assembling'
-                      ? `${(assemblyCount / ASSEMBLY_ORDER.length) * 50}%`
-                      : buildPhase === 'evaluating'
-                        ? `${50 + scanProgress * 45}%`
-                        : '100%',
+                    buildPhase === 'analyzing'
+                      ? '10%'
+                      : buildPhase === 'assembling'
+                        ? `${10 + (assemblyCount / ASSEMBLY_ORDER.length) * 45}%`
+                        : buildPhase === 'evaluating'
+                          ? `${55 + scanProgress * 40}%`
+                          : '100%',
                 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
               />

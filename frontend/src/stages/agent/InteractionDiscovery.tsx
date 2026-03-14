@@ -994,6 +994,16 @@ export function InteractionDiscovery() {
       {/* Explainer */}
       <PatternsExplainer viewMode={viewMode} />
 
+      {/* Dimensional sunburst — Task → Data → User Profile rings */}
+      {phase === 'complete' && (
+        <DimensionalSunburst
+          patterns={data.patterns}
+          taskIds={data.taskDimensions}
+          labels={labels}
+          accentColor={accentColor}
+        />
+      )}
+
       {/* Loading placeholder */}
       {phase === 'loading' && (
         <motion.div
@@ -1090,16 +1100,6 @@ export function InteractionDiscovery() {
         <TierBreakdownBar
           breakdown={data.tierBreakdown}
           total={data.validPatterns}
-          accentColor={accentColor}
-        />
-      )}
-
-      {/* Dimensional sunburst — Task → Data → User Profile rings */}
-      {phase === 'complete' && (
-        <DimensionalSunburst
-          patterns={data.patterns}
-          taskIds={data.taskDimensions}
-          labels={labels}
           accentColor={accentColor}
         />
       )}

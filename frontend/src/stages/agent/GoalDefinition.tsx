@@ -354,6 +354,17 @@ function ScrollAffordance() {
   )
 }
 
+// ─── Persistent Blinking Cursor ─────────────────────────────────────────────
+
+function useBlinkingCursor() {
+  const [visible, setVisible] = useState(true)
+  useEffect(() => {
+    const interval = setInterval(() => setVisible((v) => !v), 530)
+    return () => clearInterval(interval)
+  }, [])
+  return visible
+}
+
 // ─── Phase State Machine ─────────────────────────────────────────────────
 
 type GoalPhase = 'typing' | 'awaiting-decompose' | 'pulsing' | 'revealed'
@@ -400,6 +411,7 @@ export function GoalDefinition() {
     goalText,
     phase === 'typing',
   )
+  const idleCursorVisible = useBlinkingCursor()
 
   // When typing finishes, show the decompose button
   useEffect(() => {
@@ -461,6 +473,11 @@ export function GoalDefinition() {
               <>
                 {displayed}
                 <TypingCursor visible={showCursor} color={accentColor} />
+              </>
+            ) : phase === 'awaiting-decompose' ? (
+              <>
+                {goalText}
+                <TypingCursor visible={idleCursorVisible} color={accentColor} />
               </>
             ) : (
               goalText

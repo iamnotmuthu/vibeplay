@@ -15,8 +15,8 @@ The agent playground follows this flow:
 2. **Context Definition** - Specify operational foundation (instructions, data, users, tools)
 3. **Context Dimensions** - Analyze dimensional aspects (under development)
 4. **Interaction Discovery** - Pattern discovery with 6 pattern types
-5. **Agent Evaluation** - Comprehensive evaluation across 4 dimensions
-6. **Solution Architecture** - Final composed architecture with 26-component stack
+5. **Agent Evaluation** - Pattern-based evaluation with 4 metrics, implicit/explicit classification, resolution flow
+6. **Agent Composition** (renamed from Solution Architecture) - Meta patterns → architecture flow → memory → orchestration → 11-category tech stack
 
 Supporting modal: **Monitoring Dashboard** - Production monitoring and observability
 
@@ -161,67 +161,81 @@ Supporting modal: **Monitoring Dashboard** - Production monitoring and observabi
 ### 5. AgentEvaluation.tsx
 **Location:** `/stages/agent/AgentEvaluation.tsx`
 **Stage:** Step 5 of 6 (NEW implementation)
-**Purpose:** Comprehensive multi-dimensional evaluation of agent behavior
+**Purpose:** Pattern-based agent evaluation with implicit/explicit classification
 
 **Key UI Elements:**
-- 4-tab evaluation interface:
-  1. **Overview** - Metrics grid, pattern handling by type, classification rates
-  2. **Scenario Matrix** - Test scenarios with verdict badges (pass/partial/fail/flag)
-  3. **Coverage Analysis** - Coverage gaps with cluster, dimension, severity
-  4. **Decision Paths** - Step-by-step execution paths with components accessed
-- Percentage and performance bars with animations
-- Severity badges and verdict indicators
-- Component/layer breakdowns in technical view
+- **Measurement Plan** (2x2 grid): 4 use-case-specific evaluation metrics with descriptions and rationale
+- **MetricsBar** (tab selector): Total Patterns count + 3 clickable tabs (Simple, Complex, Fuzzy)
+- **Implicit/Explicit Sub-Sections**: Within each tab, patterns are grouped into collapsible "Explicit Patterns" and "Implicit Patterns" sections
+- **Pattern Rows**: Each row shows pattern name + intent type badge (Explicit/Implicit) + validation count
+- **Resolution Flow** (on expand): Horizontal flow diagram showing Query → Pattern → Components → Output
+- **Example Questions** (on expand): Listed below the resolution flow
 
 **User Interactions:**
-- Switch between evaluation tabs
-- View metrics and verdicts for different scenarios
-- Explore coverage gaps and decision paths
-- Review pattern handling statistics
+- Switch between Simple/Complex/Fuzzy tabs
+- Collapse/expand Implicit and Explicit pattern sub-sections
+- Click pattern rows to see resolution flow and example questions
+- View 4 evaluation metrics in the Measurement Plan
 
 **Key Data Structures:**
-- Overview metrics object with rates and percentages
-- Scenario array with verdict and severity data
-- Coverage gap array with cluster/dimension/severity
-- Decision path array with component sequence
+- `TileEvalMetrics` with metric1-4 (name, shortName, description, actual, target, unit, passed, breakdown)
+- `METRIC_WHY` with why1-4 rationale strings per tile
+- `IntentType` ('explicit' | 'implicit') derived from example question analysis
+- Pattern groups by classification with intent sub-grouping
+- Resolution flow using pattern's `activatedComponents` array
+
+**Data Files:**
+- `componentTechData.ts` — 4 metrics per use case (10 tiles), metric rationale
+- `patternDiscoveryData.ts` — patterns with auto-derived intentType via `classifyIntentType()`
+- `evaluationData.ts` — scenario test data per tile
 
 ---
 
-### 6. SolutionArchitecture.tsx
+### 6. SolutionArchitecture.tsx (Agent Composition)
 **Location:** `/stages/agent/SolutionArchitecture.tsx`
 **Stage:** Step 6 of 6 (NEW implementation)
-**Purpose:** Final composed architecture with 26-component agent stack
+**Purpose:** Agent composition showing meta patterns → architecture → memory → orchestration
+**Stepper Label:** "Agent Composition" (renamed from "Solution Architecture")
 
-**Key UI Elements:**
-- Architecture banner showing:
-  - Total component count
-  - Interaction path count
-  - Lane count
-- Trust boundary lanes (4 lanes for different autonomy levels):
-  - Autonomous
-  - Supervised
-  - Escalation
-  - Blocked
-- Lane cards with component chips organized by layer:
-  - Ingestion layer (5 components)
-  - Routing layer (4 components)
-  - Context layer (5 components)
-  - Execution layer (4 components)
-  - Output layer (5 components)
-  - Ops layer (3 components)
-- "View Monitoring Dashboard" button
-- Competitive differentiator messaging
+**Key UI Elements (New sections at top):**
+- **Meta Patterns Section**: Tags showing detected meta patterns (e.g., multi-task-in-single-query, document_data) with hover tooltips
+- **Architecture Flow Diagram**: Grouped flow showing composed architecture:
+  - Model choices (embedding + primary + secondary LLM)
+  - Agent Core components (Intent Classification, Planner, etc.)
+  - Retrieval Pipeline (Doc → Chunk → VectorDB, Hybrid Retrieval, etc.)
+  - Memory Architecture (Short-Term, Long-Term, Episodic)
+  - Output Layer (Response Generation, Guardrails, etc.)
+  - "Agent Ready" completion indicator
+- **Memory Architecture Section**: Cards for each memory type showing description, retention period, and which components use it
+- **Orchestration Patterns Section**: Problem → Solution cards showing orchestration approach and involved components
+
+**Key UI Elements (Existing, kept below new sections):**
+- Explainer card (Why This Architecture)
+- Agent Composition info card with 11-category pipeline strip
+- Chosen Agent panel with stats (categories, technologies, trust lanes)
+- 11 Technology Stack category cards (expandable)
+- Trust Lane summary (autonomous/supervised/escalation/blocked)
+- Build & Evaluate animation (4 phases: analyzing → assembling → evaluating → complete)
+- Evaluation metric cards (after build completes)
+- Monitoring Dashboard + Download Deployment Guide buttons
 
 **User Interactions:**
-- View final architecture composition
-- Access monitoring dashboard
-- Review component distribution across layers
-- Switch between business/technical views
+- Hover meta pattern tags for descriptions
+- Review composed architecture flow
+- Expand category cards for technology details
+- Click "Build & Evaluate" to see assembly animation
+- View evaluation results after build completes
 
 **Key Data Structures:**
-- Architecture lanes array with components
-- Component registry with layer assignments
-- Lane configuration with trust boundary metadata
+- `MetaPattern` — id, label, description per tile
+- `ArchFlowNode` — id, label, group, color for flow diagram
+- `MemoryConfig` — type, label, description, retention, usedBy
+- `OrchestrationPattern` — id, problem, solution, components
+
+**Data Files:**
+- `compositionData.ts` — meta patterns, memory configs, orchestration patterns, architecture flow data per tile
+- `architectureData.ts` — lane data, trust boundaries
+- `componentTechData.ts` — 11-category tech stack per tile
 
 ---
 

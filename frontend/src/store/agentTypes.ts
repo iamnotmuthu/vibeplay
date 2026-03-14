@@ -27,7 +27,7 @@ export const AGENT_STAGE_LABELS: Record<AgentStageId, string> = {
   'context-dimensions': 'Dimension Analysis',
   'interaction-discovery': 'Patterns',
   'agent-evaluation': 'Agent Evaluation',
-  'solution-architecture': 'Solution Architecture',
+  'solution-architecture': 'Agent Composition',
 }
 
 export const AGENT_STAGE_NUMBERS: Record<AgentStageId, number> = {
@@ -454,6 +454,8 @@ export interface Cluster {
 
 // ─── Discovered Pattern (Patterns — legacy) ──────────────────────────────
 
+export type IntentType = 'explicit' | 'implicit'
+
 export interface DiscoveredPattern {
   id: string
   patternType: PatternType
@@ -466,6 +468,7 @@ export interface DiscoveredPattern {
   ambiguityNote?: string       // fuzzy: what is ambiguous
   activatedComponents: string[]
   importanceRank: number
+  intentType?: IntentType      // explicit = user directly states intent, implicit = intent must be inferred
 }
 
 export interface DiscoveryLogEntry {

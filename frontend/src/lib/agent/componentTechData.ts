@@ -542,6 +542,8 @@ export interface EvalMetric {
 export interface TileEvalMetrics {
   metric1: EvalMetric
   metric2: EvalMetric
+  metric3: EvalMetric
+  metric4: EvalMetric
 }
 
 // Helper to generate realistic pattern breakdowns from an overall score
@@ -557,7 +559,7 @@ function bk(overall: number, dominantDelta = 4, nonDomDelta = 15, fuzzyDelta = 2
 const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
   'faq-knowledge': {
     metric1: {
-      name: 'Task Completion Rate',
+      name: 'Task Completion Rate (Success Rate)',
       shortName: 'Success Rate',
       description: 'Percentage of user queries resolved end-to-end without fallback or escalation.',
       actual: '96.4',
@@ -567,8 +569,8 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       breakdown: bk(96, 3, 7, 14),
     },
     metric2: {
-      name: 'Latency (TTFT)',
-      shortName: 'Time to First Token',
+      name: 'Latency (Time To First Token)',
+      shortName: 'TTFT',
       description: 'Time from query submission to first streamed token. Measures perceived responsiveness.',
       actual: '142',
       target: '< 200',
@@ -576,10 +578,30 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       passed: true,
       breakdown: bk(86, 5, 14, 21),
     },
+    metric3: {
+      name: 'Deflection Rate',
+      shortName: 'Deflection',
+      description: 'Conversations resolved without human handoff. Measures self-service capability.',
+      actual: '89.2',
+      target: '> 85',
+      unit: '%',
+      passed: true,
+      breakdown: bk(89, 4, 12, 22),
+    },
+    metric4: {
+      name: 'Resolution Time (Avg Handle Time)',
+      shortName: 'Avg Handle Time',
+      description: 'Average time per session from first message to resolution. Lower means faster service.',
+      actual: '24',
+      target: '< 30',
+      unit: 'sec',
+      passed: true,
+      breakdown: bk(87, 5, 13, 24),
+    },
   },
   'doc-intelligence': {
     metric1: {
-      name: 'Groundedness',
+      name: 'Groundedness / Hallucination Rate',
       shortName: 'Hallucination Rate',
       description: 'Percentage of claims in responses that are fully grounded in retrieved source documents.',
       actual: '2.1',
@@ -598,10 +620,30 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       passed: true,
       breakdown: bk(87, 5, 13, 25),
     },
+    metric3: {
+      name: 'Answer Faithfulness',
+      shortName: 'Faithfulness',
+      description: 'Proportion of claims in the answer that are directly supported by the retrieved context.',
+      actual: '93.8',
+      target: '> 90',
+      unit: '%',
+      passed: true,
+      breakdown: bk(94, 4, 12, 22),
+    },
+    metric4: {
+      name: 'Chunk Utilization Rate',
+      shortName: 'Chunk Usage',
+      description: 'Percentage of retrieved chunks actually used in generation. Low values indicate retrieval waste.',
+      actual: '72.4',
+      target: '> 65',
+      unit: '%',
+      passed: true,
+      breakdown: bk(72, 8, 18, 30),
+    },
   },
   'saas-copilot': {
     metric1: {
-      name: 'Tool Selection F1 & Param Accuracy',
+      name: 'Tool Selection (F1) & Parameter Accuracy',
       shortName: 'Tool Accuracy',
       description: 'F1 score for selecting the correct tool, combined with exact-match accuracy for parameter values.',
       actual: '91.3',
@@ -620,6 +662,26 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       passed: true,
       breakdown: bk(90, 4, 14, 25),
     },
+    metric3: {
+      name: 'API Error Rate',
+      shortName: 'API Errors',
+      description: 'Percentage of failed or malformed tool calls. Lower is better.',
+      actual: '2.8',
+      target: '< 5',
+      unit: '%',
+      passed: true,
+      breakdown: bk(91, 4, 13, 24),
+    },
+    metric4: {
+      name: 'Multi-Tool Trajectory Success',
+      shortName: 'Trajectory Success',
+      description: 'Exact correct sequence of tools invoked for multi-step operations.',
+      actual: '84.6',
+      target: '> 80',
+      unit: '%',
+      passed: true,
+      breakdown: bk(85, 6, 16, 28),
+    },
   },
   'research-comparison': {
     metric1: {
@@ -633,7 +695,7 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       breakdown: bk(94, 4, 12, 23),
     },
     metric2: {
-      name: 'Information Extraction Recall',
+      name: 'Recall@K / Information Extraction Recall',
       shortName: 'Recall@K',
       description: 'Proportion of relevant facts from source documents successfully extracted and included in output.',
       actual: '0.83',
@@ -642,10 +704,30 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       passed: true,
       breakdown: bk(83, 6, 15, 28),
     },
+    metric3: {
+      name: 'Source Diversity Score',
+      shortName: 'Source Diversity',
+      description: 'Number of unique, authoritative domains cited. Measures breadth of research coverage.',
+      actual: '7.4',
+      target: '> 5',
+      unit: 'sources',
+      passed: true,
+      breakdown: bk(82, 7, 16, 28),
+    },
+    metric4: {
+      name: 'Synthesis Quality (LLM-as-a-Judge)',
+      shortName: 'Synthesis Score',
+      description: 'LLM-as-a-Judge grading on coherence, structure, and analytical depth of the synthesized output.',
+      actual: '4.2',
+      target: '> 3.8',
+      unit: '/ 5.0',
+      passed: true,
+      breakdown: bk(84, 5, 14, 26),
+    },
   },
   'ops-agent': {
     metric1: {
-      name: 'End-to-End Task Completion',
+      name: 'End-to-End Task Completion Rate',
       shortName: 'E2E Completion',
       description: 'Percentage of multi-step operational workflows completed without human intervention or failure.',
       actual: '87.2',
@@ -664,10 +746,30 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       passed: true,
       breakdown: bk(79, 7, 15, 27),
     },
+    metric3: {
+      name: 'Error Recovery Rate',
+      shortName: 'Error Recovery',
+      description: 'Successful completion rate after an initial failure. Measures resilience and self-correction.',
+      actual: '74.3',
+      target: '> 65',
+      unit: '%',
+      passed: true,
+      breakdown: bk(74, 8, 18, 30),
+    },
+    metric4: {
+      name: 'State Retention',
+      shortName: 'Context Decay',
+      description: 'Context decay measurement over long context history. Higher means better memory over long tasks.',
+      actual: '91.6',
+      target: '> 88',
+      unit: '%',
+      passed: true,
+      breakdown: bk(92, 4, 12, 22),
+    },
   },
   'coding-agent': {
     metric1: {
-      name: 'Code Execution Pass Rate',
+      name: 'Code Execution Pass Rate (pass@k)',
       shortName: 'pass@k',
       description: 'Percentage of generated code samples that pass all unit tests on first execution (pass@1).',
       actual: '78.5',
@@ -685,6 +787,26 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       unit: 'avg cycles',
       passed: true,
       breakdown: bk(82, 7, 15, 28),
+    },
+    metric3: {
+      name: 'Code Quality Score',
+      shortName: 'Code Quality',
+      description: 'Static analysis metrics passed (e.g., SonarQube rules). Measures maintainability and standards.',
+      actual: '88.1',
+      target: '> 85',
+      unit: '%',
+      passed: true,
+      breakdown: bk(88, 5, 13, 24),
+    },
+    metric4: {
+      name: 'Context/Repo Alignment',
+      shortName: 'Repo Alignment',
+      description: 'Functions matching existing repo abstractions, naming conventions, and patterns.',
+      actual: '81.7',
+      target: '> 75',
+      unit: '%',
+      passed: true,
+      breakdown: bk(82, 6, 16, 29),
     },
   },
   'decision-workflow': {
@@ -708,10 +830,30 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       passed: true,
       breakdown: bk(94, 4, 11, 19),
     },
+    metric3: {
+      name: 'Prompt Injection Robustness',
+      shortName: 'Injection Defense',
+      description: 'Percentage of jailbreak and prompt injection attempts successfully blocked.',
+      actual: '99.1',
+      target: '> 98',
+      unit: '%',
+      passed: true,
+      breakdown: bk(99, 1, 3, 7),
+    },
+    metric4: {
+      name: 'Auditability Score',
+      shortName: 'Audit Trail',
+      description: 'Percentage of outputs with fully traceable deterministic logs for compliance auditing.',
+      actual: '98.4',
+      target: '> 97',
+      unit: '%',
+      passed: true,
+      breakdown: bk(98, 2, 4, 9),
+    },
   },
   'onprem-assistant': {
     metric1: {
-      name: 'Task Completion Rate',
+      name: 'Task Completion Rate (Constrained Env)',
       shortName: 'Constrained Success',
       description: 'Task completion in constrained on-prem environment with limited model size and no cloud fallback.',
       actual: '84.6',
@@ -721,14 +863,34 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       breakdown: bk(85, 6, 14, 27),
     },
     metric2: {
-      name: 'Resource Efficiency',
-      shortName: 'TPS/Watt & VRAM',
+      name: 'Resource Efficiency (TPS/Watt & VRAM)',
+      shortName: 'TPS/Watt',
       description: 'Tokens per second per watt of power draw, and peak VRAM utilization during inference.',
       actual: '14.2 TPS/W, 78%',
       target: '> 12 TPS/W, < 85%',
       unit: '',
       passed: true,
       breakdown: bk(84, 6, 15, 28),
+    },
+    metric3: {
+      name: 'Cold Start Latency',
+      shortName: 'Cold Start',
+      description: 'Time to first token when model loads to VRAM from cold state.',
+      actual: '3.2',
+      target: '< 5',
+      unit: 'sec',
+      passed: true,
+      breakdown: bk(88, 5, 13, 24),
+    },
+    metric4: {
+      name: 'Context Processing Speed',
+      shortName: 'Prefill Speed',
+      description: 'Prefill latency / prompt tokens per second. Measures how fast long prompts are processed.',
+      actual: '2,840',
+      target: '> 2,000',
+      unit: 'tok/sec',
+      passed: true,
+      breakdown: bk(86, 6, 14, 26),
     },
   },
   'multimodal-agent': {
@@ -743,8 +905,8 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       breakdown: bk(85, 7, 15, 27),
     },
     metric2: {
-      name: 'Semantic Alignment (CLIP) & Fidelity',
-      shortName: 'CLIP / FID Score',
+      name: 'Semantic Alignment (CLIP) & Visual Fidelity (FID)',
+      shortName: 'CLIP / FID',
       description: 'CLIP score measures text-image semantic alignment. FID/FVD measures visual output fidelity.',
       actual: '0.82 CLIP, 38.4 FID',
       target: '> 0.78, < 45',
@@ -752,10 +914,30 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       passed: true,
       breakdown: bk(82, 6, 15, 28),
     },
+    metric3: {
+      name: 'Modality Switching Latency',
+      shortName: 'Switch Latency',
+      description: 'Overhead to swap between text/audio/video/image processing modes.',
+      actual: '89',
+      target: '< 150',
+      unit: 'ms',
+      passed: true,
+      breakdown: bk(88, 5, 14, 25),
+    },
+    metric4: {
+      name: 'Spatial/Temporal Grounding Accuracy',
+      shortName: 'Grounding IoU',
+      description: 'IoU for spatial grounding or video frame-level accuracy for temporal references.',
+      actual: '0.76',
+      target: '> 0.70',
+      unit: 'IoU',
+      passed: true,
+      breakdown: bk(76, 8, 17, 30),
+    },
   },
   'consumer-chat': {
     metric1: {
-      name: 'Latency / Throughput at Scale',
+      name: 'Latency / Throughput (at Scale)',
       shortName: 'P95 Latency',
       description: 'P95 end-to-end latency under peak concurrent load. Measures production-grade performance.',
       actual: '186',
@@ -774,6 +956,26 @@ const TILE_EVAL_METRICS: Record<string, TileEvalMetrics> = {
       passed: true,
       breakdown: bk(86, 6, 13, 25),
     },
+    metric3: {
+      name: 'Concurrency Limit',
+      shortName: 'Max RPM',
+      description: 'Max parallel requests per minute while maintaining P95 latency target.',
+      actual: '12,400',
+      target: '> 10,000',
+      unit: 'RPM',
+      passed: true,
+      breakdown: bk(85, 6, 14, 26),
+    },
+    metric4: {
+      name: 'Cost Per Conversation',
+      shortName: 'Cost/Conv',
+      description: 'Total compute and API overhead per user session. Measures unit economics at scale.',
+      actual: '$0.0032',
+      target: '< $0.005',
+      unit: 'USD',
+      passed: true,
+      breakdown: bk(88, 5, 12, 23),
+    },
   },
 }
 
@@ -783,49 +985,69 @@ export function getEvalMetrics(tileId: string): TileEvalMetrics | null {
 
 // ─── Measurement Plan: why each metric was chosen per tile ───────────────
 
-const METRIC_WHY: Record<string, { why1: string; why2: string }> = {
+const METRIC_WHY: Record<string, { why1: string; why2: string; why3: string; why4: string }> = {
   'faq-knowledge': {
-    why1: 'End-to-end resolution directly measures user value — an agent that cannot finish requests is not deployable, regardless of response speed.',
-    why2: 'FAQ users expect instant answers. Time to first token is a hard reliability boundary — above 200ms, perceived quality drops sharply.',
+    why1: 'End-to-end resolution directly measures user value. An agent that cannot finish requests is not deployable, regardless of response speed.',
+    why2: 'FAQ users expect instant answers. Time to first token is a hard reliability boundary. Above 200ms, perceived quality drops sharply.',
+    why3: 'Every conversation that reaches a human costs 10-50x more. Deflection rate directly measures ROI of the agent investment.',
+    why4: 'Fast resolution drives satisfaction. Average handle time captures whether the agent resolves efficiently, not just eventually.',
   },
   'doc-intelligence': {
     why1: 'Ungrounded claims in document extraction cause direct downstream harm. Hallucination rate is the non-negotiable safety gate before any output is trusted.',
     why2: 'Retrieving irrelevant chunks is the leading cause of incorrect answers. NDCG@k measures ranking quality to ensure the best evidence reaches generation.',
+    why3: 'Faithfulness measures whether the answer stays within the bounds of retrieved evidence. A fluent but unfaithful answer is worse than no answer.',
+    why4: 'Low chunk utilization means the retriever is noisy. Measuring usage ensures the pipeline retrieves what it actually needs, reducing latency and cost.',
   },
   'saas-copilot': {
     why1: 'Calling the wrong tool or using incorrect parameters causes real system mutations. Tool selection accuracy is the primary reliability gate before deployment.',
-    why2: 'Multi-step tasks can fail midway. End-to-end completion rate captures full chain reliability — not just individual step accuracy.',
+    why2: 'Multi-step tasks can fail midway. End-to-end completion rate captures full chain reliability, not just individual step accuracy.',
+    why3: 'Malformed API calls waste rate limits and trigger error states. API error rate catches integration bugs that completion rate alone can mask.',
+    why4: 'Getting tools right individually is not enough. The exact sequence matters for multi-step operations like data pipelines or approval workflows.',
   },
   'research-comparison': {
     why1: 'Research outputs are only valuable if claims are true and traceable. Factual accuracy is the primary gate before any report is considered trustworthy.',
     why2: 'Missing a key fact can distort the entire comparison. Recall@K ensures important evidence from source documents is never silently dropped.',
+    why3: 'Research citing only one or two sources looks shallow. Source diversity ensures the agent explores multiple authoritative perspectives.',
+    why4: 'Raw facts are not enough. Synthesis quality measures whether the agent produces coherent, structured analysis that a human would find useful.',
   },
   'ops-agent': {
     why1: 'Ops workflows that stall mid-task create more problems than they solve. Full completion without human intervention is the primary deployment criterion.',
-    why2: 'Wasted steps in infrastructure automation waste real compute and time. Trajectory efficiency ensures the agent takes the minimum actions needed to reach the goal.',
+    why2: 'Wasted steps in infrastructure automation waste real compute and time. Trajectory efficiency ensures the agent takes the minimum actions needed.',
+    why3: 'Failures are inevitable in production. Error recovery rate measures whether the agent can self-correct, not just whether it works in happy-path scenarios.',
+    why4: 'Long-running tasks lose context over time. State retention measures whether the agent remembers earlier decisions accurately across extended workflows.',
   },
   'coding-agent': {
-    why1: 'Code that does not run is not useful. pass@1 directly measures whether generated solutions work the first time — without requiring repeated human review.',
+    why1: 'Code that does not run is not useful. pass@1 directly measures whether generated solutions work the first time, without requiring repeated human review.',
     why2: 'Excessive debug cycles negate the productivity gains of automation. This metric caps the fix loops needed before a solution passes all tests.',
+    why3: 'Passing tests is not enough. Code quality score ensures generated code meets maintainability standards and does not introduce technical debt.',
+    why4: 'Code that works but ignores repo conventions is hard to review and merge. Alignment measures whether the agent writes code that fits the codebase.',
   },
   'decision-workflow': {
     why1: 'Any PII leak or regulatory failure is a blocking defect. Compliance rate is set at 99.5% to enforce near-zero tolerance for safety violations.',
-    why2: 'Over-cautious guardrails that block legitimate requests erode user trust. FRR balances safety with usability — the agent must be both safe and helpful.',
+    why2: 'Over-cautious guardrails that block legitimate requests erode user trust. FRR balances safety with usability.',
+    why3: 'Adversarial attacks are a real production threat. Injection robustness ensures the agent resists manipulation attempts under adversarial conditions.',
+    why4: 'Regulated environments require full traceability. Auditability ensures every decision can be reconstructed from deterministic logs.',
   },
   'onprem-assistant': {
-    why1: 'On-prem constraints — limited model size, no cloud fallback — mean the success baseline must be validated under real deployment conditions, not lab settings.',
+    why1: 'On-prem constraints with limited model size and no cloud fallback mean the success baseline must be validated under real deployment conditions.',
     why2: 'Hardware costs and power draw are fixed on-prem. TPS/Watt ensures the solution is economically viable and stays within thermal and VRAM limits.',
+    why3: 'On-prem models must load to VRAM on demand. Cold start latency determines whether the agent can serve requests after idle periods without unacceptable wait.',
+    why4: 'Long documents and complex prompts are common in enterprise. Prefill speed determines whether the agent can process large inputs within acceptable time.',
   },
   'multimodal-agent': {
     why1: 'Mixed-input tasks have more failure modes than text-only. Success rate across modality combinations is the primary proof that integration works end-to-end.',
     why2: 'CLIP alignment and FID fidelity together verify that generated or retrieved visual outputs match the intended meaning and quality bar.',
+    why3: 'Switching between modalities incurs real overhead. Measuring switch latency ensures the agent handles modality transitions without perceptible delay.',
+    why4: 'Spatial and temporal grounding are the hardest multimodal capabilities. IoU measures whether the agent can actually locate and reference specific visual elements.',
   },
   'consumer-chat': {
-    why1: 'Consumer products fail fast on latency. P95 at scale is more demanding than averages — it captures the ceiling that ensures even the slowest 1-in-20 users gets a good experience.',
-    why2: 'Latency and accuracy are necessary but not sufficient. CSAT captures holistic satisfaction — the signal that determines retention and word-of-mouth growth.',
+    why1: 'Consumer products fail fast on latency. P95 at scale captures the ceiling that ensures even the slowest 1-in-20 users gets a good experience.',
+    why2: 'Latency and accuracy are necessary but not sufficient. CSAT captures holistic satisfaction, the signal that determines retention and growth.',
+    why3: 'Scale is the defining challenge for consumer apps. Concurrency limit validates that performance holds under real peak load, not just benchmarks.',
+    why4: 'Unit economics determine whether scaling is sustainable. Cost per conversation ensures the agent is financially viable at the intended user volume.',
   },
 }
 
-export function getMetricWhy(tileId: string): { why1: string; why2: string } | null {
+export function getMetricWhy(tileId: string): { why1: string; why2: string; why3: string; why4: string } | null {
   return METRIC_WHY[tileId] ?? null
 }
