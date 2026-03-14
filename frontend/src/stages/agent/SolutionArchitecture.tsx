@@ -862,7 +862,7 @@ function CompositionDNASection({ tileId }: { tileId: string }) {
   const patterns = getMetaPatterns(tileId)
 
   const [activePatternIdx, setActivePatternIdx] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
+  const [isPaused, setIsPaused] = useState(true)
   const [hoveredComponentCatId, setHoveredComponentCatId] = useState<string | null>(null)
   const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const patternCountRef = useRef(0)
@@ -988,7 +988,7 @@ function CompositionDNASection({ tileId }: { tileId: string }) {
   }, [stopAutoplay])
 
   const handlePatternLeave = useCallback(() => {
-    setIsPaused(false)
+    // intentionally no-op: autoplay stays off
   }, [])
 
   const handleComponentEnter = useCallback((catId: string) => {
@@ -999,7 +999,7 @@ function CompositionDNASection({ tileId }: { tileId: string }) {
 
   const handleComponentLeave = useCallback(() => {
     setHoveredComponentCatId(null)
-    setIsPaused(false)
+    // intentionally no-op: autoplay stays off
   }, [])
 
   // ── Find which layer a category belongs to ──
