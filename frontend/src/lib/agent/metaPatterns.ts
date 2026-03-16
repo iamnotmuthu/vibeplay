@@ -1105,7 +1105,7 @@ export const ALL_META_PATTERNS: Record<string, MetaPattern> = {
     description: 'System provides defined path for migrating from old to new versions.',
     componentStrengths: {
       'input-api': 'Version compatibility bridge',
-      'session-context': 'Data migration on access',
+      'session-context': 'Shipment tracking on access',
       'tool-data-access': 'Legacy and new API coexistence',
     },
   },

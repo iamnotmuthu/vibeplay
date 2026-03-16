@@ -25,6 +25,10 @@ import {
   Plus,
   RotateCcw,
   Radar,
+  Link2,
+  ShieldAlert,
+  CircleSlash,
+  Gauge,
 } from 'lucide-react'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
@@ -560,14 +564,24 @@ function DriftDetectedCard({
 
 // ─── New Dimension Discovered Card ───────────────────────────────────────
 
+const DIMENSION_CATEGORY_CONFIG: Record<string, { icon: React.ElementType; label: string; badgeColor: string; badgeBg: string }> = {
+  'new-dimension': { icon: Radar, label: 'New Dimension', badgeColor: '#d97706', badgeBg: 'rgba(245,158,11,0.1)' },
+  'multi-doc-hop': { icon: Link2, label: 'Multi-Doc Hop', badgeColor: '#7c3aed', badgeBg: 'rgba(124,58,237,0.1)' },
+  'prompt-injection': { icon: ShieldAlert, label: 'Prompt Injection', badgeColor: '#dc2626', badgeBg: 'rgba(220,38,38,0.1)' },
+  'absence-detection': { icon: CircleSlash, label: 'Absence Detection', badgeColor: '#0891b2', badgeBg: 'rgba(8,145,178,0.1)' },
+  'confidence-decay': { icon: Gauge, label: 'Confidence Decay', badgeColor: '#c2410c', badgeBg: 'rgba(194,65,12,0.1)' },
+}
+
 function NewDimensionDetectedCard({
   dimension,
   tileColor: _tileColor,
   viewMode,
+  delay = 0.3,
 }: {
   dimension: NewDimensionCard
   tileColor: string
   viewMode: string
+  delay?: number
 }) {
   const [showDemoMsg, setShowDemoMsg] = useState(false)
 
@@ -576,11 +590,15 @@ function NewDimensionDetectedCard({
     setTimeout(() => setShowDemoMsg(false), 3000)
   }
 
+  const cat = dimension.category ?? 'new-dimension'
+  const config = DIMENSION_CATEGORY_CONFIG[cat] ?? DIMENSION_CATEGORY_CONFIG['new-dimension']
+  const IconComp = config.icon
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.4 }}
+      transition={{ delay, duration: 0.4 }}
       className="rounded-xl border-2 overflow-hidden"
       style={{
         borderColor: '#fcd34d',
@@ -592,17 +610,17 @@ function NewDimensionDetectedCard({
         <div className="flex items-start gap-3 mb-3">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(245,158,11,0.1)' }}
+            style={{ background: config.badgeBg }}
           >
-            <Radar className="w-5 h-5 text-amber-500" />
+            <IconComp className="w-5 h-5" style={{ color: config.badgeColor }} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <span
                 className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full"
-                style={{ background: 'rgba(245,158,11,0.1)', color: '#d97706' }}
+                style={{ background: config.badgeBg, color: config.badgeColor }}
               >
-                New Dimension
+                {config.label}
               </span>
               <span className="text-[10px] text-gray-400">Week {dimension.week}</span>
             </div>
@@ -965,10 +983,12 @@ export function Monitoring() {
         )}
       </motion.div>
 
-      {/* Drift & New Dimension Alert Cards */}
+      {/* Drift & Dimension Alert Cards — 2-column grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <DriftDetectedCard drift={data.driftCard} tileColor={tileColor} viewMode={viewMode} />
-        <NewDimensionDetectedCard dimension={data.newDimensionCard} tileColor={tileColor} viewMode={viewMode} />
+        {(data.dimensionAlerts ?? [data.newDimensionCard]).map((dim, i) => (
+          <NewDimensionDetectedCard key={dim.category ?? `dim-${i}`} dimension={dim} tileColor={tileColor} viewMode={viewMode} delay={0.3 + i * 0.1} />
+        ))}
       </div>
 
       {/* Performance Trend Charts */}

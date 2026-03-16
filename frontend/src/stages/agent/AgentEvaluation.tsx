@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   ShieldCheck,
   MessageSquare,
+  FlaskConical,
 } from 'lucide-react'
 import type { PatternClassification, DiscoveredPattern, ScenarioTest, DimensionPattern } from '@/store/agentTypes'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
@@ -16,9 +18,24 @@ import { PATTERN_CLASSIFICATION_META } from '@/store/agentTypes'
 // ─── Map combinatorial tier → classification ────────────────────────────
 
 const TIER_TO_CLASSIFICATION: Record<string, PatternClassification> = {
-  simple: 'dominant',
-  complex: 'non-dominant',
+  simple: 'simple',
+  complex: 'complex',
   fuzzy: 'fuzzy',
+}
+
+// ─── Tier color system for pattern ID badges ───────────────────────────────
+
+const TIER_COLOR_MAP: Record<string, { color: string; bg: string }> = {
+  simple: { color: '#059669', bg: 'rgba(5,150,105,0.08)' },      // green
+  complex: { color: '#dc2626', bg: 'rgba(220,38,38,0.08)' },     // red
+  fuzzy: { color: '#d97706', bg: 'rgba(217,119,6,0.10)' },       // amber
+}
+
+function getTierFromPatternId(id: string): 'simple' | 'complex' | 'fuzzy' {
+  if (id.includes('-S')) return 'simple'
+  if (id.includes('-C')) return 'complex'
+  if (id.includes('-F')) return 'fuzzy'
+  return 'fuzzy' // default
 }
 
 function mapDimensionToDiscovered(dp: DimensionPattern, idx: number): DiscoveredPattern {
@@ -46,21 +63,21 @@ interface PatternGroup {
 
 
 function MetricsBar({
-  dominantCount,
-  nonDominantCount,
+  simpleCount,
+  complexCount,
   fuzzyCount,
   activeTab,
   onTabChange,
 }: {
-  dominantCount: number
-  nonDominantCount: number
+  simpleCount: number
+  complexCount: number
   fuzzyCount: number
   activeTab: PatternClassification
   onTabChange: (tab: PatternClassification) => void
 }) {
   const tabs: { classification: PatternClassification; count: number }[] = [
-    { classification: 'dominant', count: dominantCount },
-    { classification: 'non-dominant', count: nonDominantCount },
+    { classification: 'simple', count: simpleCount },
+    { classification: 'complex', count: complexCount },
     { classification: 'fuzzy', count: fuzzyCount },
   ]
 
@@ -117,13 +134,16 @@ function PatternDetail({ pattern }: { pattern: DiscoveredPattern }) {
       className="overflow-hidden"
     >
       <div className="px-4 pb-4 pt-1">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">
-          Example User Questions
-        </p>
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+            Validation Queries (Synthetic)
+          </p>
+          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">(auto-generated)</span>
+        </div>
         <div className="space-y-1.5">
           {pattern.exampleQuestions.map((q, i) => (
             <div key={i} className="flex items-start gap-2">
-              <MessageSquare className="w-3 h-3 text-gray-400 mt-0.5 shrink-0" aria-hidden="true" />
+              <FlaskConical className="w-3 h-3 text-blue-400 mt-0.5 shrink-0" aria-hidden="true" />
               <p className="text-xs text-gray-700 leading-relaxed">{q}</p>
             </div>
           ))}
@@ -145,6 +165,8 @@ function PatternRow({
   delay: number
 }) {
   const [expanded, setExpanded] = useState(false)
+  const tier = getTierFromPatternId(pattern.id)
+  const tierStyle = TIER_COLOR_MAP[tier]
 
   return (
     <motion.div
@@ -155,11 +177,16 @@ function PatternRow({
     >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer hover:bg-gray-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+        className="w-full flex items-start gap-3 px-4 py-3 text-left cursor-pointer hover:bg-gray-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         aria-expanded={expanded}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900 mb-0.5">{pattern.label}</p>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="font-mono font-bold px-2.5 py-1 rounded text-xs" style={{ background: tierStyle.bg, color: tierStyle.color }}>
+              {pattern.id}
+            </span>
+          </div>
+          <p className="text-sm font-semibold text-gray-900 mb-0.5">{pattern.label}</p>
           <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
             {pattern.description}
           </p>
@@ -218,16 +245,47 @@ function AgentMeasurementPlan({ tileId }: { tileId: string }) {
     >
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center gap-2 w-full mb-3 cursor-pointer hover:opacity-80 transition-opacity"
+        className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg cursor-pointer transition-all"
+        style={{
+          background: collapsed ? '#fafafa' : 'transparent',
+          border: collapsed ? '1px solid #e5e7eb' : 'none',
+          boxShadow: collapsed ? '0 1px 2px rgba(0,0,0,0.04)' : 'none',
+        }}
         aria-expanded={!collapsed}
       >
-        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Measurement Plan</span>
-        <div className="flex-1 h-px" style={{ background: '#e5e7eb' }} />
-        <span className="text-[10px] text-gray-400 italic mr-1">how we will evaluate the agent</span>
-        {collapsed
-          ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" aria-hidden="true" />
-          : <ChevronUp className="w-3.5 h-3.5 text-gray-400 shrink-0" aria-hidden="true" />
-        }
+        <div className="flex items-center gap-1.5 shrink-0">
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4 text-gray-500 transition-transform" aria-hidden="true" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-500 transition-transform" aria-hidden="true" />
+          )}
+        </div>
+        
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-600">Measurement Plan</span>
+        
+        {collapsed && (
+          <div className="flex items-center gap-1.5 flex-1">
+            {items.map(({ metric }, idx) => {
+              const mc = EVAL_METRIC_COLORS[idx] || EVAL_METRIC_COLORS[0]
+              return (
+                <span
+                  key={idx}
+                  className="text-[9px] font-bold px-2 py-1 rounded-full whitespace-nowrap truncate"
+                  style={{ background: `${mc.color}14`, color: mc.color, border: `1px solid ${mc.color}30` }}
+                >
+                  {metric.name}
+                </span>
+              )
+            })}
+          </div>
+        )}
+        
+        {!collapsed && (
+          <>
+            <div className="flex-1 h-px" style={{ background: '#e5e7eb' }} />
+            <span className="text-[10px] text-gray-400 italic">how we will evaluate the agent</span>
+          </>
+        )}
       </button>
 
       <AnimatePresence initial={false}>
@@ -292,7 +350,7 @@ function AgentMeasurementPlan({ tileId }: { tileId: string }) {
 
 export function AgentEvaluation() {
   const activeTileId = useAgentPlaygroundStore((s) => s.activeTileId)
-  const [activeTab, setActiveTab] = useState<PatternClassification>('dominant')
+  const [activeTab, setActiveTab] = useState<PatternClassification>('simple')
 
   // Get evaluation & discovery data
   const evalData = useMemo(
@@ -301,7 +359,7 @@ export function AgentEvaluation() {
   )
   const scenarios = evalData?.scenarios ?? []
 
-  // Use the SAME combinatorial patterns as the Patterns stage
+  // Use the SAME combinatorial patterns as the Patterns stage — counts must match exactly
   const groups: PatternGroup[] = useMemo(() => {
     const payload = getCombinatorialPatternsData(activeTileId || '')
     if (!payload) return []
@@ -312,8 +370,9 @@ export function AgentEvaluation() {
       existing.push(mapped)
       byClassification.set(mapped.classification, existing)
     })
+    // All tiles now have hand-crafted fuzzy patterns in the payload — no dummy needed
     const result: PatternGroup[] = []
-    for (const cls of ['dominant', 'non-dominant', 'fuzzy'] as PatternClassification[]) {
+    for (const cls of ['simple', 'complex', 'fuzzy'] as PatternClassification[]) {
       const patterns = byClassification.get(cls) ?? []
       if (patterns.length > 0) result.push({ classification: cls, patterns })
     }
@@ -333,11 +392,11 @@ export function AgentEvaluation() {
   }, [groups, scenarios])
 
   // Compute pattern counts for each classification
-  const dominantCount = groups
-    .find((g) => g.classification === 'dominant')
+  const simpleCount = groups
+    .find((g) => g.classification === 'simple')
     ?.patterns.length ?? 0
-  const nonDominantCount = groups
-    .find((g) => g.classification === 'non-dominant')
+  const complexCount = groups
+    .find((g) => g.classification === 'complex')
     ?.patterns.length ?? 0
   const fuzzyCount = groups
     .find((g) => g.classification === 'fuzzy')
@@ -348,21 +407,11 @@ export function AgentEvaluation() {
   const patternValidationCounts = useMemo(() => {
     if (!activeGroup) return new Map<string, number>()
     const counts = new Map<string, number>()
-    const scenarios = scenariosByClassification.get(activeTab) ?? []
     for (const pattern of activeGroup.patterns) {
-      const matching = scenarios.filter(
-        (s) => s.patternType === pattern.patternType
-      )
-      const sameTypePatterns = activeGroup.patterns.filter(
-        (p) => p.patternType === pattern.patternType
-      )
-      counts.set(
-        pattern.id,
-        Math.round(matching.length / sameTypePatterns.length)
-      )
+      counts.set(pattern.id, pattern.exampleQuestions.length)
     }
     return counts
-  }, [activeGroup, activeTab, scenariosByClassification])
+  }, [activeGroup])
 
 
   return (
@@ -370,7 +419,7 @@ export function AgentEvaluation() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="h-full flex flex-col px-4 sm:px-8"
+      className="w-full px-4 sm:px-6 py-8 space-y-6"
     >
       {/* Header */}
       <motion.div
@@ -395,15 +444,15 @@ export function AgentEvaluation() {
 
       {/* Metrics Bar (doubles as tab selector) */}
       <MetricsBar
-        dominantCount={dominantCount}
-        nonDominantCount={nonDominantCount}
+        simpleCount={simpleCount}
+        complexCount={complexCount}
         fuzzyCount={fuzzyCount}
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
 
       {/* Tab content */}
-      <div className="flex-1 overflow-y-auto pb-8">
+      <div>
         <div role="tabpanel" aria-live="polite" aria-atomic="true">
           <AnimatePresence mode="wait">
             {activeGroup && (

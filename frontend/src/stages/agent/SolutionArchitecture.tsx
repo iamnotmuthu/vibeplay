@@ -418,8 +418,8 @@ const PATTERN_BARS: {
   textClass: string
 }[] = [
   { key: 'overall', label: 'Overall Performance', color: '#3b82f6', bgClass: 'bg-blue-500', textClass: 'text-blue-600' },
-  { key: 'dominant', label: 'Simple Patterns', color: '#10b981', bgClass: 'bg-emerald-500', textClass: 'text-emerald-600' },
-  { key: 'nonDominant', label: 'Complex Patterns', color: '#ef4444', bgClass: 'bg-red-500', textClass: 'text-red-600' },
+  { key: 'simple', label: 'Simple Patterns', color: '#10b981', bgClass: 'bg-emerald-500', textClass: 'text-emerald-600' },
+  { key: 'complex', label: 'Complex Patterns', color: '#ef4444', bgClass: 'bg-red-500', textClass: 'text-red-600' },
   { key: 'fuzzy', label: 'Fuzzy Patterns', color: '#f59e0b', bgClass: 'bg-amber-500', textClass: 'text-amber-600' },
 ]
 
@@ -858,27 +858,20 @@ function ReverseComponentView({
 
 function CompositionDNASection({ tileId }: { tileId: string }) {
   const flowData = getArchFlowData(tileId)
-  const techStack = getTechStack(tileId)
   const patterns = getMetaPatterns(tileId)
 
-  const [activePatternIdx, setActivePatternIdx] = useState(0)
-  const [isPaused, setIsPaused] = useState(true)
-  const [hoveredComponentCatId, setHoveredComponentCatId] = useState<string | null>(null)
-  const autoplayRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const patternCountRef = useRef(0)
-  const patternItemRefs = useRef<Map<number, HTMLDivElement>>(new Map())
-  const leftColumnRef = useRef<HTMLDivElement>(null)
+  const [activeComponentCatId, setActiveComponentCatId] = useState<string | null>(null)
 
-  if (!flowData || !techStack || patterns.length === 0) return null
+  if (!flowData || patterns.length === 0) return null
 
-  // ── Data: Only patterns that have component connections for this tile ──
-  const { connectedPatterns, patternToComponents, componentToPatterns } = useMemo(() => {
-    const p2c = new Map<string, ConnectionInfo[]>()
+  // ── Build componentToPatterns map ──
+  const { componentToPatterns, connectedNodes, patternLookup } = useMemo(() => {
     const c2p = new Map<string, ConnectionInfo[]>()
     const nodeCatIds = new Set(flowData.nodes.map(n => n.categoryId))
+    const pLookup = new Map<string, MetaPattern>()
 
     for (const pattern of patterns) {
-      const connections: ConnectionInfo[] = []
+      pLookup.set(pattern.id, pattern)
       for (const [catId, reason] of Object.entries(pattern.componentStrengths)) {
         if (nodeCatIds.has(catId) && reason) {
           const conn: ConnectionInfo = {
@@ -887,7 +880,6 @@ function CompositionDNASection({ tileId }: { tileId: string }) {
             categoryId: catId,
             reason,
           }
-          connections.push(conn)
           const existing = c2p.get(catId) || []
           if (!existing.some(e => e.patternId === conn.patternId)) {
             existing.push(conn)
@@ -895,142 +887,40 @@ function CompositionDNASection({ tileId }: { tileId: string }) {
           }
         }
       }
-      if (connections.length > 0) {
-        p2c.set(pattern.id, connections)
-      }
     }
 
-    const connected = patterns.filter(p => p2c.has(p.id))
-    return { connectedPatterns: connected, patternToComponents: p2c, componentToPatterns: c2p }
+    const connected = flowData.nodes.filter(n => c2p.has(n.categoryId))
+    return { componentToPatterns: c2p, connectedNodes: connected, patternLookup: pLookup }
   }, [patterns, flowData])
 
-  // ── Tech role lookup ──
-  const techByCategory = useMemo(() => {
-    const lookup = new Map<string, CategoryTechMapping>()
-    for (const cat of techStack.categories) lookup.set(cat.categoryId, cat)
-    return lookup
-  }, [techStack])
-
-  const getTechRole = useCallback((categoryId: string): string | null => {
-    const mappedId = CATEGORY_ID_MAPPING[categoryId] || categoryId
-    const techCat = techByCategory.get(mappedId)
-    return techCat?.technologies[0]?.role || null
-  }, [techByCategory])
-
-  // ── Active pattern (clamped) ──
-  const safeIdx = Math.min(activePatternIdx, connectedPatterns.length - 1)
-  const activePattern = connectedPatterns[safeIdx] || connectedPatterns[0]
-  const activeConnections = activePattern ? (patternToComponents.get(activePattern.id) || []) : []
-
-  // ── Which pattern IDs are highlighted when hovering a component ──
-  const reverseHighlightPatternIds = useMemo(() => {
-    if (!hoveredComponentCatId) return null
-    const conns = componentToPatterns.get(hoveredComponentCatId) || []
-    return new Set(conns.map(c => c.patternId))
-  }, [hoveredComponentCatId, componentToPatterns])
-
-  // Keep ref in sync so interval callback never stales
-  patternCountRef.current = connectedPatterns.length
-
-  // ── Autoplay timer ──
-  const startAutoplay = useCallback(() => {
-    if (autoplayRef.current) clearInterval(autoplayRef.current)
-    autoplayRef.current = setInterval(() => {
-      setActivePatternIdx(prev => (prev + 1) % (patternCountRef.current || 1))
-    }, AUTOPLAY_INTERVAL)
-  }, [])
-
-  const stopAutoplay = useCallback(() => {
-    if (autoplayRef.current) {
-      clearInterval(autoplayRef.current)
-      autoplayRef.current = null
-    }
-  }, [])
-
+  // ── Initialize first component on mount / tile change ──
   useEffect(() => {
-    if (!isPaused && connectedPatterns.length > 1) {
-      startAutoplay()
-    } else {
-      stopAutoplay()
-    }
-    return () => stopAutoplay()
-  }, [isPaused, connectedPatterns.length, startAutoplay, stopAutoplay])
+    setActiveComponentCatId(connectedNodes[0]?.categoryId ?? null)
+  }, [tileId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset on tile change
-  useEffect(() => {
-    setActivePatternIdx(0)
-    setIsPaused(false)
-    setHoveredComponentCatId(null)
-  }, [tileId])
+  if (connectedNodes.length === 0) return null
 
-  // Scroll active pattern into view WITHIN the left column only (never page-level scroll)
-  useEffect(() => {
-    const el = patternItemRefs.current.get(safeIdx)
-    const container = leftColumnRef.current
-    if (!el || !container) return
-    const elTop = el.offsetTop
-    const elBottom = elTop + el.offsetHeight
-    const containerTop = container.scrollTop
-    const containerBottom = containerTop + container.clientHeight
-    if (elTop < containerTop) {
-      container.scrollTo({ top: elTop - 8, behavior: 'smooth' })
-    } else if (elBottom > containerBottom) {
-      container.scrollTo({ top: elBottom - container.clientHeight + 8, behavior: 'smooth' })
-    }
-  }, [safeIdx])
-
-  // ── Handlers ──
-  const handlePatternEnter = useCallback((idx: number) => {
-    setIsPaused(true)
-    stopAutoplay()
-    setActivePatternIdx(idx)
-    setHoveredComponentCatId(null)
-  }, [stopAutoplay])
-
-  const handlePatternLeave = useCallback(() => {
-    // intentionally no-op: autoplay stays off
-  }, [])
-
-  const handleComponentEnter = useCallback((catId: string) => {
-    setIsPaused(true)
-    stopAutoplay()
-    setHoveredComponentCatId(catId)
-  }, [stopAutoplay])
-
-  const handleComponentLeave = useCallback(() => {
-    setHoveredComponentCatId(null)
-    // intentionally no-op: autoplay stays off
-  }, [])
-
-  // ── Find which layer a category belongs to ──
-  const getLayerForCategory = useCallback((catId: string) => {
-    return ARCHITECTURE_LAYERS.find(l => l.categories.includes(catId))
-  }, [])
-
-  if (connectedPatterns.length === 0) return null
+  const activeNode = flowData.nodes.find(n => n.categoryId === activeComponentCatId)
+  const activeVis = activeComponentCatId ? (CATEGORY_VISUALS[activeComponentCatId] ?? CATEGORY_VISUALS['output-delivery']) : null
+  const activePatternConns = activeComponentCatId ? (componentToPatterns.get(activeComponentCatId) ?? []) : []
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1, duration: 0.3 }}
-      className="space-y-3"
+      className="space-y-2"
     >
       {/* Section header */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-2">
         <Workflow className="w-4 h-4 text-indigo-500" aria-hidden="true" />
         <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
           Composition DNA
         </span>
         <div className="flex-1 h-px bg-gray-200" />
         <span className="text-[10px] text-gray-400 italic">
-          hover patterns to explore
+          click a component to explore
         </span>
-      </div>
-
-      {/* Screen reader */}
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {activePattern ? `Active pattern: ${activePattern.label}. Influences ${activeConnections.length} components.` : ''}
       </div>
 
       {/* ═══ Split Panel ═══ */}
@@ -1038,281 +928,144 @@ function CompositionDNASection({ tileId }: { tileId: string }) {
         className="rounded-xl border border-gray-200 bg-white overflow-hidden"
         style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] min-h-[480px]">
+        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] min-h-[360px]">
 
-          {/* ─── LEFT COLUMN: Pattern Nav ─── */}
+          {/* ─── LEFT COLUMN: Component list (flat, no expansion) ─── */}
           <div className="flex flex-col border-r border-gray-100">
-            {/* Sticky header */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-white shrink-0">
-              <Tag className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-white shrink-0">
+              <Box className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
               <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">
-                Detected Patterns ({connectedPatterns.length})
+                Components
               </span>
             </div>
 
-            {/* Pattern list — scrollable within column only */}
-            <div ref={leftColumnRef} className="flex flex-col gap-1 p-4 overflow-y-auto max-h-[480px]">
-            {connectedPatterns.map((mp, idx) => {
-              const isActive = safeIdx === idx && !hoveredComponentCatId
-              const isReverseHighlighted = reverseHighlightPatternIds?.has(mp.id) ?? false
-              const isDimmed = hoveredComponentCatId !== null && !isReverseHighlighted
+            <div className="flex flex-col gap-0.5 p-3 overflow-y-auto max-h-[360px]">
+              {connectedNodes.map((node) => {
+                const isActive = activeComponentCatId === node.categoryId
+                const vis = CATEGORY_VISUALS[node.categoryId] ?? CATEGORY_VISUALS['output-delivery']
 
-              return (
-                <motion.div
-                  key={mp.id}
-                  ref={(el: HTMLDivElement | null) => { if (el) patternItemRefs.current.set(idx, el); else patternItemRefs.current.delete(idx) }}
-                  onMouseEnter={() => handlePatternEnter(idx)}
-                  onMouseLeave={handlePatternLeave}
-                  onFocus={() => handlePatternEnter(idx)}
-                  onBlur={handlePatternLeave}
-                  animate={{
-                    opacity: isDimmed ? 0.3 : isActive || isReverseHighlighted ? 1 : 0.5,
-                  }}
-                  transition={{ duration: 0.3 }}
-                  className="relative rounded-lg cursor-pointer transition-colors"
-                  style={{
-                    borderLeft: `3px solid ${isActive || isReverseHighlighted ? '#4338ca' : 'transparent'}`,
-                    background: isActive
-                      ? 'linear-gradient(90deg, rgba(67,56,202,0.06) 0%, transparent 100%)'
-                      : isReverseHighlighted
-                        ? 'linear-gradient(90deg, rgba(67,56,202,0.03) 0%, transparent 100%)'
+                return (
+                  <motion.div
+                    key={node.id}
+                    onClick={() => setActiveComponentCatId(node.categoryId)}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer"
+                    style={{
+                      borderLeft: `3px solid ${isActive ? vis.color : 'transparent'}`,
+                      background: isActive
+                        ? `linear-gradient(90deg, ${vis.color}12 0%, transparent 100%)`
                         : 'transparent',
-                    boxShadow: isActive ? '0 4px 16px -4px rgba(0,0,0,0.1)' : 'none',
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Pattern: ${mp.label}`}
-                  aria-pressed={isActive}
-                >
-                  <div className="px-4 py-3">
-                    <h4 className="text-[13px] font-bold text-gray-900 leading-snug">
-                      {mp.label}
-                    </h4>
-                    {/* Show description only when active */}
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.p
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.25 }}
-                          className="text-[11px] text-gray-500 leading-relaxed mt-1 overflow-hidden"
-                        >
-                          {mp.description}
-                        </motion.p>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-              )
-            })}
+                      transition: 'background 0.2s ease, border-color 0.2s ease',
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-pressed={isActive}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveComponentCatId(node.categoryId) } }}
+                  >
+                    <div
+                      className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: vis.bg, color: vis.color }}
+                    >
+                      <span className="scale-[0.65] origin-center">{vis.icon}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold text-gray-800 leading-tight truncate">
+                        {node.categoryLabel}
+                      </p>
+                      <p className="text-[10px] text-gray-400 truncate">
+                        {node.selectedComponent}
+                      </p>
+                    </div>
+                  </motion.div>
+                )
+              })}
             </div>
           </div>
 
-          {/* ─── RIGHT COLUMN: Component Slides (cross-fade stack) ─── */}
-          <div className="relative p-5 overflow-hidden" style={{ perspective: '1000px' }}>
-            {/* All slides stacked absolutely — only active one visible */}
-            {connectedPatterns.map((mp, idx) => {
-              const isSlideActive = safeIdx === idx && !hoveredComponentCatId
-              const slideConnections = patternToComponents.get(mp.id) || []
-
-              return (
+          {/* ─── RIGHT COLUMN: Component detail — patterns that drove selection ─── */}
+          <div className="p-5 bg-gradient-to-b from-slate-50/60 to-white overflow-y-auto max-h-[360px]">
+            <AnimatePresence mode="wait">
+              {activeNode && activeVis ? (
                 <motion.div
-                  key={mp.id}
-                  animate={{
-                    opacity: isSlideActive ? 1 : 0,
-                    y: isSlideActive ? 0 : 40,
-                    scale: isSlideActive ? 1 : 0.95,
-                  }}
-                  transition={SLIDE_TRANSITION}
-                  className="w-full"
-                  style={{
-                    position: idx === safeIdx ? 'relative' : 'absolute',
-                    top: idx === safeIdx ? undefined : 0,
-                    left: idx === safeIdx ? undefined : 0,
-                    right: idx === safeIdx ? undefined : 0,
-                    pointerEvents: isSlideActive ? 'auto' : 'none',
-                    zIndex: isSlideActive ? 10 : 1,
-                    willChange: 'opacity, transform',
-                  }}
+                  key={activeComponentCatId}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="space-y-4"
                 >
-                  {/* Slide header */}
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-500">
-                        Pattern Impact
-                      </span>
+                  {/* Component header */}
+                  <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: activeVis.bg, color: activeVis.color }}
+                    >
+                      <span className="scale-90 origin-center">{activeVis.icon}</span>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {mp.label}
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                      {mp.description}
-                    </p>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: activeVis.color }}>
+                        {activeNode.categoryLabel}
+                      </p>
+                      <p className="text-sm font-bold text-gray-900">{activeNode.selectedComponent}</p>
+                    </div>
                   </div>
 
-                  {/* Affected components */}
-                  <div className="space-y-2">
-                    {slideConnections.map((conn) => {
-                      const node = flowData.nodes.find(n => n.categoryId === conn.categoryId)
-                      const vis = CATEGORY_VISUALS[conn.categoryId] ?? CATEGORY_VISUALS['output-delivery']
-                      const layer = getLayerForCategory(conn.categoryId)
-                      const techRole = getTechRole(conn.categoryId)
-                      const isComponentHovered = hoveredComponentCatId === conn.categoryId
-
-                      return (
-                        <motion.div
-                          key={conn.categoryId}
-                          onMouseEnter={() => handleComponentEnter(conn.categoryId)}
-                          onMouseLeave={handleComponentLeave}
-                          animate={{
-                            boxShadow: isComponentHovered
-                              ? `0 0 24px ${vis.color}30`
-                              : '0 1px 3px rgba(0,0,0,0.05)',
-                          }}
-                          transition={{ duration: 0.2 }}
-                          className="rounded-xl border overflow-hidden cursor-pointer"
-                          style={{
-                            borderColor: isComponentHovered ? vis.color : '#e5e7eb',
-                            borderWidth: isComponentHovered ? '2px' : '1px',
-                            background: '#ffffff',
-                          }}
-                          tabIndex={0}
-                          role="button"
-                          aria-label={`${node?.categoryLabel}: ${node?.selectedComponent}`}
-                        >
-                          <div className="flex items-start gap-3 p-3">
-                            {/* Icon */}
-                            <div
-                              className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                              style={{ background: vis.bg, color: vis.color }}
-                            >
-                              {vis.icon}
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: vis.color }}>
-                                  {node?.categoryLabel || conn.categoryId}
-                                </span>
-                                {layer && (
-                                  <span
-                                    className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full"
-                                    style={{ background: `${layer.accent}10`, color: layer.accent }}
-                                  >
-                                    {layer.label.replace(' LAYER', '')}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm font-bold text-gray-900">
-                                {node?.selectedComponent || '—'}
+                  {/* Chosen because of */}
+                  {activePatternConns.length > 0 && (
+                    <div className="space-y-2.5">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                        Chosen because of:
+                      </p>
+                      {activePatternConns.map((conn) => {
+                        const pattern = patternLookup.get(conn.patternId)
+                        return (
+                          <div
+                            key={conn.patternId}
+                            className="rounded-lg p-3 space-y-1.5"
+                            style={{
+                              background: 'rgba(67,56,202,0.04)',
+                              border: '1px solid rgba(67,56,202,0.1)',
+                            }}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-indigo-500" />
+                              <p className="text-[11px] font-bold text-indigo-700 leading-tight">
+                                {conn.patternLabel}
                               </p>
-                              {techRole && (
-                                <p className="text-[10px] text-gray-500 mt-0.5">
-                                  ({techRole})
-                                </p>
-                              )}
-                              {/* The WHY — always visible, this is the star */}
-                              <div className="mt-2 flex items-start gap-1.5 rounded-md px-2.5 py-1.5" style={{ background: '#f8f7ff' }}>
-                                <ArrowRight className="w-3 h-3 text-indigo-400 shrink-0 mt-0.5" aria-hidden="true" />
-                                <p className="text-[11px] text-gray-700 leading-snug">
-                                  {conn.reason}
-                                </p>
-                              </div>
                             </div>
-                          </div>
-
-                          {/* Reverse direction: when THIS component is hovered, show all driving patterns */}
-                          <AnimatePresence>
-                            {isComponentHovered && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.25 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="px-3 pb-3 pt-1 border-t border-gray-100">
-                                  <p className="text-[8px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
-                                    All driving patterns for this component
-                                  </p>
-                                  <div className="space-y-1">
-                                    {(componentToPatterns.get(conn.categoryId) || []).map((cp) => (
-                                      <div key={cp.patternId} className="flex items-start gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 bg-indigo-400" />
-                                        <div>
-                                          <span className="text-[10px] font-semibold text-indigo-700">
-                                            {cp.patternLabel}
-                                          </span>
-                                          <span className="text-[10px] text-gray-400 mx-1">—</span>
-                                          <span className="text-[10px] text-gray-600 italic">
-                                            {cp.reason}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </motion.div>
+                            {pattern?.description && (
+                              <p className="text-[10px] text-gray-500 pl-3 leading-relaxed line-clamp-2">
+                                {pattern.description}
+                              </p>
                             )}
-                          </AnimatePresence>
-                        </motion.div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Component count footer */}
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="text-[10px] text-gray-400">
-                      {slideConnections.length} component{slideConnections.length !== 1 ? 's' : ''} influenced by this pattern
-                    </span>
-                  </div>
+                            <p className="text-[10px] text-gray-700 pl-3 italic leading-relaxed">
+                              {conn.reason}
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </motion.div>
-              )
-            })}
-
-            {/* ── Reverse view: when hovering a component, show its full context ── */}
-            <AnimatePresence>
-              {hoveredComponentCatId != null && (
-                <ReverseComponentView
-                  key={`reverse-${hoveredComponentCatId}`}
-                  categoryId={hoveredComponentCatId}
-                  flowData={flowData}
-                  componentToPatterns={componentToPatterns}
-                  getLayerForCategory={getLayerForCategory}
-                  getTechRole={getTechRole}
-                  onClose={handleComponentLeave}
-                />
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center justify-center h-full text-center py-12"
+                >
+                  <p className="text-sm text-gray-400">Select a component to explore</p>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
-        </div>
-
-        {/* Progress dots (like slide indicators) */}
-        <div className="flex items-center justify-center gap-1.5 py-3 border-t border-gray-100">
-          {connectedPatterns.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => { setActivePatternIdx(idx); setIsPaused(true); setHoveredComponentCatId(null) }}
-              className="p-2 -m-1.5 rounded-full cursor-pointer group"
-              aria-label={`Go to pattern ${idx + 1}`}
-            >
-              <span
-                className="block h-1.5 rounded-full transition-all duration-300"
-                style={{
-                  background: idx === safeIdx && !hoveredComponentCatId ? '#4338ca' : '#d1d5db',
-                  width: idx === safeIdx && !hoveredComponentCatId ? '16px' : '6px',
-                }}
-              />
-            </button>
-          ))}
         </div>
       </div>
     </motion.div>
   )
 }
+
+
 
 
 
@@ -1327,6 +1080,9 @@ const DIAGRAM_LAYERS: { id: string; label: string; color: string; accent: string
 
 function ArchitectureDiagramSection({ tileId }: { tileId: string }) {
   const flowData = getArchFlowData(tileId)
+  const patterns = getMetaPatterns(tileId)
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
+  
   if (!flowData || flowData.nodes.length === 0) return null
 
   // Group nodes by layer
@@ -1334,6 +1090,11 @@ function ArchitectureDiagramSection({ tileId }: { tileId: string }) {
     ...layer,
     nodes: flowData.nodes.filter((n) => layer.groups.includes(n.group)),
   })).filter((l) => l.nodes.length > 0)
+
+  // Find patterns that activate this component
+  const getPatternsByComponent = useCallback((categoryId: string) => {
+    return patterns.filter((p) => p.componentStrengths[categoryId] !== undefined)
+  }, [patterns])
 
   return (
     <motion.div
@@ -1352,10 +1113,10 @@ function ArchitectureDiagramSection({ tileId }: { tileId: string }) {
       </div>
 
       <div
-        className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+        className="rounded-xl border border-gray-200 bg-white overflow-visible"
         style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
       >
-        <div className="p-5 space-y-2">
+        <div className="p-5 space-y-2 relative">
           {layersWithNodes.map((layer, li) => (
             <div key={layer.id}>
               {/* Arrow connector between layers */}
@@ -1394,33 +1155,127 @@ function ArchitectureDiagramSection({ tileId }: { tileId: string }) {
 
                 {/* Nodes row */}
                 <div className={`grid gap-2 p-3 ${layer.nodes.length === 1 ? 'grid-cols-1' : layer.nodes.length === 2 ? 'grid-cols-2' : layer.nodes.length === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'}`}>
-                  {layer.nodes.map((node) => {
+                  {layer.nodes.map((node, nodeIdx) => {
                     const vis = CATEGORY_VISUALS[node.categoryId] ?? CATEGORY_VISUALS['output-delivery']
+                    const isHovered = hoveredNodeId === node.id
+                    const activatingPatterns = getPatternsByComponent(node.categoryId)
+                    const isFirst = nodeIdx === 0
+                    const isLast = nodeIdx === layer.nodes.length - 1
+
                     return (
                       <div
                         key={node.id}
-                        className="flex flex-col gap-1.5 rounded-lg p-3 bg-white"
-                        style={{ border: `1px solid ${layer.border}` }}
+                        className="relative"
+                        onMouseEnter={() => setHoveredNodeId(node.id)}
+                        onMouseLeave={() => setHoveredNodeId(null)}
                       >
-                        {/* Icon + category */}
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
-                            style={{ background: vis.bg, color: vis.color }}
-                          >
-                            <span className="scale-75 origin-center">{vis.icon}</span>
+                        <motion.div
+                          className="flex flex-col gap-1.5 rounded-lg p-3 bg-white cursor-pointer transition-all"
+                          style={{ 
+                            border: `1px solid ${isHovered ? vis.color : layer.border}`,
+                            boxShadow: isHovered ? `0 0 12px ${vis.color}30` : 'none'
+                          }}
+                          animate={{
+                            scale: isHovered ? 1.02 : 1,
+                          }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {/* Icon + category */}
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                              style={{ background: vis.bg, color: vis.color }}
+                            >
+                              <span className="scale-75 origin-center">{vis.icon}</span>
+                            </div>
+                            <span
+                              className="text-[9px] font-bold uppercase tracking-wider leading-tight"
+                              style={{ color: vis.color }}
+                            >
+                              {node.categoryLabel}
+                            </span>
                           </div>
-                          <span
-                            className="text-[9px] font-bold uppercase tracking-wider leading-tight"
-                            style={{ color: vis.color }}
-                          >
-                            {node.categoryLabel}
-                          </span>
-                        </div>
-                        {/* Selected tech */}
-                        <p className="text-xs font-bold text-gray-800 leading-snug pl-0.5">
-                          {node.selectedComponent}
-                        </p>
+                          {/* Selected tech */}
+                          <p className="text-xs font-bold text-gray-800 leading-snug pl-0.5">
+                            {node.selectedComponent}
+                          </p>
+                        </motion.div>
+
+                        {/* Hover tooltip card — anchored above the card */}
+                        <AnimatePresence>
+                          {isHovered && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 6 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute z-50 rounded-lg bg-white border border-gray-200"
+                              style={{
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                                bottom: 'calc(100% + 10px)',
+                                width: 240,
+                                // Align left edge for first node, right edge for last, center otherwise
+                                ...(isFirst
+                                  ? { left: 0 }
+                                  : isLast
+                                    ? { right: 0 }
+                                    : { left: '50%', transform: 'translateX(-50%)' }),
+                                pointerEvents: 'none',
+                              }}
+                            >
+                              <div className="p-3 space-y-2">
+                                {/* Component name */}
+                                <div>
+                                  <p className="text-xs font-bold text-gray-900">
+                                    {node.categoryLabel}
+                                  </p>
+                                  <p className="text-[11px] text-gray-600 font-medium">
+                                    {node.selectedComponent}
+                                  </p>
+                                </div>
+
+                                {/* Layer badge */}
+                                <div className="flex items-center gap-1.5 pt-1 border-t border-gray-100">
+                                  <span className="text-[9px] font-bold uppercase text-gray-400">
+                                    Layer:
+                                  </span>
+                                  <span
+                                    className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full"
+                                    style={{ background: `${layer.accent}10`, color: layer.accent }}
+                                  >
+                                    {layer.label.replace(' LAYER', '')}
+                                  </span>
+                                </div>
+
+                                {/* Chosen because of — patterns that drove selection */}
+                                {activatingPatterns.length > 0 && (
+                                  <div className="pt-1 border-t border-gray-100">
+                                    <p className="text-[8px] font-bold uppercase text-gray-400 mb-1.5">
+                                      Chosen because of:
+                                    </p>
+                                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                      {activatingPatterns.map((pat) => (
+                                        <div key={pat.id} className="space-y-0.5">
+                                          <div className="flex items-start gap-1.5">
+                                            <div className="w-1.5 h-1.5 rounded-full mt-0.5 shrink-0" style={{ background: '#4338ca' }} />
+                                            <span className="text-[10px] text-indigo-700 font-bold leading-tight">
+                                              {pat.label}
+                                            </span>
+                                          </div>
+                                          {pat.componentStrengths[node.categoryId] && (
+                                            <p className="text-[9px] text-gray-500 pl-3 italic leading-snug">
+                                              {pat.componentStrengths[node.categoryId]}
+                                            </p>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     )
                   })}
@@ -1588,11 +1443,11 @@ export function SolutionArchitecture() {
       {/* Why This Agent Architecture — expandable explainer */}
       <WhyThisArchitectureCard viewMode={viewMode} />
 
-      {/* ═══ Composition DNA — unified interactive patterns + architecture ═══ */}
-      {activeTileId && <CompositionDNASection tileId={activeTileId} />}
-
       {/* ═══ Architecture Blueprint Diagram ═══ */}
       {activeTileId && <ArchitectureDiagramSection tileId={activeTileId} />}
+
+      {/* ═══ Composition DNA — unified interactive patterns + architecture ═══ */}
+      {activeTileId && <CompositionDNASection tileId={activeTileId} />}
 
       {/* ═══ Existing Content Below ═══ */}
 

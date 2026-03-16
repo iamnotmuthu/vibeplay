@@ -382,29 +382,29 @@ const TILE_ORCHESTRATION: Record<string, OrchestrationPattern[]> = {
   'faq-knowledge': [
     {
       id: 'faq-orch-1',
-      problem: 'User asks a simple factual question that has one correct answer in the knowledge base.',
-      solution: 'Single-shot RAG: classify intent, retrieve top-k chunks, generate grounded response.',
-      components: ['Intent Classifier', 'RAG Pipeline', 'Response Generator'],
+      problem: 'Customer asks about a specific order issue that has a clear resolution in order history or policies.',
+      solution: 'Single-shot retrieval: classify intent (tracking/refund/shipping), retrieve order data, generate grounded response.',
+      components: ['Intent Classifier', 'Order Database', 'Response Generator'],
     },
     {
       id: 'faq-orch-2',
-      problem: 'User asks an ambiguous question that could map to multiple FAQ entries.',
-      solution: 'Clarification loop: detect ambiguity, ask follow-up, re-retrieve with refined query.',
-      components: ['Ambiguity Detector', 'Clarification Engine', 'RAG Pipeline'],
+      problem: 'Customer asks about a complex order situation that could map to multiple policies or carrier options.',
+      solution: 'Clarification loop: detect ambiguity in resolution path, ask for details, re-retrieve with refined context.',
+      components: ['Ambiguity Detector', 'Clarification Engine', 'Order Policies Lookup'],
     },
   ],
   'doc-intelligence': [
     {
       id: 'doc-orch-1',
-      problem: 'Document is too large to fit in context window for extraction.',
-      solution: 'Map-reduce: chunk document, extract per chunk, merge and deduplicate results.',
-      components: ['Document Chunker', 'Parallel Extractor', 'Merge Engine'],
+      problem: 'Loan document (credit report, appraisal, income verification) is too large for context window.',
+      solution: 'Map-reduce: chunk document by section (tradelines, property details, income), extract per section, normalize results.',
+      components: ['Document Chunker', 'Field Extractor', 'Normalization Engine'],
     },
     {
       id: 'doc-orch-2',
-      problem: 'Extracted data needs to be cross-referenced across multiple documents.',
-      solution: 'Graph-based composition: build entity graph from extractions, resolve references, output unified view.',
-      components: ['Entity Normalizer', 'Knowledge Graph', 'Composition Engine'],
+      problem: 'Extracted DTI components need to be cross-referenced across multiple loan documents.',
+      solution: 'Graph-based composition: normalize income/expenses across documents, resolve amounts, calculate unified DTI.',
+      components: ['Amount Normalizer', 'DTI Calculator', 'Composition Engine'],
     },
   ],
   'saas-copilot': [

@@ -52,7 +52,12 @@ function useDimensionLabels(tileId: string | null) {
     const map: Record<string, string> = {}
     for (const d of data.taskDimensions) map[d.id] = d.label
     for (const d of data.dataDimensions) map[d.id] = d.label
-    for (const d of data.userProfileDimensions) map[d.id] = d.label
+    for (const d of data.outputDimensions) map[d.id] = d.label
+    for (const d of data.toolDimensions) {
+      for (const state of d.states) {
+        map[state.id] = state.label
+      }
+    }
     return map
   }, [tileId])
 }
@@ -61,19 +66,24 @@ function useDimensionLabels(tileId: string | null) {
 
 type AnimPhase = 'counter' | 'explosion' | 'flow' | 'complete'
 
+// Module-level: persists across component remounts so navigation back skips the animation
+const animatedTileIds = new Set<string>()
+
 // ─── Phase 1: Counter Hero ──────────────────────────────────────────────────
 
 function CounterHero({
   taskCount,
   dataSubsetCount,
-  userProfileCount,
+  outputCount,
+  toolStateCount,
   totalCombinations,
   validPatterns,
   onComplete,
 }: {
   taskCount: number
   dataSubsetCount: number
-  userProfileCount: number
+  outputCount: number
+  toolStateCount: number
   totalCombinations: number
   validPatterns: number
   onComplete: () => void
@@ -105,11 +115,15 @@ function CounterHero({
           </span>
           <span className="text-gray-500 text-lg">&times;</span>
           <span className="text-lg font-bold" style={{ color: DIMENSION_COLORS.data.primary }}>
-            {dataSubsetCount} data combos
+            {dataSubsetCount} data subsets
           </span>
           <span className="text-gray-500 text-lg">&times;</span>
-          <span className="text-lg font-bold" style={{ color: DIMENSION_COLORS.userProfile.primary }}>
-            {userProfileCount} user profiles
+          <span className="text-lg font-bold" style={{ color: DIMENSION_COLORS.output.primary }}>
+            {outputCount} outputs
+          </span>
+          <span className="text-gray-500 text-lg">&times;</span>
+          <span className="text-lg font-bold" style={{ color: DIMENSION_COLORS.tool.primary }}>
+            {toolStateCount} tool states
           </span>
         </motion.div>
 
@@ -166,13 +180,14 @@ function ExplosionAnimation({
 
   const tasks = analysis.taskDimensions.slice(0, 10)
   const dataDims = analysis.dataDimensions.slice(0, 5)
-  const userProfiles = analysis.userProfileDimensions.slice(0, 6)
+  const outputs = analysis.outputDimensions.slice(0, 4)
+  const toolStates = analysis.toolDimensions.flatMap((td) => td.states).slice(0, 5)
 
-  const W = 800
+  const W = 950
   const H = 400
-  const COL_X = [100, 400, 700]
+  const COL_X = [80, 320, 560, 800]
 
-  // Task positions (left column, evenly spaced)
+  // Task positions (column 1, evenly spaced)
   const taskNodes = tasks.map((t, i) => ({
     id: t.id,
     label: t.label,
@@ -180,7 +195,7 @@ function ExplosionAnimation({
     y: 30 + (i * (H - 60)) / Math.max(tasks.length - 1, 1),
   }))
 
-  // Data positions (center column)
+  // Data positions (column 2)
   const dataNodes = dataDims.map((d, i) => ({
     id: d.id,
     label: d.label,
@@ -188,20 +203,28 @@ function ExplosionAnimation({
     y: 50 + (i * (H - 100)) / Math.max(dataDims.length - 1, 1),
   }))
 
-  // User profile positions (right column)
-  const upNodes = userProfiles.map((u, i) => ({
-    id: u.id,
-    label: u.label,
+  // Output positions (column 3)
+  const outputNodes = outputs.map((o, i) => ({
+    id: o.id,
+    label: o.label,
     x: COL_X[2],
-    y: 40 + (i * (H - 80)) / Math.max(userProfiles.length - 1, 1),
+    y: 40 + (i * (H - 80)) / Math.max(outputs.length - 1, 1),
+  }))
+
+  // Tool state positions (column 4)
+  const toolNodes = toolStates.map((t, i) => ({
+    id: t.id,
+    label: t.label,
+    x: COL_X[3],
+    y: 35 + (i * (H - 70)) / Math.max(toolStates.length - 1, 1),
   }))
 
   // Generate paths: task → data (every task connects to every data)
   const taskDataPaths: { d: string; delay: number }[] = []
   taskNodes.forEach((tn, ti) => {
     dataNodes.forEach((dn, di) => {
-      const cp1x = tn.x + 100
-      const cp2x = dn.x - 100
+      const cp1x = tn.x + 80
+      const cp2x = dn.x - 80
       taskDataPaths.push({
         d: `M ${tn.x} ${tn.y} C ${cp1x} ${tn.y}, ${cp2x} ${dn.y}, ${dn.x} ${dn.y}`,
         delay: 0.3 + ti * 0.04 + di * 0.02,
@@ -209,15 +232,28 @@ function ExplosionAnimation({
     })
   })
 
-  // data → user profile
-  const dataUpPaths: { d: string; delay: number }[] = []
+  // data → output
+  const dataOutputPaths: { d: string; delay: number }[] = []
   dataNodes.forEach((dn, di) => {
-    upNodes.forEach((un, ui) => {
-      const cp1x = dn.x + 100
-      const cp2x = un.x - 100
-      dataUpPaths.push({
-        d: `M ${dn.x} ${dn.y} C ${cp1x} ${dn.y}, ${cp2x} ${un.y}, ${un.x} ${un.y}`,
-        delay: 0.8 + di * 0.05 + ui * 0.03,
+    outputNodes.forEach((on, oi) => {
+      const cp1x = dn.x + 80
+      const cp2x = on.x - 80
+      dataOutputPaths.push({
+        d: `M ${dn.x} ${dn.y} C ${cp1x} ${dn.y}, ${cp2x} ${on.y}, ${on.x} ${on.y}`,
+        delay: 0.8 + di * 0.05 + oi * 0.03,
+      })
+    })
+  })
+
+  // output → tool
+  const outputToolPaths: { d: string; delay: number }[] = []
+  outputNodes.forEach((on, oi) => {
+    toolNodes.forEach((tn, ti) => {
+      const cp1x = on.x + 80
+      const cp2x = tn.x - 80
+      outputToolPaths.push({
+        d: `M ${on.x} ${on.y} C ${cp1x} ${on.y}, ${cp2x} ${tn.y}, ${tn.x} ${tn.y}`,
+        delay: 1.3 + oi * 0.04 + ti * 0.025,
       })
     })
   })
@@ -241,7 +277,7 @@ function ExplosionAnimation({
           Mapping dimensional relationships
         </motion.p>
 
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[800px] mx-auto">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
           <defs>
             <filter id="glow-explosion">
               <feGaussianBlur stdDeviation="3" result="blur" />
@@ -267,13 +303,28 @@ function ExplosionAnimation({
             />
           ))}
 
-          {/* Data → UserProfile paths */}
-          {dataUpPaths.map((p, i) => (
+          {/* Data → Output paths */}
+          {dataOutputPaths.map((p, i) => (
             <motion.path
-              key={`du-${i}`}
+              key={`do-${i}`}
               d={p.d}
               fill="none"
               stroke={DIMENSION_COLORS.data.primary}
+              strokeWidth={0.8}
+              strokeOpacity={0.35}
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ delay: p.delay, duration: 0.5, ease: 'easeOut' }}
+            />
+          ))}
+
+          {/* Output → Tool paths */}
+          {outputToolPaths.map((p, i) => (
+            <motion.path
+              key={`ot-${i}`}
+              d={p.d}
+              fill="none"
+              stroke={DIMENSION_COLORS.output.primary}
               strokeWidth={0.8}
               strokeOpacity={0.35}
               initial={{ pathLength: 0 }}
@@ -302,12 +353,22 @@ function ExplosionAnimation({
             </motion.g>
           ))}
 
-          {/* User Profile nodes */}
-          {upNodes.map((n, i) => (
-            <motion.g key={n.id} initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.0 + i * 0.04, duration: 0.3 }}>
-              <circle cx={n.x} cy={n.y} r={5} fill={DIMENSION_COLORS.userProfile.primary} filter="url(#glow-explosion)" />
-              <text x={n.x + 12} y={n.y + 1} textAnchor="start" fontSize={9} fill={DIMENSION_COLORS.userProfile.medium} fontWeight="600">
+          {/* Output nodes */}
+          {outputNodes.map((n, i) => (
+            <motion.g key={n.id} initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.3 + i * 0.04, duration: 0.3 }}>
+              <circle cx={n.x} cy={n.y} r={5} fill={DIMENSION_COLORS.output.primary} filter="url(#glow-explosion)" />
+              <text x={n.x - 12} y={n.y + 1} textAnchor="end" fontSize={9} fill={DIMENSION_COLORS.output.medium} fontWeight="600">
                 {n.label.length > 16 ? n.label.slice(0, 14) + '...' : n.label}
+              </text>
+            </motion.g>
+          ))}
+
+          {/* Tool state nodes */}
+          {toolNodes.map((n, i) => (
+            <motion.g key={n.id} initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.6 + i * 0.04, duration: 0.3 }}>
+              <circle cx={n.x} cy={n.y} r={5} fill={DIMENSION_COLORS.tool.primary} filter="url(#glow-explosion)" />
+              <text x={n.x + 12} y={n.y + 1} textAnchor="start" fontSize={9} fill={DIMENSION_COLORS.tool.medium} fontWeight="600">
+                {n.label.length > 14 ? n.label.slice(0, 12) + '...' : n.label}
               </text>
             </motion.g>
           ))}
@@ -319,8 +380,11 @@ function ExplosionAnimation({
           <motion.text initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} x={COL_X[1]} y={16} textAnchor="middle" fontSize={10} fontWeight="700" fill={DIMENSION_COLORS.data.primary} letterSpacing="0.1em">
             DATA SOURCES
           </motion.text>
-          <motion.text initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} x={COL_X[2]} y={16} textAnchor="middle" fontSize={10} fontWeight="700" fill={DIMENSION_COLORS.userProfile.primary} letterSpacing="0.1em">
-            USER PROFILES
+          <motion.text initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} x={COL_X[2]} y={16} textAnchor="middle" fontSize={10} fontWeight="700" fill={DIMENSION_COLORS.output.primary} letterSpacing="0.1em">
+            OUTPUTS
+          </motion.text>
+          <motion.text initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} x={COL_X[3]} y={16} textAnchor="middle" fontSize={10} fontWeight="700" fill={DIMENSION_COLORS.tool.primary} letterSpacing="0.1em">
+            TOOLS
           </motion.text>
         </svg>
       </div>
@@ -333,7 +397,7 @@ function ExplosionAnimation({
 interface FlowNode {
   id: string
   label: string
-  column: 0 | 1 | 2
+  column: 0 | 1 | 2 | 3
   x: number
   y: number
   patternCount: number
@@ -358,8 +422,8 @@ function DimensionalFlow({
   patterns: DimensionPattern[]
   analysis: DimensionAnalysisPayload
   labels: Record<string, string>
-  onFilterChange: (filter: { type: 'task' | 'data' | 'userProfile'; id: string } | null) => void
-  activeFilter: { type: 'task' | 'data' | 'userProfile'; id: string } | null
+  onFilterChange: (filter: { type: 'task' | 'data' | 'output' | 'tool'; id: string } | null) => void
+  activeFilter: { type: 'task' | 'data' | 'output' | 'tool'; id: string } | null
 }) {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
@@ -373,16 +437,18 @@ function DimensionalFlow({
   }, [])
 
   // Build nodes
-  const W = 1060
+  const W = 1200
   const H = 500
   const PADDING_TOP = 45
   const PADDING_BOTTOM = 20
-  const COL_X = [140, 515, 880]
+  const COL_X = [200, 460, 720, 980]
 
-  const { nodes, taskDataLinks, dataUpLinks, deadTaskDataLinks, deadDataUpLinks } = useMemo(() => {
+  const { nodes, taskDataLinks, dataOutputLinks, outputToolLinks, deadTaskDataLinks, deadDataOutputLinks, deadOutputToolLinks } = useMemo(() => {
     const tasks = analysis.taskDimensions
     const dataDims = analysis.dataDimensions
-    const userProfiles = analysis.userProfileDimensions
+    const outputs = analysis.outputDimensions
+    const toolDims = analysis.toolDimensions
+    const allToolStates = toolDims.flatMap(td => td.states)
 
     const usableH = H - PADDING_TOP - PADDING_BOTTOM
 
@@ -416,22 +482,37 @@ function DimensionalFlow({
       }
     })
 
-    // User Profile nodes
-    const upNodesArr: FlowNode[] = userProfiles.map((u, i) => {
-      const count = patterns.filter(p => p.userProfileDimensionId === u.id).length
+    // Output nodes
+    const outputNodesArr: FlowNode[] = outputs.map((o, i) => {
+      const count = patterns.filter(p => p.outputDimensionId === o.id).length
       return {
-        id: u.id,
-        label: u.label,
+        id: o.id,
+        label: o.label,
         column: 2 as const,
         x: COL_X[2],
-        y: PADDING_TOP + 10 + (i * (usableH - 20)) / Math.max(userProfiles.length - 1, 1),
+        y: PADDING_TOP + 15 + (i * (usableH - 30)) / Math.max(outputs.length - 1, 1),
         patternCount: count,
-        color: DIMENSION_COLORS.userProfile.primary,
-        glowColor: DIMENSION_COLORS.userProfile.medium,
+        color: DIMENSION_COLORS.output.primary,
+        glowColor: DIMENSION_COLORS.output.medium,
       }
     })
 
-    const allNodes = [...taskNodes, ...dataNodesArr, ...upNodesArr]
+    // Tool state nodes
+    const toolNodesArr: FlowNode[] = allToolStates.map((ts, i) => {
+      const count = patterns.filter(p => p.toolStateDimensionId === ts.id).length
+      return {
+        id: ts.id,
+        label: ts.label,
+        column: 3 as const,
+        x: COL_X[3],
+        y: PADDING_TOP + 10 + (i * (usableH - 20)) / Math.max(allToolStates.length - 1, 1),
+        patternCount: count,
+        color: DIMENSION_COLORS.tool.primary,
+        glowColor: DIMENSION_COLORS.tool.medium,
+      }
+    })
+
+    const allNodes = [...taskNodes, ...dataNodesArr, ...outputNodesArr, ...toolNodesArr]
 
     // Build Task→Data links (valid + dead)
     const tdLinks: FlowLink[] = []
@@ -458,18 +539,18 @@ function DimensionalFlow({
       }
     }
 
-    // Build Data→UserProfile links (valid + dead)
-    const duLinks: FlowLink[] = []
-    const deadDuLinks: { sourceId: string; targetId: string }[] = []
+    // Build Data→Output links (valid + dead)
+    const doLinks: FlowLink[] = []
+    const deadDoLinks: { sourceId: string; targetId: string }[] = []
     for (const data of dataDims) {
-      for (const up of userProfiles) {
+      for (const output of outputs) {
         const matching = patterns.filter(p =>
-          p.dataDimensionIds.includes(data.id) && p.userProfileDimensionId === up.id
+          p.dataDimensionIds.includes(data.id) && p.outputDimensionId === output.id
         )
         if (matching.length > 0) {
-          duLinks.push({
+          doLinks.push({
             sourceId: data.id,
-            targetId: up.id,
+            targetId: output.id,
             patternCount: matching.length,
             tierBreakdown: {
               simple: matching.filter(p => p.tier === 'simple').length,
@@ -478,7 +559,32 @@ function DimensionalFlow({
             },
           })
         } else {
-          deadDuLinks.push({ sourceId: data.id, targetId: up.id })
+          deadDoLinks.push({ sourceId: data.id, targetId: output.id })
+        }
+      }
+    }
+
+    // Build Output→Tool links (valid + dead)
+    const otLinks: FlowLink[] = []
+    const deadOtLinks: { sourceId: string; targetId: string }[] = []
+    for (const output of outputs) {
+      for (const toolState of allToolStates) {
+        const matching = patterns.filter(p =>
+          p.outputDimensionId === output.id && p.toolStateDimensionId === toolState.id
+        )
+        if (matching.length > 0) {
+          otLinks.push({
+            sourceId: output.id,
+            targetId: toolState.id,
+            patternCount: matching.length,
+            tierBreakdown: {
+              simple: matching.filter(p => p.tier === 'simple').length,
+              complex: matching.filter(p => p.tier === 'complex').length,
+              fuzzy: matching.filter(p => p.tier === 'fuzzy').length,
+            },
+          })
+        } else {
+          deadOtLinks.push({ sourceId: output.id, targetId: toolState.id })
         }
       }
     }
@@ -486,17 +592,19 @@ function DimensionalFlow({
     return {
       nodes: allNodes,
       taskDataLinks: tdLinks,
-      dataUpLinks: duLinks,
+      dataOutputLinks: doLinks,
+      outputToolLinks: otLinks,
       deadTaskDataLinks: deadTdLinks,
-      deadDataUpLinks: deadDuLinks,
+      deadDataOutputLinks: deadDoLinks,
+      deadOutputToolLinks: deadOtLinks,
     }
   }, [patterns, analysis])
 
   // Compute max pattern count for link thickness scaling
   const maxLinkCount = useMemo(() => {
-    const allLinks = [...taskDataLinks, ...dataUpLinks]
+    const allLinks = [...taskDataLinks, ...dataOutputLinks, ...outputToolLinks]
     return Math.max(1, ...allLinks.map(l => l.patternCount))
-  }, [taskDataLinks, dataUpLinks])
+  }, [taskDataLinks, dataOutputLinks, outputToolLinks])
 
   // Determine which nodes/links are connected to hovered node
   const { connectedNodeIds, connectedLinkIds } = useMemo(() => {
@@ -512,7 +620,14 @@ function DimensionalFlow({
         linkIds.add(`${link.sourceId}-${link.targetId}`)
       }
     }
-    for (const link of dataUpLinks) {
+    for (const link of dataOutputLinks) {
+      if (link.sourceId === hoveredNode || link.targetId === hoveredNode) {
+        nodeIds.add(link.sourceId)
+        nodeIds.add(link.targetId)
+        linkIds.add(`${link.sourceId}-${link.targetId}`)
+      }
+    }
+    for (const link of outputToolLinks) {
       if (link.sourceId === hoveredNode || link.targetId === hoveredNode) {
         nodeIds.add(link.sourceId)
         nodeIds.add(link.targetId)
@@ -520,26 +635,33 @@ function DimensionalFlow({
       }
     }
 
-    // For task nodes, also connect through data to user profiles
+    // For task nodes, also connect through data→output→tool
     const hoveredNodeObj = nodes.find(n => n.id === hoveredNode)
     if (hoveredNodeObj?.column === 0) {
-      // Task node: find connected data, then connected user profiles
       const connectedDataIds = taskDataLinks
         .filter(l => l.sourceId === hoveredNode)
         .map(l => l.targetId)
       for (const dataId of connectedDataIds) {
-        for (const link of dataUpLinks) {
+        for (const link of dataOutputLinks) {
           if (link.sourceId === dataId) {
             nodeIds.add(link.targetId)
             linkIds.add(`${link.sourceId}-${link.targetId}`)
+            // Also connect to tool states
+            const outputId = link.targetId
+            for (const otLink of outputToolLinks) {
+              if (otLink.sourceId === outputId) {
+                nodeIds.add(otLink.targetId)
+                linkIds.add(`${otLink.sourceId}-${otLink.targetId}`)
+              }
+            }
           }
         }
       }
     }
 
-    // For user profile nodes, connect back through data to tasks
+    // For output nodes, connect back through data to tasks and forward to tools
     if (hoveredNodeObj?.column === 2) {
-      const connectedDataIds = dataUpLinks
+      const connectedDataIds = dataOutputLinks
         .filter(l => l.targetId === hoveredNode)
         .map(l => l.sourceId)
       for (const dataId of connectedDataIds) {
@@ -550,10 +672,40 @@ function DimensionalFlow({
           }
         }
       }
+      // Also connect to tool states
+      for (const link of outputToolLinks) {
+        if (link.sourceId === hoveredNode) {
+          nodeIds.add(link.targetId)
+          linkIds.add(`${link.sourceId}-${link.targetId}`)
+        }
+      }
+    }
+
+    // For tool state nodes, connect back through output to data
+    if (hoveredNodeObj?.column === 3) {
+      const connectedOutputIds = outputToolLinks
+        .filter(l => l.targetId === hoveredNode)
+        .map(l => l.sourceId)
+      for (const outputId of connectedOutputIds) {
+        for (const link of dataOutputLinks) {
+          if (link.targetId === outputId) {
+            nodeIds.add(link.sourceId)
+            linkIds.add(`${link.sourceId}-${link.targetId}`)
+            // Also connect to tasks
+            const dataId = link.sourceId
+            for (const tdLink of taskDataLinks) {
+              if (tdLink.targetId === dataId) {
+                nodeIds.add(tdLink.sourceId)
+                linkIds.add(`${tdLink.sourceId}-${tdLink.targetId}`)
+              }
+            }
+          }
+        }
+      }
     }
 
     return { connectedNodeIds: nodeIds, connectedLinkIds: linkIds }
-  }, [hoveredNode, taskDataLinks, dataUpLinks, nodes])
+  }, [hoveredNode, taskDataLinks, dataOutputLinks, outputToolLinks, nodes])
 
   // Link thickness: log scale mapped to 2-10px
   function linkThickness(count: number): number {
@@ -578,9 +730,9 @@ function DimensionalFlow({
   // Hovered link tooltip data
   const hoveredLinkData = useMemo(() => {
     if (!hoveredLink) return null
-    const allLinks = [...taskDataLinks, ...dataUpLinks]
+    const allLinks = [...taskDataLinks, ...dataOutputLinks, ...outputToolLinks]
     return allLinks.find(l => `${l.sourceId}-${l.targetId}` === hoveredLink) ?? null
-  }, [hoveredLink, taskDataLinks, dataUpLinks])
+  }, [hoveredLink, taskDataLinks, dataOutputLinks, outputToolLinks])
 
   // Compute tooltip pixel position from SVG coordinates
   const tooltipPos = useMemo(() => {
@@ -606,7 +758,9 @@ function DimensionalFlow({
       ? patterns.filter(p => p.taskDimensionId === hoveredNode)
       : node.column === 1
         ? patterns.filter(p => p.dataDimensionIds.includes(hoveredNode))
-        : patterns.filter(p => p.userProfileDimensionId === hoveredNode)
+        : node.column === 2
+          ? patterns.filter(p => p.outputDimensionId === hoveredNode)
+          : patterns.filter(p => p.toolStateDimensionId === hoveredNode)
     return {
       total: relevant.length,
       simple: relevant.filter(p => p.tier === 'simple').length,
@@ -641,13 +795,17 @@ function DimensionalFlow({
               <span className="text-gray-500">Data Sources</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ background: DIMENSION_COLORS.userProfile.primary }} />
-              <span className="text-gray-500">User Profiles</span>
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: DIMENSION_COLORS.output.primary }} />
+              <span className="text-gray-500">Outputs</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: DIMENSION_COLORS.tool.primary }} />
+              <span className="text-gray-500">Tools</span>
             </div>
           </div>
         </div>
 
-        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[900px] mx-auto" role="img" aria-label="Dimensional flow showing pattern relationships">
+        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full" overflow="visible" role="img" aria-label="Dimensional flow showing pattern relationships">
           <defs>
             <filter id="glow-flow">
               <feGaussianBlur stdDeviation="4" result="blur" />
@@ -676,9 +834,13 @@ function DimensionalFlow({
               <stop offset="0%" stopColor={DIMENSION_COLORS.task.primary} />
               <stop offset="100%" stopColor={DIMENSION_COLORS.data.primary} />
             </linearGradient>
-            <linearGradient id="grad-data-up" x1="0" y1="0" x2="1" y2="0">
+            <linearGradient id="grad-data-output" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor={DIMENSION_COLORS.data.primary} />
-              <stop offset="100%" stopColor={DIMENSION_COLORS.userProfile.primary} />
+              <stop offset="100%" stopColor={DIMENSION_COLORS.output.primary} />
+            </linearGradient>
+            <linearGradient id="grad-output-tool" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={DIMENSION_COLORS.output.primary} />
+              <stop offset="100%" stopColor={DIMENSION_COLORS.tool.primary} />
             </linearGradient>
           </defs>
 
@@ -689,8 +851,11 @@ function DimensionalFlow({
           <text x={COL_X[1]} y={22} textAnchor="middle" fontSize={11} fontWeight="700" fill={DIMENSION_COLORS.data.primary} letterSpacing="0.08em">
             DATA SOURCES
           </text>
-          <text x={COL_X[2]} y={22} textAnchor="middle" fontSize={11} fontWeight="700" fill={DIMENSION_COLORS.userProfile.primary} letterSpacing="0.08em">
-            USER PROFILES
+          <text x={COL_X[2]} y={22} textAnchor="middle" fontSize={11} fontWeight="700" fill={DIMENSION_COLORS.output.primary} letterSpacing="0.08em">
+            OUTPUTS
+          </text>
+          <text x={COL_X[3]} y={22} textAnchor="middle" fontSize={11} fontWeight="700" fill={DIMENSION_COLORS.tool.primary} letterSpacing="0.08em">
+            TOOLS
           </text>
 
           {/* Dead Task → Data paths (invalid combinations, greyed out) */}
@@ -713,14 +878,34 @@ function DimensionalFlow({
             )
           })}
 
-          {/* Dead Data → User Profile paths (invalid combinations, greyed out) */}
-          {deadDataUpLinks.map((link) => {
+          {/* Dead Data → Output paths (invalid combinations, greyed out) */}
+          {deadDataOutputLinks.map((link) => {
             const source = nodeMap.get(link.sourceId)
             const target = nodeMap.get(link.targetId)
             if (!source || !target) return null
             return (
               <path
-                key={`dead-du-${link.sourceId}-${link.targetId}`}
+                key={`dead-do-${link.sourceId}-${link.targetId}`}
+                d={linkPath(source, target)}
+                fill="none"
+                stroke="#334155"
+                strokeWidth={1}
+                strokeDasharray="4 6"
+                opacity={isAnythingHovered ? 0.03 : 0.08}
+                strokeLinecap="round"
+                style={{ transition: 'opacity 0.2s ease' }}
+              />
+            )
+          })}
+
+          {/* Dead Output → Tool paths (invalid combinations, greyed out) */}
+          {deadOutputToolLinks.map((link) => {
+            const source = nodeMap.get(link.sourceId)
+            const target = nodeMap.get(link.targetId)
+            if (!source || !target) return null
+            return (
+              <path
+                key={`dead-ot-${link.sourceId}-${link.targetId}`}
                 d={linkPath(source, target)}
                 fill="none"
                 stroke="#334155"
@@ -773,8 +958,8 @@ function DimensionalFlow({
             )
           })}
 
-          {/* Valid Data → User Profile links */}
-          {dataUpLinks.map((link) => {
+          {/* Valid Data → Output links */}
+          {dataOutputLinks.map((link) => {
             const source = nodeMap.get(link.sourceId)
             const target = nodeMap.get(link.targetId)
             if (!source || !target) return null
@@ -785,10 +970,10 @@ function DimensionalFlow({
 
             return (
               <motion.path
-                key={`link-du-${linkId}`}
+                key={`link-do-${linkId}`}
                 d={linkPath(source, target)}
                 fill="none"
-                stroke="url(#grad-data-up)"
+                stroke="url(#grad-data-output)"
                 strokeWidth={isThisHovered ? linkThickness(link.patternCount) + 2 : linkThickness(link.patternCount)}
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{
@@ -796,6 +981,40 @@ function DimensionalFlow({
                   opacity: isDimmed ? 0.03 : isThisHovered ? 0.95 : isConnected && isAnythingHovered ? 0.65 : 0.18,
                 }}
                 transition={{ pathLength: { duration: 0.8, delay: 0.3 }, opacity: { duration: 0.15 } }}
+                strokeLinecap="round"
+                style={{
+                  cursor: 'pointer',
+                  filter: isThisHovered ? 'url(#glow-link-hover)' : isConnected && isAnythingHovered ? 'url(#glow-flow)' : 'none',
+                }}
+                onMouseEnter={() => setHoveredLink(linkId)}
+                onMouseLeave={() => setHoveredLink(null)}
+              />
+            )
+          })}
+
+          {/* Valid Output → Tool links */}
+          {outputToolLinks.map((link) => {
+            const source = nodeMap.get(link.sourceId)
+            const target = nodeMap.get(link.targetId)
+            if (!source || !target) return null
+            const linkId = `${link.sourceId}-${link.targetId}`
+            const isConnected = connectedLinkIds.has(linkId)
+            const isDimmed = isAnythingHovered && !isConnected
+            const isThisHovered = hoveredLink === linkId
+
+            return (
+              <motion.path
+                key={`link-ot-${linkId}`}
+                d={linkPath(source, target)}
+                fill="none"
+                stroke="url(#grad-output-tool)"
+                strokeWidth={isThisHovered ? linkThickness(link.patternCount) + 2 : linkThickness(link.patternCount)}
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{
+                  pathLength: 1,
+                  opacity: isDimmed ? 0.03 : isThisHovered ? 0.95 : isConnected && isAnythingHovered ? 0.65 : 0.18,
+                }}
+                transition={{ pathLength: { duration: 0.8, delay: 0.5 }, opacity: { duration: 0.15 } }}
                 strokeLinecap="round"
                 style={{
                   cursor: 'pointer',
@@ -816,9 +1035,9 @@ function DimensionalFlow({
             const nodeRadius = 6 + Math.min(Math.log(node.patternCount + 1) * 1.5, 6)
 
             // Label positioning
-            const labelX = node.column === 0 ? node.x - nodeRadius - 6 : node.column === 2 ? node.x + nodeRadius + 6 : node.x
-            const labelAnchor = node.column === 0 ? 'end' : node.column === 2 ? 'start' : 'middle'
-            const labelY = node.column === 1 ? node.y - nodeRadius - 5 : node.y + 1
+            const labelX = node.column === 0 ? node.x - nodeRadius - 6 : node.column === 3 ? node.x + nodeRadius + 6 : node.x
+            const labelAnchor = node.column === 0 ? 'end' : node.column === 3 ? 'start' : 'middle'
+            const labelY = (node.column === 1 || node.column === 2) ? node.y - nodeRadius - 5 : node.y + 1
 
             return (
               <g
@@ -827,7 +1046,7 @@ function DimensionalFlow({
                 onMouseEnter={() => handleNodeHover(node.id)}
                 onMouseLeave={() => handleNodeHover(null)}
                 onClick={() => {
-                  const type = node.column === 0 ? 'task' as const : node.column === 1 ? 'data' as const : 'userProfile' as const
+                  const type = node.column === 0 ? 'task' as const : node.column === 1 ? 'data' as const : node.column === 2 ? 'output' as const : 'tool' as const
                   onFilterChange(activeFilter?.id === node.id ? null : { type, id: node.id })
                 }}
               >
@@ -860,21 +1079,6 @@ function DimensionalFlow({
                   filter={isHovered || isConnected ? 'url(#glow-node)' : 'none'}
                 />
 
-                {/* Pattern count inside node */}
-                {nodeRadius > 8 && (
-                  <text
-                    x={node.x}
-                    y={node.y + 1}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize={8}
-                    fontWeight="700"
-                    fill="white"
-                    style={{ pointerEvents: 'none', opacity: isDimmed ? 0.2 : 1 }}
-                  >
-                    {node.patternCount}
-                  </text>
-                )}
 
                 {/* Label */}
                 <text
@@ -915,13 +1119,13 @@ function DimensionalFlow({
               )}
             </span>
           </div>
-          {(deadTaskDataLinks.length > 0 || deadDataUpLinks.length > 0) && (
+          {(deadTaskDataLinks.length > 0 || deadDataOutputLinks.length > 0 || deadOutputToolLinks.length > 0) && (
             <div
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px]"
               style={{ background: 'rgba(30,41,59,0.6)', border: '1px solid rgba(71,85,105,0.3)' }}
             >
               <div className="w-3 border-t border-dashed" style={{ borderColor: '#475569' }} />
-              <span className="text-gray-600">{deadTaskDataLinks.length + deadDataUpLinks.length} eliminated paths</span>
+              <span className="text-gray-600">{deadTaskDataLinks.length + deadDataOutputLinks.length + deadOutputToolLinks.length} eliminated paths</span>
             </div>
           )}
         </div>
@@ -1323,25 +1527,34 @@ function TierBreakdownBar({ breakdown, total, accentColor }: { breakdown: { simp
 
 // ─── Dimension DNA Chip ──────────────────────────────────────────────────────
 
-function DimensionDNA({ taskId, dataIds, userProfileId, labels }: { taskId: string; dataIds: string[]; userProfileId: string; labels: Record<string, string> }) {
+function DimensionDNA({ taskId, dataIds, outputId, toolStateIds, labels }: { taskId: string; dataIds: string[]; outputId: string; toolStateIds: string[]; labels: Record<string, string> }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: DIMENSION_COLORS.task.primary, background: DIMENSION_COLORS.task.light, border: `1px solid ${DIMENSION_COLORS.task.medium}` }}>
+      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded items-center" style={{ color: DIMENSION_COLORS.task.primary, background: DIMENSION_COLORS.task.light, border: `1px solid ${DIMENSION_COLORS.task.medium}`, display: 'inline-flex' }}>
         {labels[taskId] ?? taskId}
       </span>
       <ArrowRight className="w-2.5 h-2.5 text-gray-300" aria-hidden="true" />
       {dataIds.map((dId, i) => (
         <span key={dId}>
           {i > 0 && <span className="text-gray-300 text-[8px] mx-0.5">+</span>}
-          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: DIMENSION_COLORS.data.primary, background: DIMENSION_COLORS.data.light, border: `1px solid ${DIMENSION_COLORS.data.medium}` }}>
+          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded items-center" style={{ color: DIMENSION_COLORS.data.primary, background: DIMENSION_COLORS.data.light, border: `1px solid ${DIMENSION_COLORS.data.medium}`, display: 'inline-flex' }}>
             {labels[dId] ?? dId}
           </span>
         </span>
       ))}
       <ArrowRight className="w-2.5 h-2.5 text-gray-300" aria-hidden="true" />
-      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: DIMENSION_COLORS.userProfile.primary, background: DIMENSION_COLORS.userProfile.light, border: `1px solid ${DIMENSION_COLORS.userProfile.medium}` }}>
-        {labels[userProfileId] ?? userProfileId}
+      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded items-center" style={{ color: DIMENSION_COLORS.output.primary, background: DIMENSION_COLORS.output.light, border: `1px solid ${DIMENSION_COLORS.output.medium}`, display: 'inline-flex' }}>
+        {labels[outputId] ?? outputId}
       </span>
+      <ArrowRight className="w-2.5 h-2.5 text-gray-300" aria-hidden="true" />
+      {toolStateIds.map((tsId, i) => (
+        <span key={tsId}>
+          {i > 0 && <span className="text-gray-300 text-[8px] mx-0.5">+</span>}
+          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded items-center" style={{ color: DIMENSION_COLORS.tool.primary, background: DIMENSION_COLORS.tool.light, border: `1px solid ${DIMENSION_COLORS.tool.medium}`, display: 'inline-flex' }}>
+            {labels[tsId] ?? tsId}
+          </span>
+        </span>
+      ))}
     </div>
   )
 }
@@ -1364,13 +1577,13 @@ function PatternCard({ pattern, labels, viewMode, delay, patternIndex }: { patte
       className="rounded-xl overflow-hidden" style={{ background: '#ffffff', border: `1px solid ${tier.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)' }}>
       <button onClick={() => setExpanded(!expanded)} className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50/50 focus-visible:outline-2 focus-visible:outline-offset-2" style={{ outlineColor: tier.color } as React.CSSProperties} aria-expanded={expanded}>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={statusBadgeStyle}>{getStandardizedPatternLabel(pattern.tier, patternIndex)}</span>
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="font-mono font-bold px-3 py-1 rounded-full text-sm" style={statusBadgeStyle}>{pattern.id}</span>
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${tier.color}12`, color: tier.color }}>{typeLabel}</span>
           </div>
-          <div className="text-sm font-semibold text-gray-900 mb-2">{pattern.name}</div>
+          <div className="text-xs font-medium text-gray-600 mb-2">{pattern.name}</div>
           <p className="text-xs text-gray-500 leading-relaxed mb-2">{pattern.description}</p>
-          <DimensionDNA taskId={pattern.taskDimensionId} dataIds={pattern.dataDimensionIds} userProfileId={pattern.userProfileDimensionId} labels={labels} />
+          <DimensionDNA taskId={pattern.taskDimensionId} dataIds={pattern.dataDimensionIds} outputId={pattern.outputDimensionId} toolStateIds={pattern.toolStateDimensionId ? [pattern.toolStateDimensionId] : []} labels={labels} />
         </div>
         <span className="shrink-0 text-gray-400 mt-1">
           {expanded ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
@@ -1427,10 +1640,14 @@ function PatternCard({ pattern, labels, viewMode, delay, patternIndex }: { patte
 export function InteractionDiscovery() {
   const activeTileId = useAgentPlaygroundStore((s) => s.activeTileId)
   const viewMode = useAgentPlaygroundStore((s) => s.viewMode)
-  const [activeSection, setActiveSection] = useState<TierTab | null>(null)
-  const [phase, setPhase] = useState<AnimPhase>('counter')
+  const [activeSection, setActiveSection] = useState<TierTab | null>(() =>
+    activeTileId != null && animatedTileIds.has(activeTileId) ? 'simple' : null
+  )
+  const [phase, setPhase] = useState<AnimPhase>(() =>
+    activeTileId != null && animatedTileIds.has(activeTileId) ? 'complete' : 'counter'
+  )
   const [vizMode, setVizMode] = useState<'flow' | 'sunburst'>('flow')
-  const [activeFilter, setActiveFilter] = useState<{ type: 'task' | 'data' | 'userProfile'; id: string } | null>(null)
+  const [activeFilter, setActiveFilter] = useState<{ type: 'task' | 'data' | 'output' | 'tool'; id: string } | null>(null)
 
   const tile = activeTileId ? AGENT_TILE_MAP[activeTileId] : null
   const data = activeTileId ? getCombinatorialPatternsData(activeTileId) : null
@@ -1461,15 +1678,18 @@ export function InteractionDiscovery() {
     return data.patterns.filter((p) => {
       if (activeFilter.type === 'task') return p.taskDimensionId === activeFilter.id
       if (activeFilter.type === 'data') return p.dataDimensionIds.includes(activeFilter.id)
-      if (activeFilter.type === 'userProfile') return p.userProfileDimensionId === activeFilter.id
+      if (activeFilter.type === 'output') return p.outputDimensionId === activeFilter.id
+      if (activeFilter.type === 'tool') return p.toolStateDimensionId === activeFilter.id
       return true
     })
   }, [activeFilter, data])
 
   // Animation sequence on mount/tile change
-  const [hasAnimated, setHasAnimated] = useState<string | null>(null)
-
-  const goToExplosion = useCallback(() => setPhase('explosion'), [])
+  const goToExplosion = useCallback(() => {
+    // Mark tile as animated here (not in the effect) to avoid StrictMode double-fire skipping the animation
+    if (activeTileId) animatedTileIds.add(activeTileId)
+    setPhase('explosion')
+  }, [activeTileId])
   const goToFlow = useCallback(() => {
     setPhase('flow')
     // Short delay then show complete with tier tabs
@@ -1481,17 +1701,16 @@ export function InteractionDiscovery() {
 
   useEffect(() => {
     if (!data || !activeTileId) return
-    if (hasAnimated === activeTileId) {
+    if (animatedTileIds.has(activeTileId)) {
       setPhase('complete')
       if (!activeSection) setActiveSection('simple')
       return
     }
-    setHasAnimated(activeTileId)
     setPhase('counter')
     setActiveFilter(null)
   }, [activeTileId, data]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasFuzzy = patternsByTier.fuzzy.length > 0
+  const hasFuzzy = true // always show — every scenario has hand-crafted human-intervention fuzzy patterns
 
   if (!tile) {
     return (
@@ -1520,7 +1739,7 @@ export function InteractionDiscovery() {
   const dataSubsetCount = data.dataDimensions.length
 
   return (
-    <div ref={containerRef} className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div ref={containerRef} className="w-full px-4 sm:px-6 py-8 space-y-6">
       {/* Stage header */}
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="flex items-center gap-3">
@@ -1539,21 +1758,21 @@ export function InteractionDiscovery() {
         </p>
       </motion.div>
 
-      {/* Phase 1: Counter Hero */}
+      {/* Phase 1 → 2 → 3: all in one AnimatePresence so each fully exits before next enters */}
       <AnimatePresence mode="wait">
         {phase === 'counter' && (
           <CounterHero
             key="counter"
             taskCount={analysis.taskDimensions.length}
             dataSubsetCount={dataSubsetCount}
-            userProfileCount={analysis.userProfileDimensions.length}
+            outputCount={analysis.outputDimensions.length}
+            toolStateCount={analysis.toolDimensions.flatMap(td => td.states).length}
             totalCombinations={data.totalCombinations}
             validPatterns={data.validPatterns}
             onComplete={goToExplosion}
           />
         )}
 
-        {/* Phase 2: Explosion Animation */}
         {phase === 'explosion' && (
           <ExplosionAnimation
             key="explosion"
@@ -1561,74 +1780,80 @@ export function InteractionDiscovery() {
             onComplete={goToFlow}
           />
         )}
-      </AnimatePresence>
 
-      {/* Phase 3+: Flow / Sunburst visualization with toggle */}
-      {(phase === 'flow' || phase === 'complete') && (
-        <>
-          {/* View toggle */}
-          <div className="flex items-center justify-end gap-1">
-            <button
-              onClick={() => setVizMode('flow')}
-              className="text-xs font-semibold px-3 py-1.5 rounded-l-lg transition-colors"
-              style={{
-                background: vizMode === 'flow' ? '#1e293b' : '#f1f5f9',
-                color: vizMode === 'flow' ? '#fff' : '#64748b',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              Flow
-            </button>
-            <button
-              onClick={() => setVizMode('sunburst')}
-              className="text-xs font-semibold px-3 py-1.5 rounded-r-lg transition-colors"
-              style={{
-                background: vizMode === 'sunburst' ? '#1e293b' : '#f1f5f9',
-                color: vizMode === 'sunburst' ? '#fff' : '#64748b',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              Sunburst
-            </button>
-          </div>
+        {(phase === 'flow' || phase === 'complete') && (
+          <motion.div
+            key="viz-section"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-4"
+          >
+            {/* View toggle */}
+            <div className="flex items-center justify-end gap-1">
+              <button
+                onClick={() => setVizMode('flow')}
+                className="text-xs font-semibold px-3 py-1.5 rounded-l-lg transition-colors"
+                style={{
+                  background: vizMode === 'flow' ? '#1e293b' : '#f1f5f9',
+                  color: vizMode === 'flow' ? '#fff' : '#64748b',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                Flow
+              </button>
+              <button
+                onClick={() => setVizMode('sunburst')}
+                className="text-xs font-semibold px-3 py-1.5 rounded-r-lg transition-colors"
+                style={{
+                  background: vizMode === 'sunburst' ? '#1e293b' : '#f1f5f9',
+                  color: vizMode === 'sunburst' ? '#fff' : '#64748b',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                Sunburst
+              </button>
+            </div>
 
-          {/* Visualization */}
-          <AnimatePresence mode="wait">
-            {vizMode === 'flow' ? (
-              <motion.div key="flow-viz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                <DimensionalFlow
-                  patterns={data.patterns}
-                  analysis={analysis}
-                  labels={labels}
-                  onFilterChange={setActiveFilter}
-                  activeFilter={activeFilter}
-                />
-              </motion.div>
-            ) : (
-              <motion.div key="sunburst-viz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                <DimensionalSunburst
-                  patterns={data.patterns}
-                  taskIds={data.taskDimensions}
-                  labels={labels}
-                  accentColor={accentColor}
-                />
+            {/* Visualization */}
+            <AnimatePresence mode="wait">
+              {vizMode === 'flow' ? (
+                <motion.div key="flow-viz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+                  <DimensionalFlow
+                    patterns={data.patterns}
+                    analysis={analysis}
+                    labels={labels}
+                    onFilterChange={setActiveFilter}
+                    activeFilter={activeFilter}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div key="sunburst-viz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+                  <DimensionalSunburst
+                    patterns={data.patterns}
+                    taskIds={data.taskDimensions}
+                    labels={labels}
+                    accentColor={accentColor}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Active filter indicator */}
+            {activeFilter && (
+              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <Circle className="w-3 h-3" style={{ color: activeFilter.type === 'task' ? DIMENSION_COLORS.task.primary : activeFilter.type === 'data' ? DIMENSION_COLORS.data.primary : DIMENSION_COLORS.userProfile.primary }} />
+                <span className="text-xs text-gray-600">
+                  Filtering by <strong className="text-gray-900">{labels[activeFilter.id] ?? activeFilter.id}</strong>
+                  {filteredPatterns && <span className="text-gray-400 ml-1">({filteredPatterns.length} patterns)</span>}
+                </span>
+                <button onClick={() => setActiveFilter(null)} className="ml-auto text-xs text-gray-400 hover:text-gray-600 transition-colors">Clear</button>
               </motion.div>
             )}
-          </AnimatePresence>
-
-          {/* Active filter indicator */}
-          {activeFilter && (
-            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <Circle className="w-3 h-3" style={{ color: activeFilter.type === 'task' ? DIMENSION_COLORS.task.primary : activeFilter.type === 'data' ? DIMENSION_COLORS.data.primary : DIMENSION_COLORS.userProfile.primary }} />
-              <span className="text-xs text-gray-600">
-                Filtering by <strong className="text-gray-900">{labels[activeFilter.id] ?? activeFilter.id}</strong>
-                {filteredPatterns && <span className="text-gray-400 ml-1">({filteredPatterns.length} patterns)</span>}
-              </span>
-              <button onClick={() => setActiveFilter(null)} className="ml-auto text-xs text-gray-400 hover:text-gray-600 transition-colors">Clear</button>
-            </motion.div>
-          )}
-        </>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Tier breakdown bar */}
       {phase === 'complete' && (
@@ -1674,7 +1899,7 @@ export function InteractionDiscovery() {
                   <div>
                     <div className="text-xs font-semibold text-amber-700 mb-0.5">Domain Expert Opportunity</div>
                     <p className="text-xs text-amber-600 leading-relaxed">
-                      Review these interaction patterns and consider whether an additional parameter could separate them into clearer outcome buckets. A single well-chosen parameter can often convert these into Dominant or Non-Dominant patterns.
+                      Review these interaction patterns and consider whether an additional parameter could separate them into clearer outcome buckets. A single well-chosen parameter can often convert these into Simple or Complex patterns.
                     </p>
                   </div>
                 </div>

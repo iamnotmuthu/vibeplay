@@ -231,10 +231,10 @@ function ScenarioCard({
 
         {/* Stats row */}
         <div
-          className="flex items-center gap-3 mt-5 pt-4"
+          className="mt-5 pt-4"
           style={{ borderTop: '1px solid #f3f4f6' }}
         >
-          <span className="text-xs font-medium text-gray-400">{tile.badge}</span>
+          <span className="text-[11px] font-medium text-gray-400 leading-snug">{tile.badge}</span>
         </div>
 
         {/* CTA */}

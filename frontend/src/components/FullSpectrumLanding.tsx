@@ -49,16 +49,19 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
         }}
       />
 
-      {/* Header */}
+      {/* Header — tabs integrated for demo-first experience */}
       <header
-        className="h-20 border-b px-6 flex items-center justify-between shrink-0 z-50 sticky top-0"
+        className="border-b px-6 flex items-center justify-between shrink-0 z-50 sticky top-0"
         style={{
-          background: 'rgba(255,255,255,0.85)',
+          background: 'rgba(255,255,255,0.92)',
           backdropFilter: 'blur(12px)',
           borderColor: '#e5e7eb',
+          minHeight: 64,
+          paddingTop: 10,
+          paddingBottom: 10,
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <a
             href="/playground"
             className="flex items-center hover:opacity-80 transition-opacity"
@@ -67,12 +70,27 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
             <img
               src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}
               alt="VibeModel"
-              style={{ height: 48, width: 'auto' }}
+              style={{ height: 36, width: 'auto' }}
             />
           </a>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Solution Type Tabs — centered in header */}
+        <div className="flex-1 flex justify-center min-w-0 overflow-visible">
+          <SolutionTypeTabs
+            activeType={activeSolutionType}
+            onTypeChange={(typeId) => {
+              if (typeId === 'agentic') {
+                setActiveAgentDemo(true)
+              } else {
+                setActiveSolutionType(typeId)
+              }
+            }}
+            compact
+          />
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
           <a
             href="https://vibemodel.ai/#beta-signup"
             target="_blank"
@@ -124,7 +142,8 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero — preserved for future use, hidden via false && */}
+      {false && (
       <motion.div
         className="text-center pt-20 pb-8 px-6 relative z-10"
         initial={{ opacity: 0, y: -20 }}
@@ -190,6 +209,7 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
           </button>
         </motion.div>
       </motion.div>
+      )}
 
       {/* Guided Entry Wizard */}
       <GuidedEntryWizard
@@ -198,21 +218,7 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
         onSelectScenario={onSelect}
       />
 
-      {/* Solution Type Tabs */}
-      <div className="px-6 pb-8 relative z-10">
-        <SolutionTypeTabs
-          activeType={activeSolutionType}
-          onTypeChange={(typeId) => {
-            if (typeId === 'agentic') {
-              setActiveAgentDemo(true)
-            } else {
-              setActiveSolutionType(typeId)
-            }
-          }}
-        />
-      </div>
-
-      {/* Content Area */}
+      {/* Content Area — starts immediately after header */}
       <div className="flex-1 relative z-10">
         <AnimatePresence mode="wait">
           {activeSolutionType === 'predictive' ? (
@@ -223,16 +229,10 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Section header */}
-              <div className="text-center mb-6 px-6">
-                <h2 className="text-xl font-bold text-gray-900">Choose an Industry Scenario</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Each scenario demonstrates autonomous pattern discovery, model composition, and validation on
-                  real-world data.
-                </p>
+              {/* Embedded DomainSelector — content starts immediately */}
+              <div className="pt-6">
+                <DomainSelector onSelect={onSelect} embedded />
               </div>
-              {/* Embedded DomainSelector — no header / hero / footer */}
-              <DomainSelector onSelect={onSelect} embedded />
             </motion.div>
           ) : (
             <motion.div

@@ -111,7 +111,7 @@ export interface InstructionStep {
 }
 
 // ─── Context Definition (Step 2) ─────────────────────────────────────────
-// Stacked sections: Instructions, Data Sources, User Profiles, Tools, Tasks
+// Stacked sections: Instructions, Data Sources, Agent Outputs, Tools, Tasks
 
 export interface DataSource {
   id: string
@@ -141,6 +141,19 @@ export interface AgentTool {
   autoDetected: boolean
   icon?: string
   accesses?: string[]
+}
+
+// ─── Agent Outputs (replaces User Profiles) ──────────────────────────────
+// Defines WHAT the agent produces — domain-specific output types per tile.
+// Each output is decomposed into Output Dimensions in the Dimension Analysis.
+
+export interface AgentOutput {
+  id: string
+  label: string
+  description: string
+  exampleOutput: string
+  triggeringTaskIds: string[]  // which tasks can produce this output
+  isCore: boolean
 }
 
 export interface AgentTask {
@@ -209,12 +222,52 @@ export interface UserProfileDimension {
   behaviorImpact: string // how this combination changes agent behavior
 }
 
+// ─── Tool Dimensions (Step 3) ──────────────────────────────────────────
+// Each tool's operational states as dimensions.
+// CRUD states + success/failure + connection states.
+
+export interface ToolState {
+  id: string
+  label: string          // e.g., "Create Success", "Read Failure"
+  operation: string      // e.g., "create", "read", "update", "delete", "connect"
+  outcome: 'success' | 'failure' | 'timeout' | 'rate-limited'
+  description: string
+}
+
+export interface ToolDimension {
+  id: string
+  toolId: string
+  toolName: string
+  states: ToolState[]
+}
+
+// ─── Output Dimensions (Step 3) ──────────────────────────────────────────
+// Decomposition of Agent Outputs along 3 axes: Outcome × Complexity × Interaction
+// Replaces UserProfileDimension in the combinatorial formula.
+
+export type OutputOutcome = 'success' | 'partial' | 'failure' | 'escalation'
+export type OutputComplexity = 'direct' | 'cross-referenced' | 'inferred'
+export type OutputInteraction = 'one-shot' | 'conversational' | 'proactive'
+
+export interface OutputDimension {
+  id: string
+  label: string           // e.g., "FAQ Answer — Success + Direct + One-shot"
+  description: string
+  agentOutputId: string   // traces back to AgentOutput
+  agentOutputLabel: string
+  outcome: OutputOutcome
+  complexity: OutputComplexity
+  interaction: OutputInteraction
+}
+
 export interface DimensionAnalysisPayload {
   tileId: string
   agentName: string
   taskDimensions: TaskDimension[]
   dataDimensions: DataDimension[]
-  userProfileDimensions: UserProfileDimension[]
+  userProfileDimensions: UserProfileDimension[]  // KEEP for backward compat
+  outputDimensions: OutputDimension[]            // NEW
+  toolDimensions: ToolDimension[]                // NEW
   summaryText: string
 }
 
@@ -229,7 +282,7 @@ export interface CombinationCell {
   dataDimensionIds: string[] // supports multi-data combos (was singular)
   isValid: boolean
   patternCount: number
-  dominantTier: PatternTier
+  primaryTier: PatternTier
   userProfileDimensionIds: string[]
 }
 
@@ -241,6 +294,8 @@ export interface DimensionPattern {
   taskDimensionId: string
   dataDimensionIds: string[] // multi-data: power set combinations
   userProfileDimensionId: string
+  outputDimensionId?: string      // NEW: output dimension for 4D patterns
+  toolStateDimensionId?: string   // NEW: tool state for 4D patterns
   patternType: PatternType
   exampleQuestions: string[]
   activatedComponents?: string[]
@@ -256,6 +311,8 @@ export interface PatternsPayload {
   taskDimensions: string[]
   dataDimensions: string[] // includes combo IDs like 'faq-data-product+pricing'
   userProfileDimensions: string[]
+  outputDimensions: string[]       // NEW
+  toolStateDimensions: string[]    // NEW
   totalCombinations: number
   validPatterns: number
   matrix: CombinationCell[][]
@@ -351,7 +408,7 @@ export interface StageReceipt {
 // 5 question complexity pattern types (Simple, Hopping, Aggregator, Branch, Reasoning).
 // "Combination" was removed — handled by merged activation profiles.
 // "Comparison" was rejected as standalone — it's Aggregator + Branch merged.
-// Classified into 3 tiers: Simple (dominant), Complex (non-dominant), Fuzzy.
+// Classified into 3 tiers: Simple, Complex, Fuzzy.
 
 export type PatternType = 'simple' | 'hopping' | 'aggregator' | 'branch' | 'reasoning'
 
@@ -371,11 +428,11 @@ export const PATTERN_TYPE_COMPLEXITY: Record<PatternType, string> = {
   reasoning: 'Very High',
 }
 
-export type PatternClassification = 'dominant' | 'non-dominant' | 'fuzzy'
+export type PatternClassification = 'simple' | 'complex' | 'fuzzy'
 
 export const PATTERN_CLASSIFICATION_LABELS: Record<PatternClassification, string> = {
-  dominant: 'Simple Patterns',
-  'non-dominant': 'Complex Patterns',
+  simple: 'Simple Patterns',
+  complex: 'Complex Patterns',
   fuzzy: 'Fuzzy Patterns',
 }
 
@@ -387,7 +444,7 @@ export const PATTERN_CLASSIFICATION_META: Record<PatternClassification, {
   activeBg: string
   description: string
 }> = {
-  dominant: {
+  simple: {
     label: 'Simple Patterns',
     color: '#16a34a',
     bgColor: '#f0fdf4',
@@ -395,7 +452,7 @@ export const PATTERN_CLASSIFICATION_META: Record<PatternClassification, {
     activeBg: '#dcfce7',
     description: 'High-confidence, single-path patterns the agent handles reliably.',
   },
-  'non-dominant': {
+  complex: {
     label: 'Complex Patterns',
     color: '#dc2626',
     bgColor: '#fef2f2',
@@ -440,6 +497,20 @@ export const DIMENSION_COLORS = {
     dark: '#9f1239',      // rose-800
     label: 'User Profile',
   },
+  output: {
+    primary: '#e11d48',   // rose-600 (same as userProfile for continuity)
+    light: '#fff1f2',     // rose-50
+    medium: '#fecdd3',    // rose-200
+    dark: '#9f1239',      // rose-800
+    label: 'Output',
+  },
+  tool: {
+    primary: '#8b5cf6',   // violet-500
+    light: '#f5f3ff',     // violet-50
+    medium: '#ddd6fe',    // violet-200
+    dark: '#6d28d9',      // violet-700
+    label: 'Tool',
+  },
 } as const
 
 // ─── Cluster (Dimension Analysis — legacy) ───────────────────────────────
@@ -464,7 +535,7 @@ export interface DiscoveredPattern {
   description: string
   exampleQuestions: string[]
   coveragePct: number
-  inferenceNote?: string       // non-dominant: what inference was made
+  inferenceNote?: string       // complex: what inference was made
   ambiguityNote?: string       // fuzzy: what is ambiguous
   activatedComponents: string[]
   importanceRank: number
@@ -486,8 +557,8 @@ export interface EvaluationOverview {
   patternsHandled: number
   handlingByType: Record<PatternType, number>
   overallConfidence: number
-  dominantRate: number
-  nonDominantRate: number
+  simpleRate: number
+  complexRate: number
   fuzzyRate: number
 }
 
@@ -844,6 +915,7 @@ export interface NewDimensionCard {
   detail: string
   impactEstimate: string
   week: number
+  category?: 'new-dimension' | 'multi-doc-hop' | 'prompt-injection' | 'absence-detection' | 'confidence-decay'
 }
 
 // ─── Performance Trend Data ──────────────────────────────────────────────

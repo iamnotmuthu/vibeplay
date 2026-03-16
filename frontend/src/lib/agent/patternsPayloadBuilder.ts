@@ -2,9 +2,12 @@ import type {
   CombinationCell,
   DimensionAnalysisPayload,
   DimensionPattern,
+  OutputDimension,
   PatternTier,
   PatternType,
   PatternsPayload,
+  ToolDimension,
+  ToolState,
 } from '@/store/agentTypes'
 
 // ─── Power-Set Helpers ──────────────────────────────────────────────────────
@@ -49,6 +52,41 @@ function comboId(dataIds: string[]): string {
 // ─── Pattern Auto-Generation ────────────────────────────────────────────────
 
 /**
+ * Map tile IDs to 3-letter prefixes for pattern ID generation.
+ */
+function tileIdToPrefix(tileId: string): string {
+  const prefixMap: Record<string, string> = {
+    'faq-knowledge': 'FAQ',
+    'saas-copilot': 'SAS',
+    'research-comparison': 'RES',
+    'dental-patient': 'DEN',
+    'doc-intelligence': 'DOC',
+    'decision-workflow': 'DEC',
+    'coding-agent': 'COD',
+    'ops-agent': 'OPS',
+    'onprem-assistant': 'ONP',
+    'multimodal-agent': 'MUL',
+    'consumer-chat': 'CON',
+    'security-compliance': 'SEC',
+  }
+  // Extract base tile ID (before hyphen if compound)
+  const baseTileId = tileId.split('-').slice(0, -1).join('-') || tileId
+  return prefixMap[baseTileId] || tileId.substring(0, 3).toUpperCase()
+}
+
+/**
+ * Get tier letter for pattern ID format.
+ */
+function tierLetter(tier: PatternTier): string {
+  const tierMap: Record<PatternTier, string> = {
+    simple: 'S',
+    complex: 'C',
+    fuzzy: 'F',
+  }
+  return tierMap[tier]
+}
+
+/**
  * Classify a combination into a tier based on data combo size, task confidence,
  * and average data depth scores.
  */
@@ -57,13 +95,13 @@ function classifyTier(
   taskConfidence: 'high' | 'medium' | 'low',
   avgDataDepth: number
 ): PatternTier {
-  // Single data source with high confidence = simple (dominant)
+  // Single data source with high confidence = simple
   if (dataComboSize === 1 && taskConfidence === 'high' && avgDataDepth >= 3) return 'simple'
   if (dataComboSize === 1 && taskConfidence === 'high') return 'simple'
   if (dataComboSize === 1 && taskConfidence === 'medium') return 'simple'
   if (dataComboSize === 1 && taskConfidence === 'low') return 'complex'
 
-  // 2 data sources = complex (non-dominant) usually
+  // 2 data sources = complex usually
   if (dataComboSize === 2 && taskConfidence === 'high' && avgDataDepth >= 3) return 'complex'
   if (dataComboSize === 2 && taskConfidence === 'high') return 'complex'
   if (dataComboSize === 2 && taskConfidence === 'medium') return 'complex'
@@ -128,7 +166,9 @@ function hashString(str: string): number {
 // ─── Full Power-Set Pattern Generator ───────────────────────────────────────
 
 /**
- * Generate ALL Task × DataPowerSet × UserProfile patterns from dimension analysis.
+ * Generate ALL combinatorial patterns from dimension analysis.
+ * 4D mode (primary): Task × DataPowerSet × OutputDimension × ToolState
+ * 3D fallback: Task × DataPowerSet × UserProfile (only when no output/tool dims exist)
  * Filters out invalid combos and auto-classifies each into tier/type.
  */
 export function generatePowerSetPatterns(
@@ -136,11 +176,13 @@ export function generatePowerSetPatterns(
 ): DimensionPattern[] {
   const patterns: DimensionPattern[] = []
   const dataSubsets = powerSet(analysis.dataDimensions.map((d) => d.id))
-  const tilePrefix = analysis.tileId.split('-')[0]
+  const tilePrefix = tileIdToPrefix(analysis.tileId)
 
   // Build quick lookup maps
   const dataMap = new Map(analysis.dataDimensions.map((d) => [d.id, d]))
   const upMap = new Map(analysis.userProfileDimensions.map((u) => [u.id, u]))
+  const outputMap = new Map((analysis.outputDimensions || []).map((o) => [o.id, o]))
+  const toolMap = new Map((analysis.toolDimensions || []).map((t) => [t.id, t]))
 
   // Build domain connectivity graph for validity checking
   const domainConnections = new Map<string, Set<string>>()
@@ -151,89 +193,181 @@ export function generatePowerSetPatterns(
     domainConnections.set(dd.id, domains)
   }
 
-  let patternCounter = 0
+  // Track per-tier pattern counters for new ID format
+  const tierCounters = { S: 0, C: 0, F: 0 }
 
-  for (const task of analysis.taskDimensions) {
-    for (const dataIds of dataSubsets) {
-      // Validity check: for multi-data combos, ensure at least some domain connectivity
-      if (dataIds.length > 1) {
-        const allDomains = dataIds.map((id) => domainConnections.get(id) || new Set<string>())
-        // Check pairwise: at least one pair must share a connected domain
-        let hasConnection = false
-        for (let i = 0; i < allDomains.length && !hasConnection; i++) {
-          for (let j = i + 1; j < allDomains.length && !hasConnection; j++) {
-            for (const domain of allDomains[i]) {
-              if (allDomains[j].has(domain)) {
-                hasConnection = true
-                break
+  // ─────── 4D Pattern Generation: Task × DataPowerSet × OutputDimension × ToolState ───────
+  // When output and tool dimensions exist, generate ONLY 4D patterns (no 3D fallback).
+  // For each tool dimension, use success + failure states (filter by outcome, not id).
+  const has4D = (analysis.outputDimensions?.length ?? 0) > 0 && (analysis.toolDimensions?.length ?? 0) > 0
+
+  if (has4D) {
+    // Collect all tool states filtered by outcome (success + failure only for combinatorial)
+    const allRelevantToolStates: { toolDim: ToolDimension; state: ToolState }[] = []
+    for (const toolDim of analysis.toolDimensions ?? []) {
+      for (const state of toolDim.states ?? []) {
+        if (state.outcome === 'success' || state.outcome === 'failure') {
+          allRelevantToolStates.push({ toolDim, state })
+        }
+      }
+    }
+
+    for (const task of analysis.taskDimensions) {
+      for (const dataIds of dataSubsets) {
+        // Validity check: for multi-data combos, ensure domain connectivity
+        if (dataIds.length > 1) {
+          const allDomains = dataIds.map((id) => domainConnections.get(id) || new Set<string>())
+          let hasConnection = false
+          for (let i = 0; i < allDomains.length && !hasConnection; i++) {
+            for (let j = i + 1; j < allDomains.length && !hasConnection; j++) {
+              for (const domain of allDomains[i]) {
+                if (allDomains[j].has(domain)) {
+                  hasConnection = true
+                  break
+                }
               }
             }
           }
+          if (!hasConnection) continue
         }
-        if (!hasConnection) continue // Skip disconnected combos
+
+        const dataDims = dataIds.map((id) => dataMap.get(id)!).filter(Boolean)
+        if (dataDims.length !== dataIds.length) continue
+
+        const avgDepth = dataDims.reduce((s, d) => s + d.depthScore, 0) / dataDims.length
+        const hasGaps = dataDims.some((d) => d.gapNote != null)
+
+        for (const outputDim of analysis.outputDimensions ?? []) {
+          for (const { toolDim, state: toolState } of allRelevantToolStates) {
+            const tier = classifyTier(dataIds.length, task.confidence, avgDepth)
+            const letter = tierLetter(tier)
+            tierCounters[letter as keyof typeof tierCounters]++
+            const seqNum = String(tierCounters[letter as keyof typeof tierCounters]).padStart(2, '0')
+            const patId = `${tilePrefix}-${letter}${seqNum}`
+
+            const patternType = classifyPatternType(dataIds.length, task.confidence, hasGaps)
+            const confidence = computeConfidence(dataIds.length, task.confidence, avgDepth)
+
+            const dataLabel = dataDims.length === 1
+              ? dataDims[0].label
+              : dataDims.length === 2
+                ? `${dataDims[0].label} + ${dataDims[1].label}`
+                : `${dataDims[0].label} + ${dataDims.length - 1} more`
+
+            const name = `${task.label} via ${dataLabel} → ${outputDim.agentOutputLabel} [${toolDim.toolName}: ${toolState.label}]`
+
+            const desc = `${task.label} using ${dataLabel.toLowerCase()} produces ${outputDim.agentOutputLabel.toLowerCase()} (${outputDim.outcome}) when ${toolDim.toolName.toLowerCase()} ${toolState.outcome === 'success' ? 'succeeds' : 'fails'}.`
+
+            const rng = seededRandom(hashString(patId))
+            const exampleQuestions = generateExampleQuestions(task, dataDims, { label: outputDim.agentOutputLabel, description: outputDim.description }, rng)
+
+            const inferenceNotes = tier === 'complex'
+              ? `Cross-references ${dataDims.length} source${dataDims.length > 1 ? 's' : ''}: ${dataDims.map((d) => d.label).join(', ')}. Tool: ${toolDim.toolName} (${toolState.outcome}).`
+              : undefined
+
+            const ambiguityNotes = tier === 'fuzzy'
+              ? `${dataDims.length} sources, avg depth ${avgDepth.toFixed(1)}/5. Output: ${outputDim.agentOutputLabel}. ${hasGaps ? 'Coverage gaps exist. ' : ''}May need review.`
+              : undefined
+
+            const activatedComponents = deriveActivatedComponents(tier, dataIds.length, hasGaps)
+
+            patterns.push({
+              id: patId,
+              name,
+              description: desc,
+              tier,
+              taskDimensionId: task.id,
+              dataDimensionIds: dataIds,
+              userProfileDimensionId: analysis.userProfileDimensions[0]?.id || '',
+              outputDimensionId: outputDim.id,
+              toolStateDimensionId: toolState.id,
+              patternType,
+              exampleQuestions,
+              activatedComponents,
+              inferenceNotes,
+              ambiguityNotes,
+              confidence,
+            })
+          }
+        }
       }
+    }
+  } else {
+    // ─────── Fallback 3D: Task × DataPowerSet × UserProfile (no output/tool dims) ───────
+    for (const task of analysis.taskDimensions) {
+      for (const dataIds of dataSubsets) {
+        if (dataIds.length > 1) {
+          const allDomains = dataIds.map((id) => domainConnections.get(id) || new Set<string>())
+          let hasConnection = false
+          for (let i = 0; i < allDomains.length && !hasConnection; i++) {
+            for (let j = i + 1; j < allDomains.length && !hasConnection; j++) {
+              for (const domain of allDomains[i]) {
+                if (allDomains[j].has(domain)) {
+                  hasConnection = true
+                  break
+                }
+              }
+            }
+          }
+          if (!hasConnection) continue
+        }
 
-      const dataDims = dataIds.map((id) => dataMap.get(id)!).filter(Boolean)
-      if (dataDims.length !== dataIds.length) continue // Skip if data dim not found
+        const dataDims = dataIds.map((id) => dataMap.get(id)!).filter(Boolean)
+        if (dataDims.length !== dataIds.length) continue
 
-      const avgDepth = dataDims.reduce((s, d) => s + d.depthScore, 0) / dataDims.length
-      const hasGaps = dataDims.some((d) => d.gapNote != null)
+        const avgDepth = dataDims.reduce((s, d) => s + d.depthScore, 0) / dataDims.length
+        const hasGaps = dataDims.some((d) => d.gapNote != null)
 
-      for (const up of analysis.userProfileDimensions) {
-        patternCounter++
-        const patId = `${tilePrefix}-pat-${patternCounter}`
+        for (const up of analysis.userProfileDimensions) {
+          const tier = classifyTier(dataIds.length, task.confidence, avgDepth)
+          const letter = tierLetter(tier)
+          tierCounters[letter as keyof typeof tierCounters]++
+          const seqNum = String(tierCounters[letter as keyof typeof tierCounters]).padStart(2, '0')
+          const patId = `${tilePrefix}-${letter}${seqNum}`
 
-        const tier = classifyTier(dataIds.length, task.confidence, avgDepth)
-        const patternType = classifyPatternType(dataIds.length, task.confidence, hasGaps)
-        const confidence = computeConfidence(dataIds.length, task.confidence, avgDepth)
+          const patternType = classifyPatternType(dataIds.length, task.confidence, hasGaps)
+          const confidence = computeConfidence(dataIds.length, task.confidence, avgDepth)
 
-        // Generate name from dimension labels
-        const dataLabel = dataDims.length === 1
-          ? dataDims[0].label
-          : dataDims.length === 2
-            ? `${dataDims[0].label} + ${dataDims[1].label}`
-            : `${dataDims[0].label} + ${dataDims.length - 1} more`
+          const dataLabel = dataDims.length === 1
+            ? dataDims[0].label
+            : dataDims.length === 2
+              ? `${dataDims[0].label} + ${dataDims[1].label}`
+              : `${dataDims[0].label} + ${dataDims.length - 1} more`
 
-        // Include user profile for unique naming across same task×data combos
-        const upDim = upMap.get(up.id)!
-        const name = `${task.label} via ${dataLabel} — ${upDim.label}`
+          const upDim = upMap.get(up.id)!
+          const name = `${task.label} via ${dataLabel} — ${upDim.label}`
+          const desc = dataDims.length === 1
+            ? `${upDim.label} performs ${task.label.toLowerCase()} using ${dataDims[0].label.toLowerCase()} data.`
+            : `${upDim.label} performs ${task.label.toLowerCase()} cross-referencing ${dataDims.map((d) => d.label.toLowerCase()).join(', ')}.`
 
-        // Generate description
-        const desc = dataDims.length === 1
-          ? `${upDim.label} performs ${task.label.toLowerCase()} using ${dataDims[0].label.toLowerCase()} data.`
-          : `${upDim.label} performs ${task.label.toLowerCase()} cross-referencing ${dataDims.map((d) => d.label.toLowerCase()).join(', ')}.`
+          const rng = seededRandom(hashString(patId))
+          const exampleQuestions = generateExampleQuestions(task, dataDims, upDim, rng)
 
-        // Generate deterministic example questions using seeded PRNG
-        const rng = seededRandom(hashString(patId))
-        const exampleQuestions = generateExampleQuestions(task, dataDims, upDim, rng)
+          const inferenceNotes = tier === 'complex'
+            ? `Cross-references ${dataDims.length} source${dataDims.length > 1 ? 's' : ''}: ${dataDims.map((d) => d.label).join(', ')}.`
+            : undefined
+          const ambiguityNotes = tier === 'fuzzy'
+            ? `${dataDims.length} sources, avg depth ${avgDepth.toFixed(1)}/5. ${hasGaps ? 'Coverage gaps exist. ' : ''}May need review.`
+            : undefined
 
-        // Inference/ambiguity notes based on tier
-        const inferenceNotes = tier === 'complex'
-          ? `Cross-references ${dataDims.length} data source${dataDims.length > 1 ? 's' : ''}: ${dataDims.map((d) => d.label).join(', ')}. Requires multi-hop retrieval.`
-          : undefined
+          const activatedComponents = deriveActivatedComponents(tier, dataIds.length, hasGaps)
 
-        const ambiguityNotes = tier === 'fuzzy'
-          ? `${dataDims.length} data sources with avg depth ${avgDepth.toFixed(1)}/5. ${hasGaps ? 'Known coverage gaps in source data. ' : ''}May require human review.`
-          : undefined
-
-        // Activated components based on complexity
-        const activatedComponents = deriveActivatedComponents(tier, dataIds.length, hasGaps)
-
-        patterns.push({
-          id: patId,
-          name,
-          description: desc,
-          tier,
-          taskDimensionId: task.id,
-          dataDimensionIds: dataIds,
-          userProfileDimensionId: up.id,
-          patternType,
-          exampleQuestions,
-          activatedComponents,
-          inferenceNotes,
-          ambiguityNotes,
-          confidence,
-        })
+          patterns.push({
+            id: patId,
+            name,
+            description: desc,
+            tier,
+            taskDimensionId: task.id,
+            dataDimensionIds: dataIds,
+            userProfileDimensionId: up.id,
+            patternType,
+            exampleQuestions,
+            activatedComponents,
+            inferenceNotes,
+            ambiguityNotes,
+            confidence,
+          })
+        }
       }
     }
   }
@@ -242,7 +376,7 @@ export function generatePowerSetPatterns(
 }
 
 /**
- * Generate 2-3 example questions based on dimension characteristics.
+ * Generate exactly 4 example questions based on dimension characteristics.
  */
 function generateExampleQuestions(
   task: { label: string; description: string; intentCategories: string[] },
@@ -256,21 +390,25 @@ function generateExampleQuestions(
 
   const entity1 = pickEntity()
   const entity2 = pickEntity()
+  const entity3 = entities.length > 2 ? entities[Math.floor(rng() * entities.length)] : entity1
 
   if (dataDims.length === 1) {
     questions.push(`How does ${entity1} relate to ${task.label.toLowerCase()}?`)
-    if (entities.length > 1) {
-      questions.push(`Can you explain ${entity2} from the ${dataDims[0].label.toLowerCase()} perspective?`)
-    }
+    questions.push(`Can you explain ${entity2} from the ${dataDims[0].label.toLowerCase()} perspective?`)
+    questions.push(`What are the key aspects of ${entity1} in the context of ${task.label.toLowerCase()}?`)
+    questions.push(`How would you compare ${entity1} and ${entity2} using ${dataDims[0].label.toLowerCase()}?`)
   } else {
     questions.push(`How does ${entity1} compare across ${dataDims.map((d) => d.label.toLowerCase()).join(' and ')}?`)
     questions.push(`What is the relationship between ${dataDims[0].label.toLowerCase()} and ${dataDims[dataDims.length - 1].label.toLowerCase()} for ${task.label.toLowerCase()}?`)
     if (dataDims.length >= 3) {
       questions.push(`Synthesize information from all ${dataDims.length} sources about ${entity1}.`)
+    } else {
+      questions.push(`How do ${dataDims[0].label.toLowerCase()} and ${dataDims[1].label.toLowerCase()} relate for ${entity1}?`)
     }
+    questions.push(`What insights about ${entity3} can only be derived by combining ${dataDims.map((d) => d.label.toLowerCase()).join(' and ')}?`)
   }
 
-  return questions.slice(0, dataDims.length === 1 ? 2 : 3)
+  return questions.slice(0, 4)
 }
 
 /**
@@ -311,6 +449,7 @@ function deriveActivatedComponents(
  * Generates the matrix, tier breakdown, and ID arrays automatically.
  *
  * If patterns array is empty, auto-generates full power-set combinatorial patterns.
+ * Supports both 3D (Task × Data × UserProfile) and 4D (Task × Data × Output × ToolState) generation.
  */
 export function buildPatternsPayload(
   analysis: DimensionAnalysisPayload,
@@ -324,6 +463,8 @@ export function buildPatternsPayload(
   const taskIds = analysis.taskDimensions.map((t) => t.id)
   const dataIds = analysis.dataDimensions.map((d) => d.id)
   const userProfileIds = analysis.userProfileDimensions.map((u) => u.id)
+  const outputIds = (analysis.outputDimensions ?? []).map((o) => o.id)
+  const toolIds = (analysis.toolDimensions ?? []).map((t) => t.id)
 
   // Collect all unique data combo IDs from patterns (includes multi-data combos)
   const allDataComboIds = new Set<string>()
@@ -333,6 +474,14 @@ export function buildPatternsPayload(
     } else {
       allDataComboIds.add(comboId(p.dataDimensionIds))
     }
+  }
+
+  // Collect all unique output dimension IDs and tool state IDs from patterns
+  const allOutputIds = new Set<string>()
+  const allToolStateIds = new Set<string>()
+  for (const p of finalPatterns) {
+    if (p.outputDimensionId) allOutputIds.add(p.outputDimensionId)
+    if (p.toolStateDimensionId) allToolStateIds.add(p.toolStateDimensionId)
   }
 
   // Build matrix: rows = tasks, cols = single data dimensions
@@ -348,17 +497,17 @@ export function buildPatternsPayload(
 
       const count = matching.length
 
-      // Determine dominant tier
-      let dominantTier: PatternTier = 'simple'
+      // Determine primary tier
+      let primaryTier: PatternTier = 'simple'
       if (count > 0) {
         const tierCounts = { simple: 0, complex: 0, fuzzy: 0 }
         matching.forEach((p) => {
           tierCounts[p.tier]++
         })
         if (tierCounts.fuzzy >= tierCounts.complex && tierCounts.fuzzy >= tierCounts.simple) {
-          dominantTier = 'fuzzy'
+          primaryTier = 'fuzzy'
         } else if (tierCounts.complex >= tierCounts.simple) {
-          dominantTier = 'complex'
+          primaryTier = 'complex'
         }
       }
 
@@ -370,7 +519,7 @@ export function buildPatternsPayload(
         dataDimensionIds: [dataId],
         isValid: count > 0,
         patternCount: count,
-        dominantTier,
+        primaryTier,
         userProfileDimensionIds: upIds,
       } satisfies CombinationCell
     })
@@ -382,9 +531,24 @@ export function buildPatternsPayload(
     tierBreakdown[p.tier]++
   })
 
-  // Total combinations = tasks × power-set data × user profiles (theoretical max)
+  // Total combinations formula
+  // 4D: tasks × power-set data × output dims × tool states (success + failure only)
+  // 3D fallback: tasks × power-set data × user profiles
+  let totalCombinations: number
   const dataSubsetCount = (1 << dataIds.length) - 1 // 2^N - 1
-  const totalCombinations = taskIds.length * dataSubsetCount * userProfileIds.length
+  if (outputIds.length > 0 && toolIds.length > 0) {
+    // Count success + failure tool states by filtering on outcome field
+    let totalToolStates = 0
+    for (const toolDim of analysis.toolDimensions ?? []) {
+      const successFailureStates = (toolDim.states ?? []).filter(
+        (s: ToolState) => s.outcome === 'success' || s.outcome === 'failure'
+      ).length
+      totalToolStates += successFailureStates
+    }
+    totalCombinations = taskIds.length * dataSubsetCount * outputIds.length * totalToolStates
+  } else {
+    totalCombinations = taskIds.length * dataSubsetCount * userProfileIds.length
+  }
 
   // Valid patterns = actual generated patterns
   const validPatterns = finalPatterns.length
@@ -396,6 +560,8 @@ export function buildPatternsPayload(
     taskDimensions: taskIds,
     dataDimensions: [...allDataComboIds],
     userProfileDimensions: userProfileIds,
+    outputDimensions: [...allOutputIds],
+    toolStateDimensions: [...allToolStateIds],
     totalCombinations,
     validPatterns,
     matrix,

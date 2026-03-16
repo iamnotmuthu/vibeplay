@@ -162,14 +162,14 @@ export function AgentPlaygroundShell({ onBack }: AgentPlaygroundShellProps) {
   )
 
   const handleScenariosClick = () => {
-    if (currentStage !== 'tiles' && activeTileId) {
+    if (activeTileId) {
       setConfirmOpen(true)
     } else {
-      resetToTiles()
+      onBack()
     }
   }
 
-  const isTileSelection = currentStage === 'tiles'
+  const isTileSelection = false // Tile selection removed — Goal page handles scenario choice
 
   return (
     <div

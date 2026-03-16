@@ -1,23 +1,28 @@
-import type { DimensionAnalysisPayload } from '@/store/agentTypes'
+import type {
+  DimensionAnalysisPayload,
+  OutputDimension,
+  ToolDimension,
+  ToolState,
+} from '@/store/agentTypes'
 
 export const OPS_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
   tileId: 'ops-agent',
-  agentName: 'Operations Agent',
+  agentName: 'Shipment Disruption Manager',
   taskDimensions: [
     {
       id: 'ops-task-job-scheduling',
-      label: 'Job Scheduling',
-      description: 'Coordinate batch job execution across distributed systems with priority queuing and dependency resolution',
-      parentTaskId: 'schedule-migration',
-      intentCategories: ['automation', 'orchestration', 'resource-planning'],
+      label: 'Disruption Detection',
+      description: 'Detect and classify shipment disruptions across carrier networks with severity scoring',
+      parentTaskId: 'detect-disruption',
+      intentCategories: ['detection', 'classification', 'severity-assessment'],
       confidence: 'high'
     },
     {
       id: 'ops-task-migration-planning',
-      label: 'Migration Planning',
-      description: 'Design and sequence data migration workflows with phase gating and validation checkpoints',
-      parentTaskId: 'schedule-migration',
-      intentCategories: ['planning', 'risk-assessment', 'change-management'],
+      label: 'Route Optimization',
+      description: 'Analyze disruption impact and sequence alternate routing workflows with validation checkpoints',
+      parentTaskId: 'optimize-route',
+      intentCategories: ['routing', 'impact-assessment', 'contingency-planning'],
       confidence: 'high'
     },
     {
@@ -208,294 +213,338 @@ export const OPS_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
       behaviorImpact: 'Requires clear error triage documentation; drives demand for one-click remediation tools'
     }
   ],
-  summaryText: 'The Operations Agent coordinates complex data migration workflows by orchestrating job scheduling, monitoring execution progress, and validating quality checkpoints across distributed systems. It synthesizes job queue metadata, migration schemas, historical logs, and configuration templates to support DevOps engineers, data engineers, and operations managers in managing large-scale data transformation initiatives.'
+  outputDimensions: [
+    { id: 'ops-od-1', label: 'Job Schedule — Success + Direct + One-shot', description: 'Simple job schedule created with no dependencies', agentOutputId: 'ops-out-schedule', agentOutputLabel: 'Job Schedule', outcome: 'success', complexity: 'direct', interaction: 'one-shot' },
+    { id: 'ops-od-2', label: 'Job Schedule — Success + Cross-referenced + One-shot', description: 'Complex job DAG with dependency resolution and priority queuing', agentOutputId: 'ops-out-schedule', agentOutputLabel: 'Job Schedule', outcome: 'success', complexity: 'cross-referenced', interaction: 'one-shot' },
+    { id: 'ops-od-3', label: 'Job Schedule — Success + Inferred + Conversational', description: 'Optimized schedule based on historical performance data', agentOutputId: 'ops-out-schedule', agentOutputLabel: 'Job Schedule', outcome: 'success', complexity: 'inferred', interaction: 'conversational' },
+    { id: 'ops-od-4', label: 'Migration Plan — Success + Cross-referenced + Conversational', description: 'Multi-stage migration plan with rollback procedures', agentOutputId: 'ops-out-migration', agentOutputLabel: 'Migration Plan', outcome: 'success', complexity: 'cross-referenced', interaction: 'conversational' },
+    { id: 'ops-od-5', label: 'Migration Plan — Partial + Cross-referenced + Conversational', description: 'Migration plan with outstanding compatibility issues', agentOutputId: 'ops-out-migration', agentOutputLabel: 'Migration Plan', outcome: 'partial', complexity: 'cross-referenced', interaction: 'conversational' },
+    { id: 'ops-od-6', label: 'Execution Report — Success + Direct + One-shot', description: 'Execution metrics and status summary for completed job', agentOutputId: 'ops-out-report', agentOutputLabel: 'Execution Report', outcome: 'success', complexity: 'direct', interaction: 'one-shot' },
+    { id: 'ops-od-7', label: 'Execution Report — Success + Cross-referenced + Conversational', description: 'Detailed post-mortem with performance analysis and recommendations', agentOutputId: 'ops-out-report', agentOutputLabel: 'Execution Report', outcome: 'success', complexity: 'cross-referenced', interaction: 'conversational' },
+    { id: 'ops-od-8', label: 'Escalation — Escalation + Direct + One-shot', description: 'Job failure requiring manual intervention', agentOutputId: 'ops-out-escalation', agentOutputLabel: 'Escalation Handoff', outcome: 'escalation', complexity: 'direct', interaction: 'one-shot' },
+    { id: 'ops-od-9', label: 'Escalation — Escalation + Cross-referenced + Conversational', description: 'Data corruption or SLA breach requiring specialist investigation', agentOutputId: 'ops-out-escalation', agentOutputLabel: 'Escalation Handoff', outcome: 'escalation', complexity: 'cross-referenced', interaction: 'conversational' },
+  ],
+  toolDimensions: [
+    { id: 'ops-tooldim-scheduler', toolId: 'job-scheduler', toolName: 'Job Scheduler', states: [
+      { id: 'ops-ts-sched-create-success', label: 'Job Created', operation: 'create', outcome: 'success', description: 'Job successfully submitted to scheduler' },
+      { id: 'ops-ts-sched-create-failure', label: 'Job Creation Failed', operation: 'create', outcome: 'failure', description: 'Job submission rejected — dependency or validation error' },
+      { id: 'ops-ts-sched-read-success', label: 'Status Fetch Success', operation: 'read', outcome: 'success', description: 'Job status retrieved successfully' },
+    ] },
+    { id: 'ops-tooldim-validator', toolId: 'data-validator', toolName: 'Data Validator', states: [
+      { id: 'ops-ts-val-read-success', label: 'Validation Success', operation: 'read', outcome: 'success', description: 'Data validation passed all quality checks' },
+      { id: 'ops-ts-val-read-failure', label: 'Validation Failure', operation: 'read', outcome: 'failure', description: 'Data validation detected anomalies or missing fields' },
+      { id: 'ops-ts-val-read-timeout', label: 'Validation Timeout', operation: 'read', outcome: 'timeout', description: 'Large dataset validation exceeded time threshold' },
+    ] },
+    { id: 'ops-tooldim-monitor', toolId: 'progress-monitor', toolName: 'Progress Monitor', states: [
+      { id: 'ops-ts-mon-read-success', label: 'Monitoring Success', operation: 'read', outcome: 'success', description: 'Job progress monitored without issues' },
+      { id: 'ops-ts-mon-read-failure', label: 'Monitoring Failure', operation: 'read', outcome: 'failure', description: 'Unable to retrieve progress metrics' },
+    ] },
+  ],
+  summaryText: 'The Shipment Disruption Manager detects and responds to shipment disruptions by analyzing carrier data, detecting anomalies, and optimizing rerouting across supply networks. It synthesizes tracking events, carrier status, route metadata, and historical patterns to support logistics managers and operations teams in maintaining on-time delivery and minimizing customer impact. 9 output dimensions across 4 core outputs. 3 tools with 9 state transitions.'
 }
 
 export const ONPREM_ASSISTANT_DIMENSIONS: DimensionAnalysisPayload = {
   tileId: 'onprem-assistant',
-  agentName: 'On-Premises Assistant',
+  agentName: 'Predictive Maintenance Agent',
   taskDimensions: [
     {
-      id: 'onprem-task-document-classification',
-      label: 'Document Classification',
-      description: 'Assess incoming documents and assign sensitivity labels based on content analysis and policy rules',
-      parentTaskId: 'classify-document',
-      intentCategories: ['classification', 'risk-assessment', 'policy-enforcement'],
+      id: 'onprem-task-sensor-anomaly-detection',
+      label: 'Sensor Anomaly Detection',
+      description: 'Real-time LSTM-based detection of abnormal vibration, temperature, and motor current patterns',
+      parentTaskId: 'sensor-anomaly-detection',
+      intentCategories: ['anomaly-detection', 'signal-processing', 'time-series-analysis'],
       confidence: 'high'
     },
     {
-      id: 'onprem-task-sensitivity-labeling',
-      label: 'Sensitivity Labeling',
-      description: 'Apply standardized sensitivity markings (U, C, S, TS) with justification and update triggers',
-      parentTaskId: 'classify-document',
-      intentCategories: ['data-governance', 'classification', 'compliance-marking'],
+      id: 'onprem-task-failure-prediction',
+      label: 'Equipment Failure Prediction',
+      description: 'Random forest model predicting bearing wear, motor degradation, and component failures within 7-day window',
+      parentTaskId: 'failure-prediction',
+      intentCategories: ['predictive-analytics', 'risk-assessment', 'failure-forecasting'],
       confidence: 'high'
     },
     {
-      id: 'onprem-task-compliance-validation',
-      label: 'Compliance Validation',
-      description: 'Verify document content and metadata against regulatory requirements and security policies',
-      parentTaskId: 'verify-compliance',
-      intentCategories: ['compliance-checking', 'audit', 'policy-enforcement'],
+      id: 'onprem-task-work-order-generation',
+      label: 'Work Order Generation',
+      description: 'Auto-create maintenance work orders with task descriptions, spare parts lists, estimated duration, and skill requirements',
+      parentTaskId: 'maintenance-scheduling',
+      intentCategories: ['task-generation', 'workflow-automation', 'resource-planning'],
       confidence: 'high'
     },
     {
-      id: 'onprem-task-audit-trail-review',
-      label: 'Audit Trail Review',
-      description: 'Examine access logs and modification history to detect unauthorized activity patterns',
-      parentTaskId: 'verify-compliance',
-      intentCategories: ['forensics', 'anomaly-detection', 'accountability'],
+      id: 'onprem-task-spare-parts-inventory-check',
+      label: 'Spare Parts Inventory Check',
+      description: 'Verify spare part availability, trigger reorders for critical shortage, and flag items with long lead times',
+      parentTaskId: 'maintenance-scheduling',
+      intentCategories: ['inventory-management', 'supply-chain', 'procurement-planning'],
       confidence: 'high'
     },
     {
-      id: 'onprem-task-access-control-verification',
-      label: 'Access Control Verification',
-      description: 'Validate that document access aligns with user clearance levels and role-based permissions',
-      parentTaskId: 'verify-compliance',
-      intentCategories: ['access-control', 'identity-verification', 'least-privilege'],
-      confidence: 'high'
-    },
-    {
-      id: 'onprem-task-report-generation',
-      label: 'Report Generation',
-      description: 'Synthesize classification, compliance, and audit findings into executive and technical reports',
-      parentTaskId: 'generate-report',
-      intentCategories: ['reporting', 'summarization', 'stakeholder-communication'],
+      id: 'onprem-task-maintenance-scheduling',
+      label: 'Maintenance Scheduling',
+      description: 'Schedule preventive maintenance within available maintenance windows and route work orders to technicians',
+      parentTaskId: 'maintenance-scheduling',
+      intentCategories: ['scheduling', 'resource-allocation', 'workforce-optimization'],
       confidence: 'medium'
     },
     {
-      id: 'onprem-task-cross-reference-analysis',
-      label: 'Cross-Reference Analysis',
-      description: 'Link related documents across the collection and identify inconsistencies or information silos',
-      parentTaskId: 'generate-report',
-      intentCategories: ['knowledge-synthesis', 'gap-analysis', 'information-discovery'],
+      id: 'onprem-task-alert-notification',
+      label: 'Alert & Notification',
+      description: 'Send real-time alerts via SMS/email/dashboard for critical equipment failures and escalate to plant engineer',
+      parentTaskId: 'failure-prediction',
+      intentCategories: ['alerting', 'escalation', 'incident-notification'],
+      confidence: 'high'
+    },
+    {
+      id: 'onprem-task-health-scoring',
+      label: 'Equipment Health Scoring',
+      description: 'Calculate equipment health index (1-100) based on recent anomalies, failure predictions, and maintenance history',
+      parentTaskId: 'failure-prediction',
+      intentCategories: ['scoring', 'health-assessment', 'risk-prioritization'],
       confidence: 'medium'
     },
     {
-      id: 'onprem-task-encryption-verification',
-      label: 'Encryption Verification',
-      description: 'Confirm that sensitive documents meet cryptographic standards and key management requirements',
-      parentTaskId: 'verify-compliance',
-      intentCategories: ['cryptography', 'data-protection', 'security-validation'],
+      id: 'onprem-task-oee-calculation',
+      label: 'OEE & MTBF Calculation',
+      description: 'Track Overall Equipment Effectiveness (OEE) and Mean Time Between Failures (MTBF) trends across equipment fleet',
+      parentTaskId: 'failure-prediction',
+      intentCategories: ['performance-metrics', 'trend-analysis', 'kpi-tracking'],
       confidence: 'medium'
     },
     {
-      id: 'onprem-task-anomaly-detection',
-      label: 'Anomaly Detection',
-      description: 'Identify suspicious access patterns, unauthorized modifications, or policy deviations in audit logs',
-      parentTaskId: 'verify-compliance',
-      intentCategories: ['threat-detection', 'behavioral-analysis', 'incident-response'],
+      id: 'onprem-task-downtime-impact-analysis',
+      label: 'Downtime Cost Analysis',
+      description: 'Calculate cost impact of unplanned equipment downtime and quantify cost avoidance from preventive maintenance',
+      parentTaskId: 'maintenance-scheduling',
+      intentCategories: ['cost-analysis', 'roi-calculation', 'business-impact'],
       confidence: 'medium'
     },
     {
-      id: 'onprem-task-policy-lookup',
-      label: 'Policy Lookup',
-      description: 'Retrieve and interpret relevant security and classification policies for assessment context',
-      parentTaskId: 'classify-document',
-      intentCategories: ['knowledge-retrieval', 'policy-interpretation', 'decision-support'],
+      id: 'onprem-task-dashboard-update',
+      label: 'Dashboard & Analytics Update',
+      description: 'Update equipment health dashboard, OEE trends, maintenance queue, and predictive metrics for technician visibility',
+      parentTaskId: 'failure-prediction',
+      intentCategories: ['visualization', 'real-time-analytics', 'operational-visibility'],
       confidence: 'low'
     }
   ],
   dataDimensions: [
     {
-      id: 'onprem-data-classified-docs',
-      label: 'Classified Documents Database',
+      id: 'onprem-data-sensor-streams',
+      label: 'Real-Time Equipment Sensor Streams',
       depthScore: 5,
       subTopics: [
-        { name: 'Document metadata and content abstracts', depth: 5 },
-        { name: 'Current and historical sensitivity labels', depth: 5 },
-        { name: 'Document source and chain of custody', depth: 4 },
-        { name: 'Related document cross-references', depth: 4 }
+        { name: 'Vibration data (1000 Hz sampling)', depth: 5 },
+        { name: 'Temperature and pressure readings', depth: 4 },
+        { name: 'Motor current signature analysis', depth: 4 },
+        { name: 'Time-series correlation and anomaly signals', depth: 5 }
       ],
-      keyEntities: ['doc_id', 'title', 'sensitivity_label', 'classification_date', 'content_hash', 'source_org', 'custodian'],
-      connectedDomains: ['information-security', 'records-management', 'compliance-tracking'],
+      keyEntities: ['equipment_id', 'sensor_type', 'timestamp_utc', 'reading_value', 'unit', 'status_flag', 'anomaly_score'],
+      connectedDomains: ['time-series-data', 'iot-telemetry', 'condition-monitoring'],
       sourceAttribution: [
-        { sourceId: 'classified_documents.db', sourceName: 'On-Premises Document Repository', count: '1.2M documents' }
+        { sourceId: 'mqtt_sensor_streams', sourceName: 'Edge Gateway MQTT Broker', count: '48 TB rolling buffer' }
       ]
     },
     {
-      id: 'onprem-data-policy-manual',
-      label: 'Security Policy Manual',
-      depthScore: 4,
-      subTopics: [
-        { name: 'Classification and sensitivity definitions', depth: 5 },
-        { name: 'Access control and clearance requirements', depth: 4 },
-        { name: 'Document handling and dissemination rules', depth: 4 },
-        { name: 'Breach notification and escalation procedures', depth: 3 }
-      ],
-      keyEntities: ['policy_section', 'sensitivity_level', 'access_requirement', 'handling_rule', 'retention_period', 'escalation_trigger'],
-      connectedDomains: ['policy-governance', 'compliance-management', 'risk-mitigation'],
-      sourceAttribution: [
-        { sourceId: 'security_policy_manual.pdf', sourceName: 'Official Policy Document', count: '287 pages' }
-      ]
-    },
-    {
-      id: 'onprem-data-compliance-rules',
-      label: 'Compliance Rules Engine',
-      depthScore: 4,
-      subTopics: [
-        { name: 'Automated compliance check definitions', depth: 4 },
-        { name: 'Regulatory requirement mappings', depth: 4 },
-        { name: 'Exception handling and waiver criteria', depth: 3 },
-        { name: 'Audit trigger conditions and thresholds', depth: 3 }
-      ],
-      keyEntities: ['rule_id', 'rule_name', 'check_type', 'severity_level', 'remediation_action', 'responsible_party'],
-      connectedDomains: ['compliance-automation', 'audit-management', 'policy-enforcement'],
-      sourceAttribution: [
-        { sourceId: 'compliance_rules.yaml', sourceName: 'Compliance Rule Repository', count: '94 rules' }
-      ]
-    },
-    {
-      id: 'onprem-data-audit-ledger',
-      label: 'Audit Event Ledger',
+      id: 'onprem-data-maintenance-history',
+      label: 'Maintenance History & Failure Database',
       depthScore: 5,
       subTopics: [
-        { name: 'Document access and download events', depth: 5 },
-        { name: 'Modification and annotation history', depth: 5 },
-        { name: 'User identity and authentication records', depth: 4 },
-        { name: 'System-level security events and alerts', depth: 4 }
+        { name: 'Equipment failure records with root causes', depth: 5 },
+        { name: 'Component replacements and repair costs', depth: 4 },
+        { name: 'MTBF and failure trend analysis', depth: 4 },
+        { name: 'Correlation between sensor patterns and failures', depth: 5 }
       ],
-      keyEntities: ['event_timestamp', 'user_id', 'document_id', 'action_type', 'ip_address', 'authentication_method', 'event_status'],
-      connectedDomains: ['audit-logging', 'forensics', 'accountability-tracking'],
+      keyEntities: ['maintenance_id', 'equipment_id', 'failure_type', 'component_failed', 'repair_duration_hours', 'spare_parts_used', 'cost_total', 'root_cause_code'],
+      connectedDomains: ['failure-analysis', 'predictive-maintenance', 'cost-optimization'],
       sourceAttribution: [
-        { sourceId: 'audit_ledger.log', sourceName: 'Immutable Audit Log', count: '18.7M events' }
+        { sourceId: 'maintenance_history.db', sourceName: 'Maintenance Records Database', count: '42,000 records (8 years)' }
+      ]
+    },
+    {
+      id: 'onprem-data-spare-parts',
+      label: 'Spare Parts Inventory & Supply Chain',
+      depthScore: 4,
+      subTopics: [
+        { name: 'Current stock levels and reorder points', depth: 4 },
+        { name: 'Supplier lead times and availability', depth: 3 },
+        { name: 'Part compatibility with equipment types', depth: 3 },
+        { name: 'Cost and criticality rankings', depth: 3 }
       ],
-      gapNote: 'Log tamper detection relies on cryptographic verification; gaps in hash chain indicate potential tampering'
+      keyEntities: ['part_id', 'part_name', 'current_stock', 'reorder_point', 'lead_time_days', 'supplier_id', 'cost_per_unit', 'criticality_level'],
+      connectedDomains: ['inventory-management', 'supply-chain', 'procurement-planning'],
+      sourceAttribution: [
+        { sourceId: 'spare_parts_inventory.db', sourceName: 'Inventory Management System', count: '1,200 part types' }
+      ]
+    },
+    {
+      id: 'onprem-data-equipment-specs',
+      label: 'Equipment Specifications & Manuals',
+      depthScore: 4,
+      subTopics: [
+        { name: 'Operating parameter ranges and thresholds', depth: 4 },
+        { name: 'Bearing wear progression curves', depth: 4 },
+        { name: 'Maintenance schedules and alarm settings', depth: 3 },
+        { name: 'Component inter-dependencies and failure cascades', depth: 3 }
+      ],
+      keyEntities: ['equipment_id', 'equipment_type', 'vibration_threshold_mm_s', 'temp_limit_c', 'bearing_life_hours', 'maintenance_interval_hours', 'manufacturer', 'model_year'],
+      connectedDomains: ['equipment-data', 'technical-specifications', 'reference-knowledge'],
+      sourceAttribution: [
+        { sourceId: 'equipment_specs_and_manuals.pdf', sourceName: 'Manufacturer Documentation', count: '287 equipment files' }
+      ],
+      gapNote: 'Thresholds are equipment-specific; generic default values may not apply to all equipment types'
     }
   ],
   userProfileDimensions: [
     {
-      id: 'onprem-up-security-officer',
-      label: 'Security Officer',
-      description: 'Sets security policy and oversees compliance posture organization-wide',
-      contextAxis: 'Enterprise risk management with policy enforcement focus',
-      postureAxis: 'Conservative; demands comprehensive audit trails and zero-tolerance for violations',
-      channelAxis: 'Compliance dashboards, executive briefings, policy update notifications',
-      behaviorImpact: 'Drives strictness of classification thresholds; influences exception approval workflow'
+      id: 'onprem-up-maintenance-technician',
+      label: 'Maintenance Technician',
+      description: 'Executes preventive and corrective maintenance tasks on factory equipment',
+      contextAxis: 'Operational maintenance with skill-based task assignment',
+      postureAxis: 'Action-oriented; needs clear work instructions and spare parts availability',
+      channelAxis: 'Work orders, maintenance alerts, equipment manuals, parts lookup',
+      behaviorImpact: 'Influences work order clarity and parts-on-hand requirements; drives task scheduling'
     },
     {
-      id: 'onprem-up-analyst-cleared',
-      label: 'Cleared Analyst',
-      description: 'Conducts substantive analysis of classified materials with security clearance',
-      contextAxis: 'Information access justified by clearance status',
-      postureAxis: 'Seeks efficient access to needed documents; respects classification integrity',
-      channelAxis: 'Document search, sensitivity labels, access request submissions',
-      behaviorImpact: 'Shapes usability of document discovery; influences access request automation criteria'
+      id: 'onprem-up-plant-engineer',
+      label: 'Plant Engineer',
+      description: 'Oversees equipment health, approves preventive maintenance schedules, optimizes OEE',
+      contextAxis: 'Equipment engineering with optimization focus',
+      postureAxis: 'Data-driven; wants predictive insights and cost-benefit analysis',
+      channelAxis: 'Health dashboards, trend analysis, OEE reports, failure predictions',
+      behaviorImpact: 'Shapes prediction confidence thresholds; influences scheduling and escalation criteria'
     },
     {
-      id: 'onprem-up-system-admin-onprem',
-      label: 'On-Premises System Administrator',
-      description: 'Manages infrastructure, access controls, and system-level security configurations',
-      contextAxis: 'Operational security with infrastructure ownership',
-      postureAxis: 'Detail-oriented on configuration consistency; responsible for enforcement mechanisms',
-      channelAxis: 'System logs, access control lists, deployment configurations',
-      behaviorImpact: 'Implements access control enforcement; drives authentication protocol requirements'
+      id: 'onprem-up-reliability-manager',
+      label: 'Reliability Manager',
+      description: 'Manages plant-wide maintenance strategy, budgets, and downtime reduction',
+      contextAxis: 'Strategic reliability with business impact focus',
+      postureAxis: 'ROI-focused; balances maintenance costs against downtime risk',
+      channelAxis: 'Strategic dashboards, cost reports, MTBF trends, budget forecasts',
+      behaviorImpact: 'Drives capital allocation and maintenance strategy; influences alert severity levels'
     },
     {
-      id: 'onprem-up-compliance-auditor',
-      label: 'Compliance Auditor',
-      description: 'Validates adherence to regulatory requirements and internal policies',
-      contextAxis: 'Regulatory alignment with evidence collection',
-      postureAxis: 'Meticulous; requires comprehensive documented evidence of compliance',
-      channelAxis: 'Audit reports, evidence collection tools, sampling methodologies',
-      behaviorImpact: 'Shapes audit evidence requirements; influences report generation and data retention policies'
+      id: 'onprem-up-operations-director',
+      label: 'Operations Director',
+      description: 'Responsible for plant production targets and overall uptime SLAs',
+      contextAxis: 'Production scheduling with reliability requirements',
+      postureAxis: 'Availability-critical; needs visibility into predictable maintenance windows',
+      channelAxis: 'Executive dashboards, downtime impact reports, maintenance calendars',
+      behaviorImpact: 'Shapes maintenance window constraints; influences scheduling and escalation SLAs'
     },
     {
-      id: 'onprem-up-intelligence-officer',
-      label: 'Intelligence Officer',
-      description: 'Analyzes classified intelligence and produces intelligence assessments',
-      contextAxis: 'Intelligence tradecraft with source protection priority',
-      postureAxis: 'Risk-aware on source disclosure; focused on actionable intelligence',
-      channelAxis: 'Redacted summaries, source-protected analysis, compartmented briefings',
-      behaviorImpact: 'Requires fine-grained redaction capabilities; influences cross-reference analysis safeguards'
-    },
-    {
-      id: 'onprem-up-legal-counsel',
-      label: 'Legal Counsel',
-      description: 'Advises on legal compliance, discovery obligations, and regulatory requirements',
-      contextAxis: 'Legal and regulatory obligations with liability minimization',
-      postureAxis: 'Conservative on documentation; demands clear liability reduction evidence',
-      channelAxis: 'Legal hold notifications, discovery requests, compliance certification memos',
-      behaviorImpact: 'Influences legal hold policies and retention periods; shapes exception approval authority'
+      id: 'onprem-up-supply-chain-manager',
+      label: 'Supply Chain Manager',
+      description: 'Optimizes spare parts inventory and supplier relationships',
+      contextAxis: 'Supply chain optimization with cost minimization',
+      postureAxis: 'Inventory-aware; balances stock-outs against excess inventory costs',
+      channelAxis: 'Inventory forecasts, demand signals, reorder recommendations, supplier performance',
+      behaviorImpact: 'Influences reorder thresholds and lead-time buffers; shapes parts forecasting'
     }
   ],
-  summaryText: 'The On-Premises Assistant protects classified information by automating document classification, compliance validation, and audit trail analysis within air-gapped environments. It leverages classified document repositories, security policies, compliance rule engines, and immutable audit ledgers to support security officers, cleared analysts, and compliance auditors in maintaining information security and regulatory compliance.'
+  outputDimensions: [
+    { id: 'onprem-od-1', label: 'Anomaly Alert — Success + Direct + One-shot', description: 'Anomaly detected in real-time equipment sensor data', agentOutputId: 'onprem-out-anomaly-alert', agentOutputLabel: 'Anomaly Alert', outcome: 'success', complexity: 'direct', interaction: 'one-shot' },
+    { id: 'onprem-od-2', label: 'Failure Prediction — Success + Inferred + One-shot', description: 'Equipment failure predicted within 7-day window with component-level breakdown', agentOutputId: 'onprem-out-failure-prediction', agentOutputLabel: 'Failure Prediction', outcome: 'success', complexity: 'inferred', interaction: 'one-shot' },
+    { id: 'onprem-od-3', label: 'Work Order — Success + Cross-referenced + One-shot', description: 'Automated work order generated with task routing and spare parts checklist', agentOutputId: 'onprem-out-work-order', agentOutputLabel: 'Work Order', outcome: 'success', complexity: 'cross-referenced', interaction: 'one-shot' },
+    { id: 'onprem-od-4', label: 'Inventory Forecast — Success + Inferred + Conversational', description: 'Spare parts inventory forecast with reorder triggers and lead-time buffers', agentOutputId: 'onprem-out-inventory-forecast', agentOutputLabel: 'Inventory Forecast', outcome: 'success', complexity: 'inferred', interaction: 'conversational' },
+    { id: 'onprem-od-5', label: 'Health Dashboard — Success + Cross-referenced + Conversational', description: 'Real-time equipment health dashboard with OEE and MTBF trend analysis', agentOutputId: 'onprem-out-health-dashboard', agentOutputLabel: 'Health Dashboard', outcome: 'success', complexity: 'cross-referenced', interaction: 'conversational' },
+    { id: 'onprem-od-6', label: 'Prediction Uncertain — Partial + Inferred + Conversational', description: 'Prediction confidence below threshold — requires manual engineer review', agentOutputId: 'onprem-out-failure-prediction', agentOutputLabel: 'Failure Prediction', outcome: 'partial', complexity: 'inferred', interaction: 'conversational' },
+    { id: 'onprem-od-7', label: 'Maintenance Scheduling — Success + Cross-referenced + One-shot', description: 'Preventive maintenance scheduled within available production windows', agentOutputId: 'onprem-out-maintenance-schedule', agentOutputLabel: 'Maintenance Schedule', outcome: 'success', complexity: 'cross-referenced', interaction: 'one-shot' },
+    { id: 'onprem-od-8', label: 'Downtime Impact — Success + Inferred + One-shot', description: 'Cost analysis of unplanned downtime and maintenance ROI calculation', agentOutputId: 'onprem-out-downtime-impact', agentOutputLabel: 'Downtime Impact', outcome: 'success', complexity: 'inferred', interaction: 'one-shot' },
+    { id: 'onprem-od-9', label: 'Escalation Alert — Escalation + Direct + One-shot', description: 'Critical equipment health issue escalated to reliability manager', agentOutputId: 'onprem-out-escalation', agentOutputLabel: 'Escalation Alert', outcome: 'escalation', complexity: 'direct', interaction: 'one-shot' },
+  ],
+  toolDimensions: [
+    { id: 'onprem-tooldim-anomaly-detector', toolId: 'sensor-anomaly-detector', toolName: 'Sensor Anomaly Detector', states: [
+      { id: 'onprem-ts-sad-read-success', label: 'Anomaly Detected', operation: 'read', outcome: 'success', description: 'Real-time sensor data analyzed; anomaly confirmed with LSTM confidence score' },
+      { id: 'onprem-ts-sad-read-failure', label: 'Anomaly Detection Failed', operation: 'read', outcome: 'failure', description: 'Sensor data unavailable or model inference error' },
+    ] },
+    { id: 'onprem-tooldim-predictor', toolId: 'failure-predictor', toolName: 'Failure Predictor', states: [
+      { id: 'onprem-ts-fp-read-success', label: 'Prediction Success', operation: 'read', outcome: 'success', description: 'Failure predicted; component type, failure window, and confidence score returned' },
+      { id: 'onprem-ts-fp-read-failure', label: 'Prediction Failed', operation: 'read', outcome: 'failure', description: 'Insufficient historical data or random forest model error' },
+    ] },
+    { id: 'onprem-tooldim-scheduler', toolId: 'maintenance-scheduler', toolName: 'Maintenance Scheduler', states: [
+      { id: 'onprem-ts-ms-read-success', label: 'Schedule Lookup Success', operation: 'read', outcome: 'success', description: 'Available maintenance windows retrieved' },
+      { id: 'onprem-ts-ms-create-success', label: 'Schedule Created', operation: 'create', outcome: 'success', description: 'Preventive maintenance task scheduled and assigned to technician' },
+      { id: 'onprem-ts-ms-create-failure', label: 'Scheduling Failed', operation: 'create', outcome: 'failure', description: 'No available maintenance window or technician availability conflict' },
+    ] },
+  ],
+  summaryText: 'The Predictive Maintenance Agent monitors 287 equipment units in real-time, detects sensor anomalies via LSTM analysis (89% accuracy), predicts bearing wear and motor failures within 7 days, auto-generates work orders with spare parts optimization, and schedules preventive maintenance within production constraints. Supports 6 user roles including maintenance technicians, plant engineers, and supply chain managers. 9 output dimensions across 5 core outputs. 3 tools with 8 state transitions.'
 }
 
 export const MULTIMODAL_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
   tileId: 'multimodal-agent',
-  agentName: 'Multimodal Agent',
+  agentName: 'Content Moderation Agent',
   taskDimensions: [
     {
-      id: 'multimodal-task-video-transcription',
-      label: 'Video Transcription',
-      description: 'Extract speech-to-text with speaker identification, timestamps, and confidence scoring',
-      parentTaskId: 'transcribe-media',
-      intentCategories: ['transcription', 'speech-recognition', 'speaker-tracking'],
+      id: 'multimodal-task-text-classification',
+      label: 'Text Classification',
+      description: 'Classify flagged text content for hate speech, toxicity, misinformation, and policy violations',
+      parentTaskId: 'content-classification',
+      intentCategories: ['toxicity-detection', 'hate-speech-detection', 'misinformation-detection'],
       confidence: 'high'
     },
     {
-      id: 'multimodal-task-image-captioning',
-      label: 'Image Captioning',
-      description: 'Generate human-readable descriptions of visual content with object recognition and context',
-      parentTaskId: 'transcribe-media',
-      intentCategories: ['visual-understanding', 'accessibility', 'content-description'],
+      id: 'multimodal-task-image-analysis',
+      label: 'Image Analysis',
+      description: 'Analyze images for NSFW content, violence, CSAM hash matching, and policy compliance',
+      parentTaskId: 'content-classification',
+      intentCategories: ['image-classification', 'safety-detection', 'hash-matching'],
       confidence: 'high'
     },
     {
-      id: 'multimodal-task-audio-extraction',
-      label: 'Audio Extraction',
-      description: 'Isolate and enhance audio tracks from multimedia with noise reduction and quality normalization',
-      parentTaskId: 'transcribe-media',
-      intentCategories: ['audio-processing', 'signal-enhancement', 'quality-assurance'],
+      id: 'multimodal-task-audio-processing',
+      label: 'Audio Processing',
+      description: 'Transcribe audio, classify transcribed text for policy violations and harmful content',
+      parentTaskId: 'content-classification',
+      intentCategories: ['speech-to-text', 'audio-classification', 'content-moderation'],
       confidence: 'high'
     },
     {
-      id: 'multimodal-task-cross-modal-synthesis',
-      label: 'Cross-Modal Synthesis',
-      description: 'Integrate insights from video, audio, and text to create cohesive understanding of content',
-      parentTaskId: 'cross-modal-analysis',
-      intentCategories: ['content-synthesis', 'semantic-integration', 'knowledge-extraction'],
+      id: 'multimodal-task-video-classification',
+      label: 'Video Classification',
+      description: 'Process video frames and audio tracks; aggregate classifications for policy decision',
+      parentTaskId: 'content-classification',
+      intentCategories: ['video-analysis', 'frame-sampling', 'multi-modal-aggregation'],
       confidence: 'high'
     },
     {
-      id: 'multimodal-task-visual-highlight-extraction',
-      label: 'Visual Highlight Extraction',
-      description: 'Identify and extract visually significant frames, diagrams, and graphics from video sequences',
-      parentTaskId: 'cross-modal-analysis',
-      intentCategories: ['keyframe-detection', 'visual-summarization', 'content-extraction'],
+      id: 'multimodal-task-policy-matching',
+      label: 'Policy Matching',
+      description: 'Match content violations against platform policies with severity scoring and confidence levels',
+      parentTaskId: 'policy-matching',
+      intentCategories: ['policy-enforcement', 'rule-matching', 'severity-assessment'],
       confidence: 'high'
     },
     {
-      id: 'multimodal-task-lesson-plan-generation',
-      label: 'Lesson Plan Generation',
-      description: 'Structure educational content into learning objectives, activities, and assessment components',
-      parentTaskId: 'summarize-content',
-      intentCategories: ['educational-design', 'content-organization', 'pedagogical-structuring'],
+      id: 'multimodal-task-action-decision',
+      label: 'Action Decision',
+      description: 'Route content to auto-removal, human review, or appeals based on confidence and severity thresholds',
+      parentTaskId: 'moderation-action',
+      intentCategories: ['decision-routing', 'threshold-application', 'workflow-orchestration'],
       confidence: 'medium'
     },
     {
-      id: 'multimodal-task-accessibility-output',
-      label: 'Accessibility Output',
-      description: 'Generate alt-text, captions, transcripts, and accessible media formats for inclusive consumption',
-      parentTaskId: 'transcribe-media',
-      intentCategories: ['accessibility', 'inclusive-design', 'content-adaptation'],
+      id: 'multimodal-task-appeal-handling',
+      label: 'Appeal Handling',
+      description: 'Review user appeals of moderation decisions with <24h SLA and escalation paths',
+      parentTaskId: 'appeals-processing',
+      intentCategories: ['appeals-management', 'reconsideration', 'user-support'],
       confidence: 'medium'
     },
     {
-      id: 'multimodal-task-metadata-tagging',
-      label: 'Metadata Tagging',
-      description: 'Extract and assign structured metadata including keywords, topics, entities, and relationships',
-      parentTaskId: 'summarize-content',
-      intentCategories: ['metadata-enrichment', 'content-indexing', 'knowledge-organization'],
+      id: 'multimodal-task-reporter-feedback',
+      label: 'Reporter Trust Feedback',
+      description: 'Track reporter reliability scores and adjust content prioritization based on historical accuracy',
+      parentTaskId: 'quality-monitoring',
+      intentCategories: ['reporter-ranking', 'reliability-scoring', 'prioritization-adjustment'],
       confidence: 'medium'
     },
     {
-      id: 'multimodal-task-temporal-analysis',
-      label: 'Temporal Analysis',
-      description: 'Track narrative progression, scene transitions, and topic shifts across media timeline',
-      parentTaskId: 'cross-modal-analysis',
-      intentCategories: ['timeline-tracking', 'narrative-structure', 'pacing-analysis'],
+      id: 'multimodal-task-quality-monitoring',
+      label: 'Quality Monitoring',
+      description: 'Audit moderation decisions, flag inconsistencies, and measure false positive rates',
+      parentTaskId: 'quality-monitoring',
+      intentCategories: ['quality-assurance', 'audit-trails', 'metric-tracking'],
       confidence: 'medium'
     },
     {
@@ -509,65 +558,65 @@ export const MULTIMODAL_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
   ],
   dataDimensions: [
     {
-      id: 'multimodal-data-video-library',
-      label: 'Video Library Archive',
+      id: 'multimodal-data-flagged-content-queue',
+      label: 'Flagged Content Queue',
       depthScore: 5,
       subTopics: [
-        { name: 'Raw video files with codec and resolution metadata', depth: 5 },
-        { name: 'Frame-by-frame visual analysis data', depth: 5 },
-        { name: 'Scene detection and transition points', depth: 4 },
-        { name: 'Compressed proxy files for efficient searching', depth: 3 }
+        { name: 'User-reported content with report reasons and timestamps', depth: 5 },
+        { name: 'Automated detection flags from client-side filters', depth: 5 },
+        { name: 'Bulk uploads and batch files requiring moderation', depth: 4 },
+        { name: 'Content priority queue with SLA tiers', depth: 4 }
       ],
-      keyEntities: ['video_id', 'duration_seconds', 'resolution', 'codec', 'fps', 'bitrate', 'file_size_mb'],
-      connectedDomains: ['video-processing', 'media-storage', 'content-management'],
+      keyEntities: ['content_id', 'content_type', 'reporter_id', 'report_reason', 'timestamp', 'priority', 'sla_minutes'],
+      connectedDomains: ['content-intake', 'queue-management', 'triage-systems'],
       sourceAttribution: [
-        { sourceId: 'video_library.tar.gz', sourceName: 'Archived Video Collection', count: '847 videos / 2.1TB' }
+        { sourceId: 'content_queue.kafka', sourceName: 'Real-time Content Queue', count: '8,000-50,000 flags/day' }
       ]
     },
     {
-      id: 'multimodal-data-image-dataset',
-      label: 'Image and Diagram Dataset',
+      id: 'multimodal-data-policy-rulebook',
+      label: 'Platform Policy Rulebook',
       depthScore: 4,
       subTopics: [
-        { name: 'High-resolution images with EXIF metadata', depth: 4 },
-        { name: 'Extracted diagrams, charts, and infographics', depth: 4 },
-        { name: 'Optical character recognition outputs', depth: 4 },
-        { name: 'Visual feature vectors for similarity search', depth: 3 }
+        { name: 'Hate speech, violence, and harassment definitions', depth: 4 },
+        { name: 'CSAM, adult content, and unsafe material policies', depth: 4 },
+        { name: 'Misinformation and false information frameworks', depth: 4 },
+        { name: 'Jurisdiction-specific rules (GDPR/DSA/NetzDG/etc)', depth: 4 }
       ],
-      keyEntities: ['image_id', 'image_type', 'resolution', 'color_space', 'ocr_text', 'dominant_colors', 'object_tags'],
-      connectedDomains: ['computer-vision', 'image-analysis', 'visual-search'],
+      keyEntities: ['policy_id', 'policy_category', 'violation_severity', 'allowed_appeals', 'appeal_window_hours', 'jurisdiction'],
+      connectedDomains: ['policy-management', 'legal-compliance', 'safety-frameworks'],
       sourceAttribution: [
-        { sourceId: 'images_and_diagrams/', sourceName: 'Image and Diagram Repository', count: '12,400 images' }
+        { sourceId: 'policies/global_rulebook.json', sourceName: 'Global Policy Rulebook', count: '47 policy categories' }
       ]
     },
     {
-      id: 'multimodal-data-audio-transcripts',
-      label: 'Audio Transcripts Database',
+      id: 'multimodal-data-moderation-decisions',
+      label: 'Historical Moderation Decisions',
       depthScore: 4,
       subTopics: [
-        { name: 'Machine and human-verified transcripts', depth: 5 },
-        { name: 'Speaker identification and diarization', depth: 4 },
-        { name: 'Phonetic confidence scores and alternative hypotheses', depth: 3 },
-        { name: 'Audio segment timing and alignment data', depth: 4 }
+        { name: 'Past decisions (removed/kept/appealed/escalated)', depth: 5 },
+        { name: 'Moderator rationales and confidence levels', depth: 4 },
+        { name: 'Appeal outcomes and reversal patterns', depth: 4 },
+        { name: 'False positive rates by content type and policy', depth: 3 }
       ],
-      keyEntities: ['transcript_id', 'speaker_name', 'start_time_ms', 'end_time_ms', 'text', 'confidence_score', 'language'],
-      connectedDomains: ['speech-recognition', 'transcript-management', 'audio-processing'],
+      keyEntities: ['decision_id', 'policy_violated', 'action_taken', 'moderator_confidence', 'appeal_status', 'resolution'],
+      connectedDomains: ['decision-history', 'quality-metrics', 'appeals-tracking'],
       sourceAttribution: [
-        { sourceId: 'audio_transcripts.db', sourceName: 'Transcript Storage System', count: '8,924 transcripts' }
+        { sourceId: 'decisions.db', sourceName: 'Decision History Database', count: '2.4M decisions' }
       ]
     },
     {
-      id: 'multimodal-data-metadata-index',
-      label: 'Media Metadata Index',
+      id: 'multimodal-data-reporter-trust-index',
+      label: 'Reporter Trust & Reliability Index',
       depthScore: 3,
       subTopics: [
-        { name: 'Aggregated media descriptors and summaries', depth: 4 },
-        { name: 'Content keywords, tags, and topic assignments', depth: 3 },
-        { name: 'Creator attribution and licensing information', depth: 3 },
-        { name: 'Relationships and cross-references between media', depth: 3 }
+        { name: 'Reporter accuracy rates and historical performance', depth: 4 },
+        { name: 'Verified reporter credentials and badges', depth: 3 },
+        { name: 'Reporter abuse patterns and malicious flagging', depth: 3 },
+        { name: 'Calibrated trust scores for prioritization', depth: 3 }
       ],
-      keyEntities: ['media_id', 'title', 'description', 'keywords', 'topics', 'creator', 'license_type', 'publication_date'],
-      connectedDomains: ['metadata-management', 'content-discovery', 'knowledge-graphs'],
+      keyEntities: ['reporter_id', 'accuracy_rate', 'verified_status', 'trust_score', 'flag_count', 'appeal_reversal_rate'],
+      connectedDomains: ['reporter-management', 'trust-systems', 'quality-assurance'],
       sourceAttribution: [
         { sourceId: 'media_metadata.json', sourceName: 'Metadata Index File', count: '21,171 entries' }
       ]
@@ -575,270 +624,325 @@ export const MULTIMODAL_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
   ],
   userProfileDimensions: [
     {
-      id: 'multimodal-up-content-creator',
-      label: 'Content Creator',
-      description: 'Produces multimedia content for educational, entertainment, or professional purposes',
-      contextAxis: 'Creative expression with audience engagement maximization',
-      postureAxis: 'Seeks efficiency in production pipeline; values quality feedback on visual presentation',
-      channelAxis: 'Preview panels, format optimization suggestions, metadata templates',
-      behaviorImpact: 'Drives demand for rapid transcription and accessibility features; influences output quality standards'
+      id: 'multimodal-up-content-moderator',
+      label: 'Content Moderator',
+      description: 'Reviews and decides on flagged content violations at scale',
+      contextAxis: 'Safety enforcement with consistency and speed',
+      postureAxis: 'Efficiency-focused; needs clear policy guidance and confidence metrics',
+      channelAxis: 'Moderation queue, policy summaries, decision templates, appeal workflows',
+      behaviorImpact: 'Drives decision clarity thresholds; influences appeals SLAs and escalation routing'
     },
     {
-      id: 'multimodal-up-educator',
-      label: 'Educator',
-      description: 'Develops and delivers educational content and curricula to learners',
-      contextAxis: 'Learning outcomes and student comprehension with accessibility priority',
-      postureAxis: 'Pedagogically-focused; values structured lesson components and learner differentiation',
-      channelAxis: 'Lesson structure templates, learning objective guidance, assessment question generation',
-      behaviorImpact: 'Shapes lesson plan generation formats; drives demand for accessibility features and student engagement metrics'
+      id: 'multimodal-up-trust-safety-manager',
+      label: 'Trust & Safety Manager',
+      description: 'Oversees platform safety operations and moderation strategy',
+      contextAxis: 'Platform integrity with compliance and user protection',
+      postureAxis: 'Data-driven; demands metrics, trends, and ROI on moderation investments',
+      channelAxis: 'Safety dashboards, trend reports, false positive analysis, policy effectiveness metrics',
+      behaviorImpact: 'Shapes policy adjustments and resource allocation; influences threshold tuning'
     },
     {
-      id: 'multimodal-up-multimedia-analyst',
-      label: 'Multimedia Analyst',
-      description: 'Conducts detailed analysis of visual and audio content for research or insights',
-      contextAxis: 'Analytical rigor with comprehensive content coverage',
-      postureAxis: 'Detail-oriented; requires granular data extraction and cross-modal correlation',
-      channelAxis: 'Data export formats, temporal markers, entity relationship visualizations',
-      behaviorImpact: 'Influences temporal analysis precision; drives demand for fine-grained extraction and cross-modal linking'
+      id: 'multimodal-up-legal-specialist',
+      label: 'Legal & Compliance Specialist',
+      description: 'Ensures moderation decisions comply with jurisdiction laws and regulations',
+      contextAxis: 'Legal compliance with liability minimization',
+      postureAxis: 'Conservative; demands audit trails and evidence for all escalations',
+      channelAxis: 'Compliance flags, legal hold notifications, jurisdiction routing, appeal documentation',
+      behaviorImpact: 'Influences jurisdiction-specific rule enforcement; shapes escalation documentation requirements'
     },
     {
-      id: 'multimodal-up-accessibility-specialist',
-      label: 'Accessibility Specialist',
-      description: 'Ensures media content is accessible to users with disabilities',
-      contextAxis: 'Inclusive access with WCAG compliance assurance',
-      postureAxis: 'Standards-driven; demands comprehensive alternative content and validation testing',
-      channelAxis: 'Alt-text templates, caption quality reports, assistive technology compatibility checks',
-      behaviorImpact: 'Shapes accessibility output specifications; ensures compliance with accessibility standards'
+      id: 'multimodal-up-appeals-specialist',
+      label: 'Appeals Specialist',
+      description: 'Reviews user appeals and makes reconsideration decisions',
+      contextAxis: 'Appeal fairness with user satisfaction',
+      postureAxis: 'Detail-focused; values full context and precedent cases for decisions',
+      channelAxis: 'Appeal queue, decision history, policy interpretations, precedent cases',
+      behaviorImpact: 'Influences appeal criteria and reversal precedents; shapes reconsideration SLAs'
     },
     {
-      id: 'multimodal-up-journalist',
-      label: 'Journalist',
-      description: 'Investigates and reports on topics using multimedia evidence and primary sources',
-      contextAxis: 'Factual accuracy with source documentation and narrative impact',
-      postureAxis: 'Verification-focused; prioritizes evidence extraction and timeline reconstruction',
-      channelAxis: 'Transcript search, visual asset galleries, fact-check summaries',
-      behaviorImpact: 'Drives need for precise transcription and source attribution; influences metadata enrichment requirements'
+      id: 'multimodal-up-community-liaison',
+      label: 'Community Liaison',
+      description: 'Communicates moderation policies and decisions to user communities',
+      contextAxis: 'Community trust with transparency on enforcement',
+      postureAxis: 'Communication-focused; emphasizes clarity in policy explanations',
+      channelAxis: 'Policy summaries, removal notifications, transparency reports, community FAQs',
+      behaviorImpact: 'Shapes explanation clarity; influences appeals transparency and community confidence'
     },
     {
-      id: 'multimodal-up-design-professional',
-      label: 'Design Professional',
-      description: 'Creates visual assets, interfaces, and design systems for digital products',
-      contextAxis: 'Visual design excellence with usability assurance',
-      postureAxis: 'Aesthetically-informed; seeks visual inspiration and design pattern extraction from media',
-      channelAxis: 'Visual highlight galleries, color palette extraction, design system mappings',
-      behaviorImpact: 'Shapes visual highlight extraction criteria; drives demand for design-focused metadata tagging'
+      id: 'multimodal-up-ai-ops-engineer',
+      label: 'AI/Ops Engineer',
+      description: 'Monitors and improves AI moderation models and automation workflows',
+      contextAxis: 'AI quality with operational efficiency',
+      postureAxis: 'Metrics-driven; focuses on false positive reduction and throughput optimization',
+      channelAxis: 'Model performance dashboards, error analysis, automation coverage reports',
+      behaviorImpact: 'Influences confidence thresholds and auto-removal criteria; shapes model retraining'
     }
   ],
-  summaryText: 'The Multimodal Agent unlocks insights from video, audio, images, and text by transcribing speech, captioning visuals, and synthesizing cross-modal understanding. It integrates video libraries, image datasets, audio transcripts, and metadata indexes to empower content creators, educators, accessibility specialists, and multimedia analysts in transforming raw media into structured, accessible, and discoverable knowledge.'
+  outputDimensions: [
+    { id: 'multimodal-od-1', label: 'Moderation Decision — Success + Direct + One-shot', description: 'Content reviewed and decision rendered (remove/keep/escalate)', agentOutputId: 'multimodal-out-moderation-decision', agentOutputLabel: 'Moderation Decision', outcome: 'success', complexity: 'direct', interaction: 'one-shot' },
+    { id: 'multimodal-od-2', label: 'Moderation Decision — Success + Inferred + One-shot', description: 'Multi-modal content analyzed; high-confidence removal or approval', agentOutputId: 'multimodal-out-moderation-decision', agentOutputLabel: 'Moderation Decision', outcome: 'success', complexity: 'inferred', interaction: 'one-shot' },
+    { id: 'multimodal-od-3', label: 'Escalation Summary — Success + Cross-referenced + Conversational', description: 'Ambiguous case escalated to human moderator with evidence dossier', agentOutputId: 'multimodal-out-escalation-summary', agentOutputLabel: 'Escalation Summary', outcome: 'success', complexity: 'cross-referenced', interaction: 'conversational' },
+    { id: 'multimodal-od-4', label: 'Appeal Outcome — Success + Direct + Conversational', description: 'User appeal reviewed and decision rendered with explanation', agentOutputId: 'multimodal-out-appeal-outcome', agentOutputLabel: 'Appeal Outcome', outcome: 'success', complexity: 'direct', interaction: 'conversational' },
+    { id: 'multimodal-od-5', label: 'Appeal Outcome — Partial + Inferred + Conversational', description: 'Appeal requires further investigation or policy consultation', agentOutputId: 'multimodal-out-appeal-outcome', agentOutputLabel: 'Appeal Outcome', outcome: 'partial', complexity: 'inferred', interaction: 'conversational' },
+    { id: 'multimodal-od-6', label: 'Trend Report — Success + Cross-referenced + One-shot', description: 'Policy violation trends and emerging violation patterns identified', agentOutputId: 'multimodal-out-trend-report', agentOutputLabel: 'Trend Report', outcome: 'success', complexity: 'cross-referenced', interaction: 'one-shot' },
+    { id: 'multimodal-od-7', label: 'Quality Audit — Success + Inferred + Conversational', description: 'False positive and enforcement consistency audit completed', agentOutputId: 'multimodal-out-quality-audit', agentOutputLabel: 'Quality Audit', outcome: 'success', complexity: 'inferred', interaction: 'conversational' },
+    { id: 'multimodal-od-8', label: 'Escalation Alert — Escalation + Direct + One-shot', description: 'Critical harmful content or policy edge case requiring legal review', agentOutputId: 'multimodal-out-escalation', agentOutputLabel: 'Escalation Alert', outcome: 'escalation', complexity: 'direct', interaction: 'one-shot' },
+  ],
+  toolDimensions: [
+    { id: 'multimodal-tooldim-text-classifier', toolId: 'text-classifier', toolName: 'Text Classifier', states: [
+      { id: 'multimodal-ts-tc-read-success', label: 'Text Classification Success', operation: 'read', outcome: 'success', description: 'Text analyzed for toxicity, hate speech, misinformation with confidence scores' },
+      { id: 'multimodal-ts-tc-read-failure', label: 'Text Classification Failed', operation: 'read', outcome: 'failure', description: 'Unsupported language or model inference error' },
+    ] },
+    { id: 'multimodal-tooldim-image-analyzer', toolId: 'image-analyzer', toolName: 'Image Analyzer', states: [
+      { id: 'multimodal-ts-ia-read-success', label: 'Image Analysis Success', operation: 'read', outcome: 'success', description: 'Image analyzed for NSFW, violence, and CSAM hash matching' },
+      { id: 'multimodal-ts-ia-read-failure', label: 'Image Analysis Failed', operation: 'read', outcome: 'failure', description: 'Image too degraded or unsupported format' },
+    ] },
+    { id: 'multimodal-tooldim-policy-matcher', toolId: 'policy-matcher', toolName: 'Policy Matcher', states: [
+      { id: 'multimodal-ts-pm-read-success', label: 'Policy Matching Success', operation: 'read', outcome: 'success', description: 'Violations matched against policies with severity scoring' },
+      { id: 'multimodal-ts-pm-read-failure', label: 'Policy Matching Failed', operation: 'read', outcome: 'failure', description: 'Policy database unavailable or configuration error' },
+      { id: 'multimodal-ts-pm-create-success', label: 'Decision Logged', operation: 'create', outcome: 'success', description: 'Moderation decision recorded with audit trail' },
+    ] },
+  ],
+  summaryText: 'The Content Moderation Agent reviews 8,000-50,000 flagged items daily, classifies policy violations across text/image/audio/video, matches violations against jurisdiction-specific policies, auto-removes high-confidence violations (<3% false positive rate), escalates ambiguous cases to human moderators (<24h SLA), and handles user appeals. Supports 6 roles including content moderators, legal specialists, and appeals specialists. 8 output dimensions across 5 core outputs. 3 tools with 8 state transitions.'
 }
 
 export const CONSUMER_CHAT_DIMENSIONS: DimensionAnalysisPayload = {
   tileId: 'consumer-chat',
-  agentName: 'Consumer Chat Agent',
+  agentName: 'Employee Support Agent',
   taskDimensions: [
     {
-      id: 'consumer-task-order-tracking',
-      label: 'Order Tracking',
-      description: 'Retrieve current order status, shipment location, delivery estimates, and proactive delay notifications',
-      parentTaskId: 'track-orders',
-      intentCategories: ['order-status', 'delivery-visibility', 'logistics-inquiry'],
+      id: 'consumer-task-policy-lookup',
+      label: 'Policy Question Answering',
+      description: 'Search employee handbook and answer questions about company policies, benefits, and compliance with state laws',
+      parentTaskId: 'answer-policy-question',
+      intentCategories: ['policy-lookup', 'compliance-verification', 'handbook-search'],
       confidence: 'high'
     },
     {
-      id: 'consumer-task-product-recommendation',
-      label: 'Product Recommendation',
-      description: 'Suggest relevant products based on browsing history, purchase patterns, and preference vectors',
-      parentTaskId: 'product-recommendation',
-      intentCategories: ['personalization', 'upsell', 'discovery'],
+      id: 'consumer-task-pto-request',
+      label: 'PTO Request Processing',
+      description: 'Process paid time-off requests with accrual calculation, FMLA tracking, and manager approval workflow',
+      parentTaskId: 'process-pto-request',
+      intentCategories: ['pto-management', 'leave-accrual', 'fmla-tracking'],
       confidence: 'high'
     },
     {
-      id: 'consumer-task-return-processing',
-      label: 'Return Processing',
-      description: 'Execute return authorization, generate shipping labels, and process refunds with status tracking',
-      parentTaskId: 'handle-returns',
-      intentCategories: ['refund-management', 'reverse-logistics', 'customer-service'],
+      id: 'consumer-task-benefits-inquiry',
+      label: 'Benefits Enrollment & Inquiry',
+      description: 'Answer benefits questions, process enrollment elections, calculate costs, and manage plan changes',
+      parentTaskId: 'benefits-enrollment-help',
+      intentCategories: ['benefits-management', 'enrollment-support', 'cost-calculator'],
       confidence: 'high'
     },
     {
-      id: 'consumer-task-faq-answering',
-      label: 'FAQ Answering',
-      description: 'Retrieve and present relevant FAQs addressing common questions about policies, shipping, and products',
-      parentTaskId: 'track-orders',
-      intentCategories: ['self-service', 'knowledge-retrieval', 'support-automation'],
+      id: 'consumer-task-payroll-question',
+      label: 'Payroll & Compensation Question',
+      description: 'Answer questions about paychecks, tax withholding, direct deposit, and compensation details',
+      parentTaskId: 'answer-policy-question',
+      intentCategories: ['payroll-inquiry', 'compensation-question', 'tax-withholding'],
       confidence: 'high'
     },
     {
-      id: 'consumer-task-sentiment-detection',
-      label: 'Sentiment Detection',
-      description: 'Analyze customer tone and emotion in messages to identify escalation triggers and empathy requirements',
-      parentTaskId: 'handle-returns',
-      intentCategories: ['emotion-recognition', 'escalation-detection', 'service-quality'],
+      id: 'consumer-task-compliance-validation',
+      label: 'Compliance Validation',
+      description: 'Validate policy answers against state employment law (CA/NY/TX FMLA/ADA) and flag legal concerns',
+      parentTaskId: 'answer-policy-question',
+      intentCategories: ['legal-compliance', 'state-law-check', 'eeoc-compliance'],
       confidence: 'medium'
     },
     {
-      id: 'consumer-task-loyalty-program',
-      label: 'Loyalty Program Management',
-      description: 'Track reward points, redemption eligibility, tier status, and exclusive member benefits',
-      parentTaskId: 'product-recommendation',
-      intentCategories: ['loyalty-tracking', 'reward-optimization', 'member-benefits'],
+      id: 'consumer-task-escalation-routing',
+      label: 'Escalation Decision',
+      description: 'Determine if policy exception or legal concern requires escalation to HR business partner',
+      parentTaskId: 'answer-policy-question',
+      intentCategories: ['escalation-criteria', 'exception-handling', 'hr-collaboration'],
       confidence: 'medium'
     },
     {
-      id: 'consumer-task-upsell-opportunity',
-      label: 'Upsell Opportunity Detection',
-      description: 'Identify contextually relevant high-margin or complementary products to suggest based on conversation',
-      parentTaskId: 'product-recommendation',
-      intentCategories: ['revenue-optimization', 'cross-sell', 'offer-timing'],
-      confidence: 'medium'
-    },
-    {
-      id: 'consumer-task-complaint-handling',
-      label: 'Complaint Handling',
-      description: 'Document issues, escalate to specialist teams, and communicate resolution timelines to customers',
-      parentTaskId: 'handle-returns',
-      intentCategories: ['issue-resolution', 'escalation-management', 'customer-recovery'],
-      confidence: 'medium'
-    },
-    {
-      id: 'consumer-task-personalization',
-      label: 'Personalization Engine',
-      description: 'Customize recommendations, content, and offers based on individual user profile and preferences',
-      parentTaskId: 'product-recommendation',
-      intentCategories: ['personalization', 'preference-learning', 'behavioral-targeting'],
+      id: 'consumer-task-intent-classification',
+      label: 'Query Intent Classification',
+      description: 'Classify employee query intent (policy, PTO, benefits, payroll) to route to correct workflow',
+      parentTaskId: 'answer-policy-question',
+      intentCategories: ['intent-detection', 'request-routing', 'conversation-understanding'],
       confidence: 'high'
     },
     {
-      id: 'consumer-task-feedback-collection',
-      label: 'Feedback Collection',
-      description: 'Solicit, structure, and route product reviews and service feedback to appropriate teams',
-      parentTaskId: 'track-orders',
-      intentCategories: ['voice-of-customer', 'survey-collection', 'continuous-improvement'],
-      confidence: 'low'
+      id: 'consumer-task-state-law-check',
+      label: 'State Law Compliance Check',
+      description: 'Verify policy answers against employee state location (CA/NY/TX) for FMLA/ADA/wage law compliance',
+      parentTaskId: 'answer-policy-question',
+      intentCategories: ['state-compliance', 'jurisdiction-routing', 'legal-verification'],
+      confidence: 'medium'
+    },
+    {
+      id: 'consumer-task-pto-calculation',
+      label: 'PTO Accrual & Calculation',
+      description: 'Calculate PTO accrual balance, process requests, and validate against FMLA eligibility and state laws',
+      parentTaskId: 'process-pto-request',
+      intentCategories: ['accrual-calculation', 'fmla-validation', 'leave-tracking'],
+      confidence: 'high'
+    },
+    {
+      id: 'consumer-task-benefit-details',
+      label: 'Benefit Plan Explanation',
+      description: 'Provide detailed explanations of health, retirement, and insurance benefit options with cost-benefit analysis',
+      parentTaskId: 'benefits-enrollment-help',
+      intentCategories: ['benefits-education', 'plan-comparison', 'cost-analysis'],
+      confidence: 'high'
     }
   ],
   dataDimensions: [
     {
       id: 'consumer-data-user-profiles',
-      label: 'User Profiles Database',
+      label: 'Employee Handbook & Policies',
       depthScore: 5,
       subTopics: [
-        { name: 'Account information and contact details', depth: 4 },
-        { name: 'Purchase history and transaction records', depth: 5 },
-        { name: 'Communication preferences and notification settings', depth: 3 },
-        { name: 'Loyalty program membership and tier status', depth: 4 }
+        { name: 'Policy documents organized by category (benefits, time-off, compensation)', depth: 5 },
+        { name: 'State-specific compliance rules (CA/NY/TX FMLA/ADA/wage)', depth: 5 },
+        { name: 'Full-text searchable policy index with versioning', depth: 4 },
+        { name: 'Policy citations and cross-references', depth: 4 }
       ],
-      keyEntities: ['user_id', 'account_email', 'phone', 'address', 'total_spend', 'lifetime_orders', 'member_tier', 'vip_status'],
-      connectedDomains: ['customer-relationship-management', 'user-segmentation', 'retention-analytics'],
+      keyEntities: ['policy_id', 'policy_name', 'category', 'state_scope', 'effective_date', 'version', 'last_updated', 'full_text'],
+      connectedDomains: ['policy-management', 'compliance-systems', 'legal-repositories'],
       sourceAttribution: [
-        { sourceId: 'user_profiles.db', sourceName: 'Customer Database', count: '2.8M active users' }
+        { sourceId: 'handbook.pdf', sourceName: 'Employee Handbook', count: '156 policies' }
       ]
     },
     {
-      id: 'consumer-data-preference-vectors',
-      label: 'Preference Vectors and Embeddings',
+      id: 'consumer-data-hris-api',
+      label: 'HRIS API & Employee Data',
+      depthScore: 5,
+      subTopics: [
+        { name: 'Employee profile data (name, ID, department, manager, location)', depth: 5 },
+        { name: 'Compensation and payroll information', depth: 5 },
+        { name: 'Benefits enrollment status and plan selections', depth: 4 },
+        { name: 'PTO balances, accrual rates, and leave history', depth: 4 }
+      ],
+      keyEntities: ['employee_id', 'name', 'department', 'manager_id', 'location', 'salary', 'status', 'pto_balance', 'benefits_enrolled'],
+      connectedDomains: ['hris-systems', 'payroll-management', 'hr-data'],
+      sourceAttribution: [
+        { sourceId: 'hris_api.workday.com', sourceName: 'Workday HRIS API', count: '24,000 employees' }
+      ]
+    },
+    {
+      id: 'consumer-data-benefits-portal',
+      label: 'Benefits Plan & Enrollment Data',
       depthScore: 4,
       subTopics: [
-        { name: 'Learned user preference embeddings from browsing and purchase signals', depth: 5 },
-        { name: 'Product affinity scores and category preferences', depth: 4 },
-        { name: 'Price sensitivity and quality preference indicators', depth: 3 },
-        { name: 'Seasonal and temporal preference patterns', depth: 3 }
+        { name: 'Available health, dental, vision, retirement plans with rates', depth: 4 },
+        { name: 'Employee benefit elections and plan selections', depth: 4 },
+        { name: 'Coverage details, deductibles, and out-of-pocket costs', depth: 4 },
+        { name: 'Life events and qualifying changes', depth: 3 }
       ],
-      keyEntities: ['user_id', 'product_embedding', 'category_score', 'price_sensitivity', 'quality_preference', 'seasonality_factor'],
-      connectedDomains: ['recommender-systems', 'machine-learning', 'behavioral-analytics'],
+      keyEntities: ['plan_id', 'plan_name', 'carrier', 'employee_rate', 'employer_rate', 'deductible', 'elected_plan', 'effective_date'],
+      connectedDomains: ['benefits-management', 'enrollment-systems', 'carrier-data'],
       sourceAttribution: [
-        { sourceId: 'preference_vectors.bin', sourceName: 'ML Model Artifacts', count: '2.8M user vectors' }
+        { sourceId: 'benefits_portal.benefitfocus.com', sourceName: 'Benefits Portal', count: '12 plans available' }
       ]
     },
     {
-      id: 'consumer-data-faq-catalog',
-      label: 'FAQ Catalog',
-      depthScore: 3,
-      subTopics: [
-        { name: 'Common questions organized by topic and product category', depth: 4 },
-        { name: 'Curated answer content with links to policies', depth: 3 },
-        { name: 'Related articles and escalation paths', depth: 3 },
-        { name: 'Search keywords and topic tags', depth: 2 }
-      ],
-      keyEntities: ['faq_id', 'question', 'answer', 'category', 'keywords', 'related_faq_ids', 'escalation_path', 'view_count'],
-      connectedDomains: ['knowledge-management', 'self-service-support', 'content-curation'],
-      sourceAttribution: [
-        { sourceId: 'faq_catalog.json', sourceName: 'FAQ Knowledge Base', count: '847 FAQs' }
-      ]
-    },
-    {
-      id: 'consumer-data-conversation-history',
-      label: 'Conversation History Database',
+      id: 'consumer-data-payroll-api',
+      label: 'Payroll & Compensation Data',
       depthScore: 4,
       subTopics: [
-        { name: 'Complete chat transcripts with timestamps and agent assignments', depth: 5 },
-        { name: 'Sentiment and intent classification per message', depth: 4 },
-        { name: 'Resolution outcomes and customer satisfaction scores', depth: 4 },
-        { name: 'Extracted entities and issue categories', depth: 3 }
+        { name: 'Pay stubs, tax withholding, and direct deposit info', depth: 4 },
+        { name: 'Year-to-date earnings, bonuses, and deductions', depth: 4 },
+        { name: 'W-2 history and tax documents', depth: 3 },
+        { name: 'Compensation philosophy and salary bands', depth: 3 }
       ],
-      keyEntities: ['conversation_id', 'user_id', 'timestamp', 'message_text', 'sentiment', 'intent', 'agent_id', 'resolution_status', 'csat_score'],
-      connectedDomains: ['customer-service', 'experience-analytics', 'quality-monitoring'],
+      keyEntities: ['employee_id', 'gross_pay', 'net_pay', 'tax_withholding', 'deductions', 'ytd_earnings', 'bonus', 'ach_routing_number'],
+      connectedDomains: ['payroll-systems', 'compensation-management', 'tax-compliance'],
       sourceAttribution: [
-        { sourceId: 'conversation_history.db', sourceName: 'Chat Database', count: '12.4M conversations / 3 years' }
-      ],
-      gapNote: 'Sentiment data currently available only for last 6 months; older conversations require batch reprocessing'
+        { sourceId: 'payroll_api.adp.com', sourceName: 'ADP Payroll API', count: '24,000 employee records' }
+      ]
     }
   ],
   userProfileDimensions: [
     {
-      id: 'consumer-up-consumer-user',
-      label: 'Consumer User',
-      description: 'Individual customer shopping for personal or household needs',
-      contextAxis: 'Convenience and value maximization with minimal effort',
-      postureAxis: 'Solution-seeking; prefers fast, straightforward answers; price-sensitive',
-      channelAxis: 'Chat messages, product pages, order confirmation emails',
-      behaviorImpact: 'Drives demand for quick issue resolution and self-service; influences response time expectations'
+      id: 'consumer-up-employee-standard',
+      label: 'Standard Employee',
+      description: 'Full-time or part-time employee seeking HR information and support',
+      contextAxis: 'Self-service HR with compliance assurance',
+      postureAxis: 'Solution-seeking; prefers fast, clear answers; wants policy citations',
+      channelAxis: 'Chat messages, handbook links, policy citations, HRIS portal',
+      behaviorImpact: 'Drives demand for quick resolution and self-service; influences response time SLAs'
     },
     {
-      id: 'consumer-up-repeat-customer',
-      label: 'Repeat Customer',
-      description: 'Loyal customer with established purchase patterns and brand affinity',
-      contextAxis: 'Relationship continuity with preference recognition',
-      postureAxis: 'Expects personalized recognition; values faster service; more forgiving of minor issues',
-      channelAxis: 'Account dashboard, personalized recommendations, loyalty email campaigns',
-      behaviorImpact: 'Shapes personalization requirements; influences loyalty program feature prioritization'
+      id: 'consumer-up-employee-manager',
+      label: 'Manager / Team Lead',
+      description: 'Manager responsible for team policies, performance, and compliance',
+      contextAxis: 'Team management with HR policy compliance',
+      postureAxis: 'Detail-oriented on facts; seeks legal compliance context and escalation paths',
+      channelAxis: 'HR business partner contacts, policy interpretations, team reporting',
+      behaviorImpact: 'Drives demand for escalation paths and compliance documentation; shapes HR partner involvement'
     },
     {
-      id: 'consumer-up-customer-service-team',
-      label: 'Customer Service Team',
-      description: 'Support staff handling escalated issues and complex customer inquiries',
-      contextAxis: 'Issue resolution with customer satisfaction and efficiency',
-      postureAxis: 'Detail-oriented on facts; seeks clear evidence and customer context for decision-making',
-      channelAxis: 'Support dashboard, customer history summaries, escalation queues',
-      behaviorImpact: 'Shapes information display and escalation criteria; drives need for contextual customer data'
+      id: 'consumer-up-hr-business-partner',
+      label: 'HR Business Partner',
+      description: 'Strategic HR leader advising on policy exceptions and employee relations issues',
+      contextAxis: 'Strategic HR with exception handling and legal compliance',
+      postureAxis: 'Legally-focused; demands clear compliance evidence and precedent cases',
+      channelAxis: 'Escalation queue, compliance certifications, precedent case library',
+      behaviorImpact: 'Shapes exception approval authority; influences escalation criteria and documentation'
     },
     {
-      id: 'consumer-up-vip-customer',
-      label: 'VIP Customer',
-      description: 'High-value customer with premium service expectations and relationship priority',
-      contextAxis: 'White-glove service with proactive outreach and special treatment',
-      postureAxis: 'Expects immediate attention and preferential handling; intolerant of standard service',
-      channelAxis: 'Dedicated support phone line, priority chat queue, personalized offers',
-      behaviorImpact: 'Drives demand for queue prioritization and personalized recommendations; influences service SLAs'
+      id: 'consumer-up-employee-new-hire',
+      label: 'New Hire / Onboarding',
+      description: 'Employee in first 90 days seeking benefits, PTO, and policy basics',
+      contextAxis: 'Onboarding experience with learning support',
+      postureAxis: 'Learning-focused; needs foundational information; sensitive to overwhelming detail',
+      channelAxis: 'Onboarding checklists, benefits enrollment, handbook highlights, buddy guidance',
+      behaviorImpact: 'Drives demand for simplified explanations and structured onboarding paths'
     },
     {
-      id: 'consumer-up-product-specialist',
-      label: 'Product Specialist',
-      description: 'Subject matter expert on product lines responsible for knowledge dissemination',
-      contextAxis: 'Product expertise with customer education and satisfaction',
-      postureAxis: 'Detail-focused on product features and quality assurance; patient with customer education',
-      channelAxis: 'FAQ updates, product recommendation training, quality feedback loops',
-      behaviorImpact: 'Shapes product information quality; drives FAQ updates and recommendation accuracy'
+      id: 'consumer-up-employee-departing',
+      label: 'Departing / Transitioning Employee',
+      description: 'Employee in off-boarding process or internal transfer seeking compliance info',
+      contextAxis: 'Transition management with benefit continuation and compliance',
+      postureAxis: 'Risk-aware; wants final paycheck details and benefit COBRA information',
+      channelAxis: 'Off-boarding checklist, COBRA enrollment, final benefits info, legal citations',
+      behaviorImpact: 'Drives demand for transition documentation and compliance assurance'
     },
     {
-      id: 'consumer-up-retention-specialist',
-      label: 'Retention Specialist',
-      description: 'Team member focused on reducing churn and increasing customer lifetime value',
-      contextAxis: 'Customer value maximization with engagement and retention focus',
-      postureAxis: 'Data-driven on retention triggers; proactive in outreach; focused on lifetime value',
-      channelAxis: 'Customer segment analytics, churn risk alerts, personalized retention offers',
-      behaviorImpact: 'Drives personalization and upsell opportunity detection; shapes loyalty program strategy'
+      id: 'consumer-up-hr-admin',
+      label: 'HR Administrator',
+      description: 'HR operations staff managing enrollment, payroll, and policy administration',
+      contextAxis: 'HR operations with data accuracy and compliance',
+      postureAxis: 'Process-focused; needs audit trails and system integration verification',
+      channelAxis: 'System dashboards, audit reports, policy documentation, escalation notes',
+      behaviorImpact: 'Shapes system integration needs and audit trail requirements'
     }
   ],
-  summaryText: 'The Consumer Chat Agent delivers personalized shopping experiences by tracking orders, recommending products, processing returns, and answering questions in real-time conversations. It synthesizes user profiles, preference vectors, FAQ catalogs, and conversation history to help consumer users, repeat customers, VIP customers, and service teams transact efficiently and build lasting relationships.'
+  outputDimensions: [
+    { id: 'consumer-od-1', label: 'Policy Answer — Success + Direct + One-shot', description: 'Policy question answered with handbook citation', agentOutputId: 'consumer-out-policy-answer', agentOutputLabel: 'Policy Answer', outcome: 'success', complexity: 'direct', interaction: 'one-shot' },
+    { id: 'consumer-od-2', label: 'Policy Answer — Success + Cross-referenced + One-shot', description: 'Multi-policy question answered with state law compliance check', agentOutputId: 'consumer-out-policy-answer', agentOutputLabel: 'Policy Answer', outcome: 'success', complexity: 'cross-referenced', interaction: 'one-shot' },
+    { id: 'consumer-od-3', label: 'Policy Answer — Partial + Inferred + Conversational', description: 'Policy answer requires escalation due to exception or legal concern', agentOutputId: 'consumer-out-policy-answer', agentOutputLabel: 'Policy Answer', outcome: 'partial', complexity: 'inferred', interaction: 'conversational' },
+    { id: 'consumer-od-4', label: 'PTO Approval — Success + Direct + One-shot', description: 'PTO request approved with accrual calculation and compliance check', agentOutputId: 'consumer-out-pto-approval', agentOutputLabel: 'PTO Approval', outcome: 'success', complexity: 'direct', interaction: 'one-shot' },
+    { id: 'consumer-od-5', label: 'PTO Approval — Success + Cross-referenced + Conversational', description: 'Complex PTO request with FMLA tracking and manager notification', agentOutputId: 'consumer-out-pto-approval', agentOutputLabel: 'PTO Approval', outcome: 'success', complexity: 'cross-referenced', interaction: 'conversational' },
+    { id: 'consumer-od-6', label: 'Benefits Election — Success + Direct + Conversational', description: 'Benefits enrollment processed with cost calculations and confirmations', agentOutputId: 'consumer-out-benefits-election', agentOutputLabel: 'Benefits Election', outcome: 'success', complexity: 'direct', interaction: 'conversational' },
+    { id: 'consumer-od-7', label: 'Benefits Election — Success + Cross-referenced + Conversational', description: 'Multi-plan benefits election with plan comparisons and life event verification', agentOutputId: 'consumer-out-benefits-election', agentOutputLabel: 'Benefits Election', outcome: 'success', complexity: 'cross-referenced', interaction: 'conversational' },
+    { id: 'consumer-od-8', label: 'Escalation Notice — Partial + Inferred + Conversational', description: 'Complex request escalated to HR business partner with evidence summary', agentOutputId: 'consumer-out-escalation-notice', agentOutputLabel: 'Escalation Notice', outcome: 'partial', complexity: 'inferred', interaction: 'conversational' },
+    { id: 'consumer-od-9', label: 'Compliance Flagging — Escalation + Direct + One-shot', description: 'Potential legal compliance issue requiring HR/legal review', agentOutputId: 'consumer-out-compliance-flag', agentOutputLabel: 'Compliance Flag', outcome: 'escalation', complexity: 'direct', interaction: 'one-shot' },
+  ],
+  toolDimensions: [
+    { id: 'consumer-tooldim-handbook', toolId: 'handbook-searcher', toolName: 'Handbook Searcher', states: [
+      { id: 'consumer-ts-hbs-read-success', label: 'Policy Found', operation: 'read', outcome: 'success', description: 'Handbook policy located and cited with version' },
+      { id: 'consumer-ts-hbs-read-failure', label: 'Policy Not Found', operation: 'read', outcome: 'failure', description: 'Policy topic not in handbook or search failed' },
+    ] },
+    { id: 'consumer-tooldim-hris', toolId: 'hris-lookup', toolName: 'HRIS Lookup', states: [
+      { id: 'consumer-ts-hris-read-success', label: 'Employee Data Fetched', operation: 'read', outcome: 'success', description: 'Employee profile and PTO balance retrieved from HRIS' },
+      { id: 'consumer-ts-hris-read-failure', label: 'HRIS Lookup Failed', operation: 'read', outcome: 'failure', description: 'Employee not found or HRIS API unavailable' },
+      { id: 'consumer-ts-hris-create-success', label: 'PTO Request Submitted', operation: 'create', outcome: 'success', description: 'PTO request successfully submitted to HRIS' },
+    ] },
+    { id: 'consumer-tooldim-benefits', toolId: 'benefits-calculator', toolName: 'Benefits Calculator', states: [
+      { id: 'consumer-ts-bc-read-success', label: 'Plan Data Retrieved', operation: 'read', outcome: 'success', description: 'Benefits plans and cost data retrieved' },
+      { id: 'consumer-ts-bc-read-failure', label: 'Plan Data Unavailable', operation: 'read', outcome: 'failure', description: 'Benefits portal unavailable or plans not found' },
+      { id: 'consumer-ts-bc-create-success', label: 'Election Recorded', operation: 'create', outcome: 'success', description: 'Benefit election submitted and confirmed' },
+    ] },
+    { id: 'consumer-tooldim-compliance', toolId: 'compliance-checker', toolName: 'Compliance Checker', states: [
+      { id: 'consumer-ts-cc-read-success', label: 'Compliance Verified', operation: 'read', outcome: 'success', description: 'State law compliance check passed; policy valid' },
+      { id: 'consumer-ts-cc-read-failure', label: 'Compliance Issue Flagged', operation: 'read', outcome: 'failure', description: 'State law concern identified; escalation needed' },
+    ] },
+  ],
+  summaryText: 'The Employee Support Agent answers HR policy questions with handbook citations, processes PTO requests with accrual calculations, manages benefits enrollments, and validates state employment law compliance (CA/NY/TX FMLA/ADA). Answers 24,000 employees with 71% first-turn resolution. Escalates policy exceptions and legal concerns to HR business partners. Supports 6 roles including employees, managers, and HR admins. 9 output dimensions across 5 core outputs. 4 tools with 11 state transitions.'
 }

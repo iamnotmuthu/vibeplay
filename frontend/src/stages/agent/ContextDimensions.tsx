@@ -18,12 +18,15 @@ import type {
   TaskDimension,
   DataDimension,
   UserProfileDimension,
+  OutputDimension,
+  ToolDimension,
+  ToolState,
 } from '@/store/agentTypes'
 import { DIMENSION_COLORS } from '@/store/agentTypes'
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
-type DimensionTab = 'task' | 'data' | 'userprofile'
+type DimensionTab = 'task' | 'data' | 'output' | 'tool'
 
 interface TabDef {
   id: DimensionTab
@@ -36,7 +39,8 @@ interface TabDef {
 const TABS: TabDef[] = [
   { id: 'task', label: 'Task Dimensions', icon: Target, goalLink: 'What the agent does', dimensionColor: DIMENSION_COLORS.task.primary },
   { id: 'data', label: 'Data Dimensions', icon: Database, goalLink: 'What the agent knows', dimensionColor: DIMENSION_COLORS.data.primary },
-  { id: 'userprofile', label: 'User Profile Dimensions', icon: Users, goalLink: 'Who the agent serves', dimensionColor: DIMENSION_COLORS.userProfile.primary },
+  { id: 'output', label: 'Output Dimensions', icon: Users, goalLink: 'What the agent produces', dimensionColor: DIMENSION_COLORS.output.primary },
+  { id: 'tool', label: 'Tool Dimensions', icon: Layers, goalLink: 'How the agent operates', dimensionColor: DIMENSION_COLORS.tool.primary },
 ]
 
 // ─── Confidence Colors ────────────────────────────────────────────────────────
@@ -445,6 +449,208 @@ function UserProfileDimensionCard({
   )
 }
 
+// ─── Output Dimension Card ────────────────────────────────────────────────────
+
+const OUTPUT_OUTCOME_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  success: { label: 'Success', color: '#166534', bg: '#dcfce7', border: '#86efac' },
+  partial: { label: 'Partial', color: '#92400e', bg: '#fef3c7', border: '#fde047' },
+  failure: { label: 'Failure', color: '#991b1b', bg: '#fee2e2', border: '#fca5a5' },
+  escalation: { label: 'Escalation', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+}
+
+const OUTPUT_COMPLEXITY_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  direct: { label: 'Direct', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  'cross-referenced': { label: 'Cross-Referenced', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  inferred: { label: 'Inferred', color: '#b45309', bg: '#fff7ed', border: '#fed7aa' },
+}
+
+const OUTPUT_INTERACTION_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  'one-shot': { label: 'One-shot', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  conversational: { label: 'Conversational', color: '#be185d', bg: '#fce7f3', border: '#fbcfe8' },
+  proactive: { label: 'Proactive', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+}
+
+function OutputDimensionCard({
+  dim,
+  delay,
+  viewMode,
+}: {
+  dim: OutputDimension
+  delay: number
+  viewMode: 'business' | 'technical'
+}) {
+  const dc = DIMENSION_COLORS.output
+  const outcomeMeta = OUTPUT_OUTCOME_META[dim.outcome] ?? OUTPUT_OUTCOME_META.success
+  const complexityMeta = OUTPUT_COMPLEXITY_META[dim.complexity] ?? OUTPUT_COMPLEXITY_META.direct
+  const interactionMeta = OUTPUT_INTERACTION_META[dim.interaction] ?? OUTPUT_INTERACTION_META['one-shot']
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+      className="rounded-xl border bg-white p-4 overflow-hidden"
+      style={{ borderColor: dc.medium }}
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: dc.light, border: `1px solid ${dc.medium}` }}
+          >
+            <BookOpen className="w-4 h-4" style={{ color: dc.primary }} aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-sm font-bold text-gray-900 truncate">{dim.label}</p>
+              {viewMode === 'technical' && (
+                <span className="text-[8px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                  {dim.id}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="ml-[42px] space-y-2.5 mt-2">
+        {/* Agent output reference */}
+        <div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+            Derives From
+          </p>
+          <span
+            className="text-[10px] font-medium px-2.5 py-1 rounded-full inline-block"
+            style={{ background: dc.light, color: dc.dark, border: `1px solid ${dc.medium}` }}
+          >
+            {dim.agentOutputLabel}
+          </span>
+        </div>
+
+        {/* Three-axis decomposition */}
+        <div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+            Decomposition Axes
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <AxisBadge meta={outcomeMeta} />
+            <AxisBadge meta={complexityMeta} />
+            <AxisBadge meta={interactionMeta} />
+          </div>
+        </div>
+
+        {/* Description */}
+        <div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+            Description
+          </p>
+          <div className="bg-gray-50 border border-gray-100 rounded-lg p-2.5">
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              {dim.description}
+            </p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Tool Dimension Card ──────────────────────────────────────────────────────
+
+const TOOL_OUTCOME_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  success: { label: 'Success', color: '#166534', bg: '#dcfce7', border: '#86efac' },
+  failure: { label: 'Failure', color: '#991b1b', bg: '#fee2e2', border: '#fca5a5' },
+  timeout: { label: 'Timeout', color: '#b45309', bg: '#fff7ed', border: '#fed7aa' },
+  'rate-limited': { label: 'Rate-Limited', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+}
+
+function ToolStateItem({
+  state,
+}: {
+  state: ToolState
+}) {
+  const outcomeMeta = TOOL_OUTCOME_META[state.outcome] ?? TOOL_OUTCOME_META.success
+
+  return (
+    <div className="border-l-2 border-gray-200 pl-3 py-2">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-[10px] font-bold text-gray-700">{state.label}</span>
+      </div>
+      <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+          {state.operation}
+        </span>
+        <span
+          className="text-[9px] font-medium px-2 py-0.5 rounded-full"
+          style={{
+            background: outcomeMeta.bg,
+            color: outcomeMeta.color,
+            border: `1px solid ${outcomeMeta.border}`,
+          }}
+        >
+          {outcomeMeta.label}
+        </span>
+      </div>
+      <p className="text-[10px] text-gray-500 leading-relaxed">{state.description}</p>
+    </div>
+  )
+}
+
+function ToolDimensionCard({
+  dim,
+  delay,
+  viewMode,
+}: {
+  dim: ToolDimension
+  delay: number
+  viewMode: 'business' | 'technical'
+}) {
+  const dc = DIMENSION_COLORS.tool
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+      className="rounded-xl border bg-white p-4 overflow-hidden"
+      style={{ borderColor: dc.medium }}
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: dc.light }}
+          >
+            <Layers className="w-4 h-4" style={{ color: dc.primary }} aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-sm font-bold text-gray-900 truncate">{dim.toolName}</p>
+              {viewMode === 'technical' && (
+                <span className="text-[8px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                  {dim.toolId}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tool states */}
+      <div className="ml-[42px] space-y-1">
+        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+          States
+        </p>
+        <div className="space-y-2">
+          {dim.states.map((state) => (
+            <ToolStateItem key={state.id} state={state} />
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 // ─── Tab Bar ──────────────────────────────────────────────────────────────────
 
 function TabBar({
@@ -615,11 +821,12 @@ export function ContextDimensions() {
   const accentColor = tile?.color ?? '#3b82f6'
 
   const counts = useMemo<Record<DimensionTab, number>>(() => {
-    if (!dimensionsData) return { task: 0, data: 0, userprofile: 0 }
+    if (!dimensionsData) return { task: 0, data: 0, output: 0, tool: 0 }
     return {
       task: dimensionsData.taskDimensions.length,
       data: dimensionsData.dataDimensions.length,
-      userprofile: dimensionsData.userProfileDimensions.length,
+      output: dimensionsData.outputDimensions.length,
+      tool: dimensionsData.toolDimensions.length,
     }
   }, [dimensionsData])
 
@@ -750,9 +957,9 @@ export function ContextDimensions() {
             </motion.div>
           )}
 
-          {activeTab === 'userprofile' && (
+          {activeTab === 'output' && (
             <motion.div
-              key="userprofile"
+              key="output"
               variants={panelVariants}
               initial="enter"
               animate="center"
@@ -761,12 +968,38 @@ export function ContextDimensions() {
               className="space-y-3"
             >
               <p className="text-xs text-gray-500 leading-relaxed">
-                Who the agent serves. Each user profile dimension models a behavioral combination
-                across three axes: Context (anonymous/known/VIP), Posture (info-seeking/problem-reporting/dispute),
-                and Channel (self-service/agent-assisted).
+                Output dimensions decompose agent outputs along three axes: Outcome (success/partial/failure/escalation),
+                Complexity (direct/cross-referenced/inferred), and Interaction (one-shot/conversational/proactive).
+                Each dimension traces back to the underlying agent output definition.
               </p>
-              {dimensionsData.userProfileDimensions.map((dim, i) => (
-                <UserProfileDimensionCard
+              {dimensionsData.outputDimensions.map((dim, i) => (
+                <OutputDimensionCard
+                  key={dim.id}
+                  dim={dim}
+                  delay={0.05 + i * 0.06}
+                  viewMode={viewMode}
+                />
+              ))}
+            </motion.div>
+          )}
+
+          {activeTab === 'tool' && (
+            <motion.div
+              key="tool"
+              variants={panelVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.2 }}
+              className="space-y-3"
+            >
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Tool dimensions describe the operations and state transitions for each tool the agent uses.
+                Each state maps an operation (create/read/update/delete/connect) to an outcome (success/failure/timeout/rate-limited)
+                with contextual descriptions.
+              </p>
+              {dimensionsData.toolDimensions.map((dim, i) => (
+                <ToolDimensionCard
                   key={dim.id}
                   dim={dim}
                   delay={0.05 + i * 0.06}

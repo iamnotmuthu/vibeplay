@@ -151,7 +151,7 @@ function SonarPulse({ color }: { color: string }) {
 function GoalHero() {
   return (
     <div
-      className="rounded-2xl px-6 py-7 text-center"
+      className="rounded-2xl px-6 py-5 text-center"
       style={{
         background: 'linear-gradient(160deg, #7c3aed 0%, #a78bfa 50%, #c4b5fd 100%)',
       }}
@@ -294,7 +294,7 @@ function DomainCardStep1({
       whileHover={{ scale: 1.02, y: -3 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="relative group cursor-pointer text-left rounded-2xl p-5 flex flex-col bg-white w-full"
+      className="relative group cursor-pointer text-left rounded-2xl p-4 flex flex-col bg-white w-full"
       style={{
         border: '1px solid #e5e7eb',
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
@@ -310,7 +310,7 @@ function DomainCardStep1({
       }}
     >
       {/* Icon + Count badge */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-3">
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center"
           style={{
@@ -425,11 +425,8 @@ function AgentTileCardStep2({
       {/* Domain badge + CTA */}
       <div className="mt-3 flex items-center justify-between">
         <span
-          className="text-xs font-bold uppercase tracking-widest px-2 py-1 rounded-full"
-          style={{
-            background: `${tile.color}10`,
-            color: tile.color,
-          }}
+          className="text-[10px] font-semibold leading-snug"
+          style={{ color: tile.color }}
         >
           {tile.badge}
         </span>
@@ -476,7 +473,7 @@ function ExamplePromptsSection({ onSelect, onBrowseAll }: { onSelect: (tileId: s
             transition={{ duration: 0.3 }}
             className="space-y-4"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {activeDomains.map((domain, i) => {
                 const tiles = getTilesByDomain(domain.id)
                 return (
@@ -543,7 +540,7 @@ function ExamplePromptsSection({ onSelect, onBrowseAll }: { onSelect: (tileId: s
             </motion.div>
 
             {/* Agent tiles grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {filteredTiles.map((tile, i) => (
                 <AgentTileCardStep2
                   key={tile.id}
@@ -733,8 +730,9 @@ export function GoalDefinition() {
   const sonarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const decompRef = useRef<HTMLDivElement>(null)
 
-  // Resolve the active tile from either local state or store
-  const tileId = selectedTileId ?? activeTileId
+  // Resolve the active tile: use selectedTileId if set, otherwise use activeTileId from store
+  // Note: selectedTileId is always set in handleSelectPrompt before phase changes to 'typing'
+  const tileId = selectedTileId !== null ? selectedTileId : activeTileId
   const tile = tileId ? AGENT_TILE_MAP[tileId] : null
   const goalData = tileId ? getGoalData(tileId) : null
   const accentColor = tile?.color ?? '#7c3aed'
@@ -755,10 +753,12 @@ export function GoalDefinition() {
   // Cleanup sonar timer on unmount
   useEffect(() => () => { if (sonarTimerRef.current) clearTimeout(sonarTimerRef.current) }, [])
 
-  // Reset when tile changes from store (navigating back)
+  // Reset when tile is cleared from store (navigating back to tile selection)
   useEffect(() => {
-    setPhase('idle')
-    setSelectedTileId(null)
+    if (!activeTileId) {
+      setPhase('idle')
+      setSelectedTileId(null)
+    }
   }, [activeTileId])
 
   // Handle prompt card click
@@ -795,7 +795,7 @@ export function GoalDefinition() {
   const inputText = phase === 'typing' ? displayed : (phase !== 'idle' ? goalText : '')
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
       {/* Hero */}
       <GoalHero />
 
@@ -813,12 +813,10 @@ export function GoalDefinition() {
         accentColor={accentColor}
       />
 
-      {/* Example prompts — only in idle phase */}
-      <AnimatePresence>
-        {phase === 'idle' && (
-          <ExamplePromptsSection onSelect={handleSelectPrompt} onBrowseAll={() => resetToTiles()} />
-        )}
-      </AnimatePresence>
+      {/* Example prompts — only rendered when idle */}
+      {phase === 'idle' && (
+        <ExamplePromptsSection onSelect={handleSelectPrompt} onBrowseAll={() => resetToTiles()} />
+      )}
 
       {/* Screen reader announcement for phase */}
       <div className="sr-only" aria-live="polite">

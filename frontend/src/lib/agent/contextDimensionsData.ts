@@ -69,11 +69,11 @@ export interface ContextDimensionsPayload {
   summaryText: string
 }
 
-// ─── FAQ / Knowledge Agent ────────────────────────────────────────────────
+// ─── Order Issue Resolution Agent ─────────────────────────────────────────
 // Context Definition sources:
-//   knowledge_base.json (JSON, 2.4 MB, structured-data)
-//   faq_entries.csv (CSV, 890 KB, tables)
-//   product_docs.pdf (PDF, 12 MB, text + tables)
+//   order_database.json (JSON, 2.4 MB, structured-data)
+//   shipping_policies.csv (CSV, 890 KB, tables)
+//   carrier_guides.pdf (PDF, 12 MB, text + tables)
 
 const FAQ_DIMENSIONS: ContextDimensionsPayload = {
   dimensions: [
@@ -81,31 +81,31 @@ const FAQ_DIMENSIONS: ContextDimensionsPayload = {
       type: 'text-documents',
       totalCount: '1,433 text sections',
       sources: [
-        { sourceId: 'knowledge-base-json', sourceName: 'knowledge_base.json', count: '1,247 Q&A entries' },
-        { sourceId: 'product-docs-pdf', sourceName: 'product_docs.pdf', count: '186 pages' },
+        { sourceId: 'order-database-json', sourceName: 'order_database.json', count: '1,247 order resolution entries' },
+        { sourceId: 'carrier-guides-pdf', sourceName: 'carrier_guides.pdf', count: '186 pages' },
       ],
     },
     {
       type: 'tables',
       totalCount: '76 tables',
       sources: [
-        { sourceId: 'faq-entries-csv', sourceName: 'faq_entries.csv', count: '634 rows across 1 table' },
-        { sourceId: 'product-docs-pdf', sourceName: 'product_docs.pdf', count: '42 embedded tables' },
+        { sourceId: 'shipping-policies-csv', sourceName: 'shipping_policies.csv', count: '634 rows across 1 table' },
+        { sourceId: 'carrier-guides-pdf', sourceName: 'carrier_guides.pdf', count: '42 embedded tables' },
       ],
     },
     {
       type: 'images',
       totalCount: '94 images',
       sources: [
-        { sourceId: 'product-docs-pdf', sourceName: 'product_docs.pdf', count: '94 diagrams and screenshots' },
+        { sourceId: 'carrier-guides-pdf', sourceName: 'carrier_guides.pdf', count: '94 label and tracking screenshots' },
       ],
-      processingNote: 'Diagrams indexed for visual search; screenshots OCR-processed for text extraction',
+      processingNote: 'Tracking labels indexed for visual search; screenshots OCR-processed for text extraction',
     },
     {
       type: 'structured-data',
       totalCount: '1,247 structured entries',
       sources: [
-        { sourceId: 'knowledge-base-json', sourceName: 'knowledge_base.json', count: '1,247 JSON entries with topic metadata' },
+        { sourceId: 'order-database-json', sourceName: 'order_database.json', count: '1,247 order entries with carrier metadata' },
       ],
     },
   ],
@@ -114,7 +114,7 @@ const FAQ_DIMENSIONS: ContextDimensionsPayload = {
       id: 'system-user',
       category: 'System User',
       proficiency: 'high',
-      exampleQuestions: ['Batch process 500 FAQ queries', 'Reset embedding index'],
+      exampleQuestions: ['Batch process 500 tracking requests', 'Reset carrier API connection'],
       isCore: true,
       outputPreferences: ['data-table', 'action-list', 'summary-report'],
       interactionContext: 'Manages the agent infrastructure and monitors system health',
@@ -123,10 +123,10 @@ const FAQ_DIMENSIONS: ContextDimensionsPayload = {
       id: 'business-user',
       category: 'Business User',
       proficiency: 'medium',
-      exampleQuestions: ['Which topics get most escalations?', 'How do we improve coverage?'],
+      exampleQuestions: ['Which carriers have most delays?', 'How do we reduce refund requests?'],
       isCore: true,
       outputPreferences: ['summary-report', 'visual-chart', 'comparison'],
-      interactionContext: 'Reviews agent performance and identifies knowledge gaps',
+      interactionContext: 'Reviews agent performance and identifies order resolution gaps',
     },
     {
       id: 'end-user',
@@ -150,12 +150,12 @@ const FAQ_DIMENSIONS: ContextDimensionsPayload = {
   summaryText: '3 sources decomposed into 4 content types: 1,433 text sections, 76 tables, 94 images, and 1,247 structured entries. 4 user profiles requiring 7 distinct output formats.',
 }
 
-// ─── Document Intelligence Agent ──────────────────────────────────────────
+// ─── Loan Underwriting Agent ──────────────────────────────────────────
 // Context Definition sources:
-//   AWS_Invoice_Jan.pdf (PDF, 3.2 MB, text + tables)
-//   GCP_Invoice_Jan.pdf (PDF, 2.8 MB, text + tables)
-//   Azure_Invoice_Jan.pdf (PDF, 4.1 MB, text + tables)
-//   Invoice_Template.xlsx (XLSX, 450 KB, tables)
+//   Loan_Application_Form.pdf (PDF, 3.8 MB, text + tables)
+//   Credit_Report_Experian.pdf (PDF, 1.2 MB, text + tables)
+//   W2_Income_Verification.pdf (PDF, 850 KB, text + tables)
+//   Property_Appraisal_Report.pdf (PDF, 5.1 MB, tables)
 
 const DOC_DIMENSIONS: ContextDimensionsPayload = {
   dimensions: [
@@ -163,40 +163,40 @@ const DOC_DIMENSIONS: ContextDimensionsPayload = {
       type: 'text-documents',
       totalCount: '342 text sections',
       sources: [
-        { sourceId: 'aws-invoice', sourceName: 'AWS_Invoice_Jan.pdf', count: '124 text sections' },
-        { sourceId: 'gcp-invoice', sourceName: 'GCP_Invoice_Jan.pdf', count: '98 text sections' },
-        { sourceId: 'azure-invoice', sourceName: 'Azure_Invoice_Jan.pdf', count: '120 text sections' },
+        { sourceId: 'credit-report-eq', sourceName: 'CreditReport_Equifax.pdf', count: '124 text sections' },
+        { sourceId: 'appraisal-doc', sourceName: 'Appraisal_Report.pdf', count: '98 text sections' },
+        { sourceId: 'income-verify', sourceName: 'IncomeVerification.pdf', count: '120 text sections' },
       ],
     },
     {
       type: 'tables',
       totalCount: '89 tables',
       sources: [
-        { sourceId: 'aws-invoice', sourceName: 'AWS_Invoice_Jan.pdf', count: '28 line-item tables' },
-        { sourceId: 'gcp-invoice', sourceName: 'GCP_Invoice_Jan.pdf', count: '22 line-item tables' },
-        { sourceId: 'azure-invoice', sourceName: 'Azure_Invoice_Jan.pdf', count: '31 line-item tables' },
-        { sourceId: 'invoice-template', sourceName: 'Invoice_Template.xlsx', count: '8 template sheets' },
+        { sourceId: 'credit-report-eq', sourceName: 'CreditReport_Equifax.pdf', count: '28 tradeline tables' },
+        { sourceId: 'appraisal-doc', sourceName: 'Appraisal_Report.pdf', count: '22 property assessment tables' },
+        { sourceId: 'income-verify', sourceName: 'IncomeVerification.pdf', count: '31 income summary tables' },
+        { sourceId: 'dti-template', sourceName: 'DTI_Calculation.xlsx', count: '8 template sheets' },
       ],
     },
     {
       type: 'images',
       totalCount: '18 images',
       sources: [
-        { sourceId: 'aws-invoice', sourceName: 'AWS_Invoice_Jan.pdf', count: '6 logos and charts' },
-        { sourceId: 'gcp-invoice', sourceName: 'GCP_Invoice_Jan.pdf', count: '4 logos and charts' },
-        { sourceId: 'azure-invoice', sourceName: 'Azure_Invoice_Jan.pdf', count: '8 logos and charts' },
+        { sourceId: 'credit-report-eq', sourceName: 'CreditReport_Equifax.pdf', count: '6 score and tradeline charts' },
+        { sourceId: 'appraisal-doc', sourceName: 'Appraisal_Report.pdf', count: '4 property photos and comparables' },
+        { sourceId: 'income-verify', sourceName: 'IncomeVerification.pdf', count: '8 document scans and charts' },
       ],
-      processingNote: 'Logos used for vendor identification; charts indexed for trend extraction',
+      processingNote: 'Property photos for appraisal review; charts indexed for trend extraction',
     },
     {
       type: 'structured-data',
-      totalCount: '15,200 line items',
+      totalCount: '15,200 data points',
       sources: [
-        { sourceId: 'aws-invoice', sourceName: 'AWS_Invoice_Jan.pdf', count: '6,400 extracted line items' },
-        { sourceId: 'gcp-invoice', sourceName: 'GCP_Invoice_Jan.pdf', count: '3,800 extracted line items' },
-        { sourceId: 'azure-invoice', sourceName: 'Azure_Invoice_Jan.pdf', count: '5,000 extracted line items' },
+        { sourceId: 'credit-report-eq', sourceName: 'CreditReport_Equifax.pdf', count: '6,400 extracted tradelines' },
+        { sourceId: 'appraisal-doc', sourceName: 'Appraisal_Report.pdf', count: '3,800 property assessment fields' },
+        { sourceId: 'income-verify', sourceName: 'IncomeVerification.pdf', count: '5,000 income line items' },
       ],
-      processingNote: 'Line items normalized to common schema for cross-vendor comparison',
+      processingNote: 'DTI components extracted and normalized for cross-document calculations',
     },
   ],
   userProfiles: [
@@ -204,28 +204,28 @@ const DOC_DIMENSIONS: ContextDimensionsPayload = {
       id: 'system-user',
       category: 'System User',
       proficiency: 'high',
-      exampleQuestions: ['Reindex contract embeddings', 'Run extraction pipeline on new batch'],
+      exampleQuestions: ['Reindex credit report embeddings', 'Run extraction pipeline on new batch'],
       isCore: true,
       outputPreferences: ['data-table', 'action-list'],
-      interactionContext: 'Manages document processing pipelines and extraction models',
+      interactionContext: 'Manages document processing pipelines and underwriting models',
     },
     {
       id: 'business-user',
       category: 'Business User',
       proficiency: 'medium',
-      exampleQuestions: ['Show contracts expiring this quarter', 'Compare AWS vs GCP spend'],
+      exampleQuestions: ['Show loans closing this quarter', 'Compare applicant credit vs income'],
       isCore: true,
       outputPreferences: ['summary-report', 'comparison', 'visual-chart', 'data-table'],
-      interactionContext: 'Analyzes document data for business decisions and reporting',
+      interactionContext: 'Analyzes underwriting documents for approval decisions',
     },
     {
       id: 'end-user',
       category: 'End User',
       proficiency: 'low',
-      exampleQuestions: ['What is my March invoice total?', 'Find the NDA with Acme Corp'],
+      exampleQuestions: ['What is my DTI ratio?', 'Find the appraisal for my property'],
       isCore: true,
       outputPreferences: ['short-answer', 'data-table'],
-      interactionContext: 'Looks up specific documents and asks about billing details',
+      interactionContext: 'Looks up specific loan documents and underwriting details',
     },
     {
       id: 'legal-reviewer',
@@ -306,7 +306,7 @@ const RESEARCH_DIMENSIONS: ContextDimensionsPayload = {
       exampleQuestions: ['Compare top 3 CRM vendors for mid-market', 'What did we evaluate last quarter?'],
       isCore: true,
       outputPreferences: ['comparison', 'summary-report', 'visual-chart'],
-      interactionContext: 'Drives procurement decisions using vendor research',
+      interactionContext: 'Drives insurance underwriting decisions using risk analysis',
     },
     {
       id: 'end-user',

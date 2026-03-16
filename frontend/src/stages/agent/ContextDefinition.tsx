@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText,
   Database,
-  Users,
+  MessageSquareText,
   Wrench,
   Shield,
   Plus,
@@ -25,12 +25,13 @@ import type {
   AgentTask,
   Guardrail,
   GuardrailCategory,
+  AgentOutput,
 } from '@/store/agentTypes'
 import { GUARDRAIL_CATEGORY_META, DIMENSION_COLORS } from '@/store/agentTypes'
 
 // ─── Tab Configuration ──────────────────────────────────────────────────────
 
-type ContextTab = 'tasks' | 'data-sources' | 'user-profiles' | 'tools' | 'guardrails'
+type ContextTab = 'tasks' | 'data-sources' | 'agent-outputs' | 'tools' | 'guardrails'
 
 interface TabDef {
   id: ContextTab
@@ -43,7 +44,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { id: 'tasks', label: 'Tasks', icon: Target, goalLink: 'What the agent does', dimensionColor: DIMENSION_COLORS.task.primary },
   { id: 'data-sources', label: 'Data Sources', icon: Database, goalLink: 'Knowledge it uses', dimensionColor: DIMENSION_COLORS.data.primary },
-  { id: 'user-profiles', label: 'User Profiles', icon: Users, goalLink: 'Who it serves', dimensionColor: DIMENSION_COLORS.userProfile.primary },
+  { id: 'agent-outputs', label: 'Agent Outputs', icon: MessageSquareText, goalLink: 'What it produces', dimensionColor: DIMENSION_COLORS.userProfile.primary },
   { id: 'tools', label: 'Tools', icon: Wrench, goalLink: 'Capabilities available' },
   { id: 'guardrails', label: 'Guardrails', icon: Shield, goalLink: 'Boundaries & rules' },
 ]
@@ -209,6 +210,29 @@ function ContextExplainer({ viewMode }: { viewMode: 'business' | 'technical' }) 
             ? 'The operational foundation of your agent. Define step-by-step instructions, data sources it can access, who uses it, which tools are available, and what tasks it can perform. This is where you set the boundaries and capabilities.'
             : 'Six-vector operational specification: instruction graph (routing rules, escalation conditions, error-handling paths), datasource bindings (format, access protocol, auth metadata), user profiles (proficiency tiers, permission scopes), tool capability matrix (input/output schemas, rate limits), task registry (trigger conditions, SLA targets), and constraint envelope (data residency, PII handling, cost ceilings).'}
         </p>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Coming Soon Card ────────────────────────────────────────────
+
+function ComingSoonCard() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6"
+    >
+      <div className="flex items-start gap-4">
+        <Info className="w-5 h-5 shrink-0 text-slate-400 mt-0.5" aria-hidden="true" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-700">Coming Soon</p>
+          <p className="text-xs text-slate-600 leading-relaxed mt-1.5">
+            What the agent should NOT do — safety limits, compliance requirements, quality thresholds.
+          </p>
+        </div>
       </div>
     </motion.div>
   )
@@ -381,6 +405,64 @@ function DataSourceCard({
             <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </AgentTooltip>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Agent Output Card ──────────────────────────────────────────────
+
+function AgentOutputCard({ output, delay }: { output: AgentOutput; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+      className="rounded-xl border bg-white overflow-hidden"
+      style={{ borderColor: DIMENSION_COLORS.userProfile.medium }}
+    >
+      <div className="h-[3px]" style={{ background: DIMENSION_COLORS.userProfile.primary }} />
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-gray-900 truncate">{output.label}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {output.isCore && (
+              <span className="text-[9px] font-bold px-2 py-1 rounded-full" style={{ background: '#fef2f2', color: '#dc2626' }}>
+                Core
+              </span>
+            )}
+            <AgentTooltip
+              title="Demo Mode"
+              content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow."
+              trigger="click"
+              position="bottom"
+            >
+              <button
+                className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                aria-label={`Edit output ${output.label}`}
+              >
+                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </AgentTooltip>
+          </div>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed mb-3">{output.description}</p>
+        {output.exampleOutput && (
+          <div className="mb-3 p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+            <p className="text-[10px] font-mono text-gray-600 leading-relaxed text-wrap">{output.exampleOutput}</p>
+          </div>
+        )}
+        {output.triggeringTaskIds && output.triggeringTaskIds.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {output.triggeringTaskIds.map((taskId) => (
+              <span key={taskId} className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                {taskId}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   )
@@ -642,21 +724,18 @@ export function ContextDefinition() {
     )
   }
 
-  const { guardrails, businessSummary, technicalSummary, dataSources, userProfiles, tools, tasks } = contextData
+  const { guardrails, businessSummary, technicalSummary, dataSources, agentOutputs, tools, tasks } = contextData
 
   const counts: Record<ContextTab, number> = {
     tasks: tasks.length,
     'data-sources': dataSources.length,
-    'user-profiles': userProfiles.length,
+    'agent-outputs': agentOutputs.length,
     tools: tools.length,
     guardrails: guardrails.length,
   }
 
   const activeTabDef = TABS.find((t) => t.id === activeTab)!
   const goalStatement = goalData?.goalStatement ?? ''
-
-  const coreProfiles = userProfiles.filter((p) => p.isCore)
-  const domainProfiles = userProfiles.filter((p) => !p.isCore)
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-5">
@@ -732,30 +811,15 @@ export function ContextDefinition() {
             </>
           )}
 
-          {/* ─── User Profiles Tab ─── */}
-          {activeTab === 'user-profiles' && (
+          {/* ─── Agent Outputs Tab ─── */}
+          {activeTab === 'agent-outputs' && (
             <>
-              {coreProfiles.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Core Users</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {coreProfiles.map((profile, i) => (
-                      <UserProfileCard key={profile.id} profile={profile} delay={0.05 + i * 0.04} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {domainProfiles.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 pt-2">Specialized Users</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {domainProfiles.map((profile, i) => (
-                      <UserProfileCard key={profile.id} profile={profile} delay={0.05 + i * 0.04} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              <AddInputArea placeholder="Add new user profile..." />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {agentOutputs.map((output, i) => (
+                  <AgentOutputCard key={output.id} output={output} delay={0.05 + i * 0.04} />
+                ))}
+              </div>
+              <AddInputArea placeholder="Add new agent output..." />
             </>
           )}
 
@@ -773,25 +837,7 @@ export function ContextDefinition() {
 
           {/* ─── Guardrails Tab ─── */}
           {activeTab === 'guardrails' && (
-            <>
-              <div className="space-y-5">
-                {(['safety', 'quality', 'escalation', 'compliance'] as GuardrailCategory[]).map(
-                  (cat, ci) => {
-                    const group = guardrails.filter((g) => g.category === cat)
-                    if (group.length === 0) return null
-                    return (
-                      <GuardrailCategoryGroup
-                        key={cat}
-                        category={cat}
-                        guardrails={group}
-                        delay={0.05 + ci * 0.08}
-                      />
-                    )
-                  },
-                )}
-              </div>
-              <AddInputArea placeholder="Add new guardrail..." />
-            </>
+            <ComingSoonCard />
           )}
         </motion.div>
       </AnimatePresence>

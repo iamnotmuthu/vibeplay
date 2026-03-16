@@ -784,7 +784,7 @@ export const MULTIMODAL_AGENT_PATTERNS: DimensionPattern[] = [
   // SIMPLE PATTERNS (8)
   {
     id: 'multimodal-agent-pat-01',
-    name: 'Video Transcription Service',
+    name: 'Content Scanning Service',
     description: 'Convert video content to text transcript.',
     tier: 'simple',
     taskDimensionId: 'multimodal-task-video-transcription',

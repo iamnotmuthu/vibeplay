@@ -523,8 +523,8 @@ export function getTechStack(tileId: string): TileTechStack | null {
 
 export interface PatternBreakdown {
   overall: number   // 0-100 performance score
-  dominant: number
-  nonDominant: number
+  simple: number
+  complex: number
   fuzzy: number
 }
 
@@ -548,11 +548,11 @@ export interface TileEvalMetrics {
 }
 
 // Helper to generate realistic pattern breakdowns from an overall score
-function bk(overall: number, dominantDelta = 4, nonDomDelta = 15, fuzzyDelta = 25): PatternBreakdown {
+function bk(overall: number, simpleDelta = 4, complexDelta = 15, fuzzyDelta = 25): PatternBreakdown {
   return {
     overall: Math.round(overall),
-    dominant: Math.min(100, Math.round(overall + dominantDelta)),
-    nonDominant: Math.max(0, Math.round(overall - nonDomDelta)),
+    simple: Math.min(100, Math.round(overall + simpleDelta)),
+    complex: Math.max(0, Math.round(overall - complexDelta)),
     fuzzy: Math.max(0, Math.round(overall - fuzzyDelta)),
   }
 }

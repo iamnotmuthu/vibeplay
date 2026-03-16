@@ -33,7 +33,7 @@ export const SOLUTION_TYPES: SolutionType[] = [
     id: 'agentic',
     label: 'Agentic AI',
     icon: Bot,
-    status: 'coming-soon',
+    status: 'active',
     demoAvailable: true,
     demoId: 'agent',
     color: '#f59e0b',

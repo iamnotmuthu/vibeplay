@@ -4,121 +4,121 @@ export const DOC_INTELLIGENCE_PATTERNS: DimensionPattern[] = [
   // SIMPLE PATTERNS (8)
   {
     id: 'doc-pat-01',
-    name: 'Invoice Line Item Classification',
-    description: 'Classify invoice line items into expense categories based on item description.',
+    name: 'Loan Application Document Parsing',
+    description: 'Extract key fields from loan application forms including borrower info, loan amount, and property details.',
     tier: 'simple',
-    taskDimensionId: 'doci-task-document-classification',
-    dataDimensionIds: ['doci-data-aws-invoice'],
+    taskDimensionId: 'doci-task-application-intake',
+    dataDimensionIds: ['doci-data-loan-apps'],
     userProfileDimensionId: 'doci-up-business-user',
     patternType: 'simple',
     exampleQuestions: [
-      'What category does this line item belong to?',
-      'Is this compute, storage, or networking expense?'
+      'What is the requested loan amount and property address?',
+      'Extract borrower name, SSN, and employment information'
     ],
     confidence: 90
   },
   {
     id: 'doc-pat-02',
-    name: 'Invoice Amount Extraction',
-    description: 'Extract total invoice amount and itemized charges from a single invoice document.',
+    name: 'Credit Score Extraction',
+    description: 'Extract credit score and major credit factors from credit bureau reports.',
     tier: 'simple',
-    taskDimensionId: 'doci-task-field-extraction',
-    dataDimensionIds: ['doci-data-gcp-invoice'],
+    taskDimensionId: 'doci-task-credit-analysis',
+    dataDimensionIds: ['doci-data-credit-bureau'],
     userProfileDimensionId: 'doci-up-analyst',
     patternType: 'simple',
     exampleQuestions: [
-      'What is the total amount due on this invoice?',
-      'Extract all charges from the invoice'
+      'What is the applicant\'s credit score?',
+      'Extract payment history and outstanding debts'
     ],
     confidence: 90
   },
   {
     id: 'doc-pat-03',
-    name: 'Invoice Header Parsing',
-    description: 'Parse invoice header information including vendor, invoice number, and date.',
+    name: 'Income Documentation Parsing',
+    description: 'Parse W-2 forms, paystubs, and tax returns to extract income information.',
     tier: 'simple',
-    taskDimensionId: 'doci-task-invoice-parsing',
-    dataDimensionIds: ['doci-data-azure-invoice'],
-    userProfileDimensionId: 'doci-up-procurement',
+    taskDimensionId: 'doci-task-income-verification',
+    dataDimensionIds: ['doci-data-income-docs'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'simple',
     exampleQuestions: [
-      'Who is the vendor on this invoice?',
-      'What is the invoice number and date?'
+      'What is the applicant\'s verified annual income?',
+      'Extract gross income from the past 2 years'
     ],
     confidence: 90
   },
   {
     id: 'doc-pat-04',
-    name: 'Tax Rate Detection',
-    description: 'Identify and extract tax rate and tax amount from invoice footer.',
+    name: 'Property Appraisal Data Extraction',
+    description: 'Extract property value, condition, and key metrics from appraisal documents.',
     tier: 'simple',
-    taskDimensionId: 'doci-task-field-extraction',
-    dataDimensionIds: ['doci-data-aws-invoice'],
-    userProfileDimensionId: 'doci-up-auditor',
+    taskDimensionId: 'doci-task-property-valuation',
+    dataDimensionIds: ['doci-data-property-appraisals'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'simple',
     exampleQuestions: [
-      'What is the tax rate applied?',
-      'How much tax is included in this invoice?'
+      'What is the appraised property value?',
+      'Extract property condition assessment and comparable sales'
     ],
     confidence: 90
   },
   {
     id: 'doc-pat-05',
-    name: 'Template Schema Matching',
-    description: 'Match invoice against known template schema to validate structure compliance.',
+    name: 'Loan Requirement Template Validation',
+    description: 'Validate loan application against standard requirements checklist.',
     tier: 'simple',
-    taskDimensionId: 'doci-task-template-matching',
-    dataDimensionIds: ['doci-data-invoice-template'],
+    taskDimensionId: 'doci-task-eligibility-check',
+    dataDimensionIds: ['doci-data-loan-apps'],
     userProfileDimensionId: 'doci-up-system-user',
     patternType: 'simple',
     exampleQuestions: [
-      'Does this invoice match the standard template?',
-      'What template format is this invoice using?'
+      'Are all required loan documents submitted?',
+      'What is the application completeness status?'
     ],
     confidence: 90
   },
   {
     id: 'doc-pat-06',
-    name: 'Vendor Name Extraction',
-    description: 'Extract vendor name and company identifier from invoice header.',
+    name: 'Employment Verification Letter Parsing',
+    description: 'Extract employment status, job title, salary, and tenure from verification letters.',
     tier: 'simple',
-    taskDimensionId: 'doci-task-field-extraction',
-    dataDimensionIds: ['doci-data-gcp-invoice'],
-    userProfileDimensionId: 'doci-up-procurement',
+    taskDimensionId: 'doci-task-income-verification',
+    dataDimensionIds: ['doci-data-income-docs'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'simple',
     exampleQuestions: [
-      'What is the vendor name on this invoice?',
-      'Extract the supplier identifier'
+      'What is the applicant\'s current employer and job title?',
+      'Extract employment start date and salary confirmation'
     ],
     confidence: 90
   },
   {
     id: 'doc-pat-07',
-    name: 'Service Period Detection',
-    description: 'Extract service period start and end dates from invoice.',
+    name: 'Debt-to-Income Ratio Calculation',
+    description: 'Calculate DTI ratio from income and debt documents.',
     tier: 'simple',
-    taskDimensionId: 'doci-task-field-extraction',
-    dataDimensionIds: ['doci-data-aws-invoice'],
+    taskDimensionId: 'doci-task-dti-calculation',
+    dataDimensionIds: ['doci-data-income-docs', 'doci-data-credit-bureau'],
     userProfileDimensionId: 'doci-up-analyst',
     patternType: 'simple',
     exampleQuestions: [
-      'What period does this invoice cover?',
-      'Extract the service start and end dates'
+      'What is the applicant\'s debt-to-income ratio?',
+      'Calculate DTI including proposed loan payment'
     ],
     confidence: 90
   },
   {
     id: 'doc-pat-08',
-    name: 'Currency Identification',
-    description: 'Identify invoice currency and normalize amounts to base currency.',
+    name: 'Loan-to-Value Ratio Determination',
+    description: 'Calculate LTV ratio from loan amount and property appraisal value.',
     tier: 'simple',
-    taskDimensionId: 'doci-task-document-classification',
-    dataDimensionIds: ['doci-data-azure-invoice'],
-    userProfileDimensionId: 'doci-up-business-user',
+    taskDimensionId: 'doci-task-property-valuation',
+    dataDimensionIds: ['doci-data-property-appraisals', 'doci-data-loan-apps'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'simple',
     exampleQuestions: [
-      'What currency is this invoice in?',
-      'Convert the amount to USD'
+      'What is the loan-to-value ratio for this property?',
+      'Calculate LTV based on appraised value'
     ],
     confidence: 90
   },
@@ -126,261 +126,260 @@ export const DOC_INTELLIGENCE_PATTERNS: DimensionPattern[] = [
   // COMPLEX PATTERNS (8)
   {
     id: 'doc-pat-09',
-    name: 'Cost Aggregation Across Vendors',
-    description: 'Aggregate and compare costs from multiple cloud vendor invoices to identify spending trends.',
+    name: 'Comprehensive Loan Eligibility Assessment',
+    description: 'Cross-reference applicant credit, income, DTI, and property value against lending standards to determine eligibility.',
     tier: 'complex',
-    taskDimensionId: 'doci-task-cost-aggregation',
-    dataDimensionIds: ['doci-data-aws-invoice', 'doci-data-gcp-invoice', 'doci-data-azure-invoice'],
-    userProfileDimensionId: 'doci-up-business-user',
+    taskDimensionId: 'doci-task-eligibility-check',
+    dataDimensionIds: ['doci-data-credit-bureau', 'doci-data-income-docs', 'doci-data-property-appraisals'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'aggregator',
     exampleQuestions: [
-      'What is our total cloud spending across AWS, GCP, and Azure?',
-      'Compare cost trends between our cloud providers'
+      'Is this applicant eligible for the requested loan amount?',
+      'Assess overall loan qualification across all metrics'
     ],
-    activatedComponents: ['cost-aggregator', 'trend-analyzer'],
+    activatedComponents: ['eligibility-scorer', 'risk-calculator'],
     confidence: 72
   },
   {
     id: 'doc-pat-10',
-    name: 'Invoice Anomaly Detection',
-    description: 'Cross-reference current invoice against historical invoices to detect unusual charges or patterns.',
+    name: 'Credit Profile Risk Analysis',
+    description: 'Analyze credit report for negative patterns, delinquencies, and credit history trends.',
     tier: 'complex',
-    taskDimensionId: 'doci-task-anomaly-detection',
-    dataDimensionIds: ['doci-data-aws-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-auditor',
+    taskDimensionId: 'doci-task-credit-analysis',
+    dataDimensionIds: ['doci-data-credit-bureau', 'doci-data-loan-apps'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'hopping',
     exampleQuestions: [
-      'Are there any unusual charges on this invoice compared to previous months?',
-      'Detect any anomalies or unexpected line items'
+      'What credit risks are present in this profile?',
+      'Identify payment defaults and delinquency patterns'
     ],
-    inferenceNotes: 'Requires comparison with historical baseline',
+    inferenceNotes: 'Requires analysis of credit history timeline and patterns',
     confidence: 72
   },
   {
     id: 'doc-pat-11',
-    name: 'Cross-Reference Invoice to PO',
-    description: 'Match invoice line items against purchase order to validate charges and quantities.',
+    name: 'Income Stability and Verification Cross-Check',
+    description: 'Cross-verify income from multiple documents (W-2, paystubs, employment letter) for consistency.',
     tier: 'complex',
-    taskDimensionId: 'doci-task-cross-reference-validation',
-    dataDimensionIds: ['doci-data-gcp-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-procurement',
+    taskDimensionId: 'doci-task-income-verification',
+    dataDimensionIds: ['doci-data-income-docs', 'doci-data-loan-apps'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'hopping',
     exampleQuestions: [
-      'Do all invoice items match the original purchase order?',
-      'Verify invoice quantities against our PO'
+      'Is reported income consistent across all documents?',
+      'Verify income history and employment stability'
     ],
-    inferenceNotes: 'Involves matching across document types',
+    inferenceNotes: 'Involves matching across multiple document types and time periods',
     confidence: 72
   },
   {
     id: 'doc-pat-12',
-    name: 'Multi-Vendor Cost Optimization',
-    description: 'Analyze spending patterns across multiple vendors to identify cost optimization opportunities.',
+    name: 'Property Valuation and Underwriting Assessment',
+    description: 'Analyze property appraisal against comparable sales and market conditions to validate underwriting.',
     tier: 'complex',
-    taskDimensionId: 'doci-task-cost-aggregation',
-    dataDimensionIds: ['doci-data-aws-invoice', 'doci-data-gcp-invoice'],
+    taskDimensionId: 'doci-task-property-valuation',
+    dataDimensionIds: ['doci-data-property-appraisals', 'doci-data-loan-apps'],
     userProfileDimensionId: 'doci-up-analyst',
-    patternType: 'aggregator',
+    patternType: 'hopping',
     exampleQuestions: [
-      'Where can we save money across our cloud spending?',
-      'What are our biggest cost drivers by vendor?'
+      'Is the property appraisal reasonable compared to comps?',
+      'Validate property value and condition assessment'
     ],
-    activatedComponents: ['cost-analyzer', 'optimization-engine'],
+    inferenceNotes: 'Requires market analysis and comparable property evaluation',
     confidence: 72
   },
   {
     id: 'doc-pat-13',
-    name: 'Invoice Validation Against Rules',
-    description: 'Validate invoice charges against business rules, spending limits, and compliance policies.',
+    name: 'Loan Compliance and Regulatory Validation',
+    description: 'Validate loan terms and underwriting decisions against regulatory requirements and lending guidelines.',
     tier: 'complex',
-    taskDimensionId: 'doci-task-compliance-checking',
-    dataDimensionIds: ['doci-data-azure-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-auditor',
+    taskDimensionId: 'doci-task-compliance-validation',
+    dataDimensionIds: ['doci-data-loan-apps', 'doci-data-credit-bureau'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'hopping',
     exampleQuestions: [
-      'Does this invoice comply with our spending policies?',
-      'Are any charges above our approved limits?'
+      'Does this loan comply with all regulatory requirements?',
+      'Verify compliance with lending standards and guidelines'
     ],
-    inferenceNotes: 'Requires rule engine integration',
+    inferenceNotes: 'Requires rule engine integration for regulatory checks',
     confidence: 72
   },
   {
     id: 'doc-pat-14',
-    name: 'Service Usage Attribution',
-    description: 'Correlate invoice charges with actual service usage to validate billing accuracy.',
+    name: 'Loan Conditions Generation',
+    description: 'Generate conditional requirements for loan approval based on identified gaps or concerns.',
     tier: 'complex',
-    taskDimensionId: 'doci-task-cross-reference-validation',
-    dataDimensionIds: ['doci-data-aws-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-business-user',
+    taskDimensionId: 'doci-task-conditions-generation',
+    dataDimensionIds: ['doci-data-loan-apps', 'doci-data-credit-bureau', 'doci-data-income-docs'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'aggregator',
     exampleQuestions: [
-      'Which services drove the highest costs this month?',
-      'How much did we actually use compared to what we were charged?'
+      'What conditions should be placed on this loan approval?',
+      'Generate requirements for document submission or clarification'
     ],
-    activatedComponents: ['usage-correlator'],
+    activatedComponents: ['conditions-engine', 'documentation-tracker'],
     confidence: 72
   },
   {
     id: 'doc-pat-15',
-    name: 'Budget Variance Analysis',
-    description: 'Compare actual invoice amounts against budgeted amounts to identify variances.',
+    name: 'Underwriter Decision Routing',
+    description: 'Route loans to appropriate underwriter (standard vs. senior) based on complexity and risk profile.',
     tier: 'complex',
-    taskDimensionId: 'doci-task-cost-aggregation',
-    dataDimensionIds: ['doci-data-gcp-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-analyst',
-    patternType: 'hopping',
+    taskDimensionId: 'doci-task-decision-routing',
+    dataDimensionIds: ['doci-data-loan-apps', 'doci-data-credit-bureau', 'doci-data-property-appraisals'],
+    userProfileDimensionId: 'doci-up-system-user',
+    patternType: 'aggregator',
     exampleQuestions: [
-      'How much did we spend versus our budget?',
-      'What percentage variance do we have this month?'
+      'Which underwriter should review this application?',
+      'Route based on risk profile and application complexity'
     ],
-    inferenceNotes: 'Requires budget baseline data',
+    activatedComponents: ['routing-engine', 'workload-balancer'],
     confidence: 72
   },
   {
     id: 'doc-pat-16',
-    name: 'Invoice Risk Flagging',
-    description: 'Flag invoices for manual review based on risk indicators like unusual amounts or vendors.',
+    name: 'Portfolio Risk Assessment',
+    description: 'Assess cumulative portfolio risk across multiple loans to identify concentration and trend risks.',
     tier: 'complex',
-    taskDimensionId: 'doci-task-risk-flagging',
-    dataDimensionIds: ['doci-data-azure-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-system-user',
-    patternType: 'hopping',
+    taskDimensionId: 'doci-task-portfolio-assessment',
+    dataDimensionIds: ['doci-data-loan-apps', 'doci-data-credit-bureau', 'doci-data-property-appraisals'],
+    userProfileDimensionId: 'doci-up-business-user',
+    patternType: 'aggregator',
     exampleQuestions: [
-      'Which invoices need manual review?',
-      'Flag any high-risk transactions'
+      'What is the overall portfolio risk level?',
+      'Identify concentration risks and adverse trends'
     ],
-    activatedComponents: ['risk-scorer'],
+    activatedComponents: ['portfolio-analyzer', 'risk-aggregator'],
     confidence: 72
   },
 
   // FUZZY PATTERNS (8)
   {
     id: 'doc-pat-17',
-    name: 'Ambiguous Line Item Classification',
-    description: 'Classify line items where category is unclear or multi-purpose charges exist.',
+    name: 'Ambiguous Credit History Interpretation',
+    description: 'Interpret credit events where cause is unclear or credit profile has competing signals.',
     tier: 'fuzzy',
-    taskDimensionId: 'doci-task-document-classification',
-    dataDimensionIds: ['doci-data-aws-invoice', 'doci-data-gcp-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-business-user',
+    taskDimensionId: 'doci-task-credit-analysis',
+    dataDimensionIds: ['doci-data-credit-bureau', 'doci-data-loan-apps'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'branch',
     exampleQuestions: [
-      'Is this a compute or storage charge?',
-      'What category should this miscellaneous service fee go to?'
+      'Was the late payment due to hardship or negligence?',
+      'How concerning is this credit event in context?'
     ],
-    ambiguityNotes: 'Item descriptions may be vague or apply to multiple categories; may require business context',
+    ambiguityNotes: 'Credit event interpretation depends on timing, severity, and recovery; requires underwriter judgment',
     confidence: 50
   },
   {
     id: 'doc-pat-18',
-    name: 'Fraudulent Invoice Detection',
-    description: 'Identify potentially fraudulent invoices using pattern reasoning and vendor behavior analysis.',
+    name: 'Fraud Detection in Loan Application',
+    description: 'Identify potentially fraudulent applications using document verification and pattern analysis.',
     tier: 'fuzzy',
-    taskDimensionId: 'doci-task-risk-flagging',
-    dataDimensionIds: ['doci-data-aws-invoice', 'doci-data-azure-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-auditor',
+    taskDimensionId: 'doci-task-compliance-validation',
+    dataDimensionIds: ['doci-data-loan-apps', 'doci-data-income-docs'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'reasoning',
     exampleQuestions: [
-      'Is this invoice legitimate or potentially fraudulent?',
-      'What red flags suggest this might be a scam?'
+      'Are the application documents genuine or fraudulent?',
+      'What red flags suggest potential document forgery or misrepresentation?'
     ],
-    ambiguityNotes: 'Fraud indicators are probabilistic; context-dependent patterns may yield false positives',
+    ambiguityNotes: 'Fraud detection is probabilistic; document authentication may require manual verification',
     confidence: 50
   },
   {
     id: 'doc-pat-19',
-    name: 'Vendor Relationship Risk Assessment',
-    description: 'Assess vendor reliability and risk using invoice patterns and historical behavior.',
+    name: 'Compensating Factor Assessment',
+    description: 'Assess whether compensating factors justify approval despite marginal credit or income metrics.',
     tier: 'fuzzy',
-    taskDimensionId: 'doci-task-risk-flagging',
-    dataDimensionIds: ['doci-data-gcp-invoice', 'doci-data-aws-invoice'],
-    userProfileDimensionId: 'doci-up-procurement',
+    taskDimensionId: 'doci-task-eligibility-check',
+    dataDimensionIds: ['doci-data-credit-bureau', 'doci-data-income-docs', 'doci-data-loan-apps'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'reasoning',
     exampleQuestions: [
-      'Is this vendor reliable based on invoice patterns?',
-      'What is the risk level for continuing with this vendor?'
+      'Do compensating factors justify an otherwise marginal loan?',
+      'Should we approve despite below-guideline metrics?'
     ],
-    ambiguityNotes: 'Risk assessment depends on incomplete historical data and subjective factors',
+    ambiguityNotes: 'Compensating factor weight depends on guideline interpretation and underwriter discretion',
     confidence: 50
   },
   {
     id: 'doc-pat-20',
-    name: 'Optimal Discount Opportunity Detection',
-    description: 'Identify when invoices could qualify for early payment discounts or volume rebates.',
+    name: 'Market Condition Impact on Property Valuation',
+    description: 'Assess impact of current market conditions on property value trends and appraisal reasonableness.',
     tier: 'fuzzy',
-    taskDimensionId: 'doci-task-cost-aggregation',
-    dataDimensionIds: ['doci-data-aws-invoice', 'doci-data-gcp-invoice', 'doci-data-azure-invoice'],
+    taskDimensionId: 'doci-task-property-valuation',
+    dataDimensionIds: ['doci-data-property-appraisals', 'doci-data-loan-apps'],
     userProfileDimensionId: 'doci-up-analyst',
     patternType: 'reasoning',
     exampleQuestions: [
-      'What discount opportunities are available for this vendor?',
-      'Should we consolidate purchases to get volume pricing?'
+      'Is the appraisal reasonable given current market conditions?',
+      'How do recent market trends affect property valuation?'
     ],
-    ambiguityNotes: 'Discount eligibility varies by vendor terms; requires negotiation history',
+    ambiguityNotes: 'Market impact assessment depends on regional conditions and economic forecasts',
     confidence: 50
   },
   {
     id: 'doc-pat-21',
-    name: 'Compliance Violation Detection',
-    description: 'Detect potential compliance violations based on invoice characteristics and business rules.',
+    name: 'Income Calculation Ambiguity Resolution',
+    description: 'Resolve ambiguous income calculation when documents show variable or non-standard income.',
     tier: 'fuzzy',
-    taskDimensionId: 'doci-task-compliance-checking',
-    dataDimensionIds: ['doci-data-azure-invoice', 'doci-data-aws-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-auditor',
+    taskDimensionId: 'doci-task-income-verification',
+    dataDimensionIds: ['doci-data-income-docs', 'doci-data-loan-apps'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'branch',
     exampleQuestions: [
-      'Does this invoice violate any regulatory requirements?',
-      'What compliance risks should we flag?'
+      'How should we calculate income from self-employment or bonus?',
+      'What is the most conservative income figure to use?'
     ],
-    ambiguityNotes: 'Compliance rules are context-specific and may conflict; interpretation varies by jurisdiction',
+    ambiguityNotes: 'Income calculation for non-standard sources requires guideline interpretation and underwriter judgment',
     confidence: 50
   },
   {
     id: 'doc-pat-22',
-    name: 'Predictive Budget Overrun Alert',
-    description: 'Predict if current spending trajectory will exceed annual budget using invoice patterns.',
+    name: 'Loan Denial vs. Conditional Approval Decision',
+    description: 'Determine whether application should be denied or approved with conditions based on risk profile.',
     tier: 'fuzzy',
-    taskDimensionId: 'doci-task-cost-aggregation',
-    dataDimensionIds: ['doci-data-aws-invoice', 'doci-data-gcp-invoice'],
-    userProfileDimensionId: 'doci-up-business-user',
+    taskDimensionId: 'doci-task-decision-routing',
+    dataDimensionIds: ['doci-data-loan-apps', 'doci-data-credit-bureau', 'doci-data-income-docs'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'reasoning',
     exampleQuestions: [
-      'Will we exceed our budget based on current spending?',
-      'What is our projected year-end spending?'
+      'Should this application be denied or conditionally approved?',
+      'What remediation would make this loan acceptable?'
     ],
-    activatedComponents: ['predictive-model'],
-    ambiguityNotes: 'Predictions depend on trend stability assumptions; seasonal variations may affect accuracy',
+    ambiguityNotes: 'Denial vs. approval decision depends on risk tolerance and guideline flexibility',
     confidence: 50
   },
   {
     id: 'doc-pat-23',
-    name: 'Invoice Duplicate or Near-Duplicate Detection',
-    description: 'Identify potentially duplicate or near-duplicate invoices from same vendor.',
+    name: 'Documentation Sufficiency Assessment',
+    description: 'Assess whether provided documentation is sufficient or if additional documentation is needed.',
     tier: 'fuzzy',
-    taskDimensionId: 'doci-task-anomaly-detection',
-    dataDimensionIds: ['doci-data-gcp-invoice', 'doci-data-aws-invoice', 'doci-data-invoice-template'],
-    userProfileDimensionId: 'doci-up-system-user',
+    taskDimensionId: 'doci-task-application-intake',
+    dataDimensionIds: ['doci-data-loan-apps', 'doci-data-income-docs'],
+    userProfileDimensionId: 'doci-up-analyst',
     patternType: 'reasoning',
     exampleQuestions: [
-      'Is this invoice a duplicate of a previous one?',
-      'Are these two invoices suspiciously similar?'
+      'Is the provided documentation adequate for underwriting?',
+      'What additional documents are needed to proceed?'
     ],
-    ambiguityNotes: 'Threshold for similarity detection is subjective; legitimate invoices may have high overlap',
+    ambiguityNotes: 'Documentation sufficiency depends on loan complexity and guideline requirements',
     confidence: 50
   },
   {
     id: 'doc-pat-24',
-    name: 'Vendor Pricing Consistency Check',
-    description: 'Assess whether current invoice pricing aligns with historical vendor pricing patterns.',
+    name: 'Regulatory Guideline Interpretation Ambiguity',
+    description: 'Resolve ambiguous regulatory guideline interpretation when multiple valid interpretations exist.',
     tier: 'fuzzy',
-    taskDimensionId: 'doci-task-cross-reference-validation',
-    dataDimensionIds: ['doci-data-aws-invoice', 'doci-data-gcp-invoice', 'doci-data-invoice-template'],
+    taskDimensionId: 'doci-task-compliance-validation',
+    dataDimensionIds: ['doci-data-loan-apps', 'doci-data-credit-bureau'],
     userProfileDimensionId: 'doci-up-analyst',
-    patternType: 'branch',
+    patternType: 'reasoning',
     exampleQuestions: [
-      'Did the vendor change their pricing unexpectedly?',
-      'Is this pricing consistent with past invoices?'
+      'How should we interpret this guideline in edge cases?',
+      'Which interpretation approach is most conservative?'
     ],
-    ambiguityNotes: 'Price changes may be legitimate due to market conditions, contract terms, or scope changes',
+    ambiguityNotes: 'Guideline interpretation varies by institution and regulator; legal guidance may be required',
     confidence: 50
   }
 ]
@@ -389,121 +388,121 @@ export const DECISION_WORKFLOW_PATTERNS: DimensionPattern[] = [
   // SIMPLE PATTERNS (8)
   {
     id: 'dental-pat-01',
-    name: 'Patient Demographic Lookup',
-    description: 'Retrieve basic patient demographics from patient records by ID.',
+    name: 'Patient Demographics Lookup',
+    description: 'Retrieve patient demographics, contact info, and insurance identifiers from EHR.',
     tier: 'simple',
     taskDimensionId: 'dw-task-patient-intake',
     dataDimensionIds: ['dw-data-patient-records'],
-    userProfileDimensionId: 'dw-up-office-staff',
+    userProfileDimensionId: 'dw-up-admin-staff',
     patternType: 'simple',
     exampleQuestions: [
-      'What is the patient name and age?',
-      'Pull up the patient contact information'
+      'What is the patient name, DOB, and contact information?',
+      'Pull up patient insurance ID and primary care provider'
     ],
     confidence: 90
   },
   {
     id: 'dental-pat-02',
-    name: 'Insurance Plan Identification',
-    description: 'Identify patient insurance plan from insurance data based on patient ID.',
+    name: 'Insurance Eligibility Check',
+    description: 'Query insurance plan eligibility and coverage type for patient.',
     tier: 'simple',
     taskDimensionId: 'dw-task-insurance-verification',
-    dataDimensionIds: ['dw-data-insurance-plans'],
+    dataDimensionIds: ['dw-data-insurance-benefits'],
     userProfileDimensionId: 'dw-up-insurance-coordinator',
     patternType: 'simple',
     exampleQuestions: [
-      'What insurance plan does this patient have?',
-      'Which provider is the patient covered by?'
+      'Is this patient\'s insurance active and eligible?',
+      'What is the patient\'s coverage type and carrier?'
     ],
     confidence: 90
   },
   {
     id: 'dental-pat-03',
-    name: 'Treatment Code Lookup',
-    description: 'Look up treatment codes and descriptions for specific dental procedures.',
+    name: 'Procedure Code & CPT Lookup',
+    description: 'Look up diagnosis codes (ICD-10) and procedure codes (CPT) for conditions and treatments.',
     tier: 'simple',
     taskDimensionId: 'dw-task-treatment-cost-estimation',
-    dataDimensionIds: ['dw-data-treatment-codes'],
-    userProfileDimensionId: 'dw-up-dentist',
+    dataDimensionIds: ['dw-data-clinical-guidelines'],
+    userProfileDimensionId: 'dw-up-physician',
     patternType: 'simple',
     exampleQuestions: [
-      'What is the code for a root canal?',
-      'Look up the treatment code for this procedure'
+      'What is the CPT code for an EKG?',
+      'Look up the ICD-10 code for hypertension'
     ],
     confidence: 90
   },
   {
     id: 'dental-pat-04',
-    name: 'Emergency Symptom Classification',
-    description: 'Classify patient symptoms into emergency, urgent, or routine categories.',
+    name: 'Emergency Symptom Triage',
+    description: 'Classify patient symptoms into emergency, urgent, or routine triage levels.',
     tier: 'simple',
-    taskDimensionId: 'dw-task-emergency-routing',
+    taskDimensionId: 'dw-task-clinical-triage',
     dataDimensionIds: ['dw-data-patient-records'],
-    userProfileDimensionId: 'dw-up-clinical-staff',
+    userProfileDimensionId: 'dw-up-nurse',
     patternType: 'simple',
     exampleQuestions: [
-      'Is this patient an emergency case?',
-      'How urgent is this patient issue?'
+      'Is this patient presenting with emergency symptoms?',
+      'What triage level should this patient be assigned?'
     ],
     confidence: 90
   },
   {
     id: 'dental-pat-05',
-    name: 'Patient Consent Status Check',
-    description: 'Verify if patient has signed required consent forms.',
+    name: 'Informed Consent Verification',
+    description: 'Verify patient has signed informed consent for procedures.',
     tier: 'simple',
     taskDimensionId: 'dw-task-consent-collection',
     dataDimensionIds: ['dw-data-patient-records'],
-    userProfileDimensionId: 'dw-up-office-staff',
+    userProfileDimensionId: 'dw-up-admin-staff',
     patternType: 'simple',
     exampleQuestions: [
-      'Has the patient provided consent for treatment?',
-      'Check the consent status'
+      'Has the patient provided informed consent for this procedure?',
+      'Check the consent documentation status'
     ],
     confidence: 90
   },
   {
     id: 'dental-pat-06',
-    name: 'Schedule Availability Lookup',
-    description: 'Check available appointment slots for a given date and provider.',
+    name: 'Provider Availability & Scheduling',
+    description: 'Check available appointment slots across provider network for given specialty and date.',
     tier: 'simple',
     taskDimensionId: 'dw-task-appointment-scheduling',
-    dataDimensionIds: ['dw-data-patient-records'],
-    userProfileDimensionId: 'dw-up-office-staff',
+    dataDimensionIds: ['dw-data-provider-network'],
+    userProfileDimensionId: 'dw-up-admin-staff',
     patternType: 'simple',
     exampleQuestions: [
-      'What appointment times are available next week?',
-      'Find an open slot for this patient'
+      'What appointment times are available with cardiology next week?',
+      'Find the next available slot with in-network providers'
     ],
     confidence: 90
   },
   {
     id: 'dental-pat-07',
-    name: 'Coverage Limit Verification',
-    description: 'Check remaining insurance coverage limits and deductibles.',
+    name: 'Insurance Deductible & Maximum Check',
+    description: 'Check remaining deductible, out-of-pocket maximum, and annual coverage limits.',
     tier: 'simple',
     taskDimensionId: 'dw-task-coverage-lookup',
-    dataDimensionIds: ['dw-data-insurance-plans'],
+    dataDimensionIds: ['dw-data-insurance-benefits'],
     userProfileDimensionId: 'dw-up-insurance-coordinator',
     patternType: 'simple',
     exampleQuestions: [
-      'What is the patient annual maximum coverage?',
-      'How much deductible has the patient met?'
+      'What is the patient\'s remaining deductible?',
+      'How much of the annual maximum has been used?'
     ],
     confidence: 90
   },
   {
     id: 'dental-pat-08',
-    name: 'Patient Medical History Retrieval',
-    description: 'Retrieve relevant medical history from patient records.',
+    name: 'Patient Clinical History Retrieval',
+    description: 'Retrieve patient medical history, conditions, medications, and allergies from EHR.',
     tier: 'simple',
     taskDimensionId: 'dw-task-patient-intake',
     dataDimensionIds: ['dw-data-patient-records'],
-    userProfileDimensionId: 'dw-up-dentist',
+    userProfileDimensionId: 'dw-up-physician',
     patternType: 'simple',
     exampleQuestions: [
-      'What is the patient medical history?',
-      'Does the patient have any allergies or conditions?'
+      'What is the patient\'s complete medical history?',
+      'What medications is the patient taking and what are documented allergies?'
     ],
     confidence: 90
   },
@@ -511,260 +510,260 @@ export const DECISION_WORKFLOW_PATTERNS: DimensionPattern[] = [
   // COMPLEX PATTERNS (8)
   {
     id: 'dental-pat-09',
-    name: 'Insurance Coverage Eligibility Verification',
-    description: 'Verify patient insurance eligibility by cross-referencing patient records with insurance data.',
+    name: 'Insurance Coverage & Prior Authorization Verification',
+    description: 'Verify patient insurance eligibility and determine prior authorization requirements by cross-referencing insurance and clinical guidelines.',
     tier: 'complex',
     taskDimensionId: 'dw-task-insurance-verification',
-    dataDimensionIds: ['dw-data-patient-records', 'dw-data-insurance-plans'],
+    dataDimensionIds: ['dw-data-patient-records', 'dw-data-insurance-benefits', 'dw-data-clinical-guidelines'],
     userProfileDimensionId: 'dw-up-insurance-coordinator',
     patternType: 'hopping',
     exampleQuestions: [
-      'Is this treatment covered under the patient insurance plan?',
-      'Verify insurance eligibility for this procedure'
+      'Is this procedure covered and does it require prior authorization?',
+      'Verify insurance eligibility and check prior auth requirements'
     ],
-    inferenceNotes: 'Requires matching patient to insurance plan and checking procedure coverage',
+    inferenceNotes: 'Requires matching patient to plan, checking coverage, and determining pre-auth rules based on procedure code',
     confidence: 72
   },
   {
     id: 'dental-pat-10',
-    name: 'Clinical Triage and Routing',
-    description: 'Assess clinical urgency and route patient to appropriate care level.',
+    name: 'Emergency Triage & Care Routing',
+    description: 'Assess clinical acuity using symptoms and patient history, then route to appropriate care level (ED, urgent, scheduled).',
     tier: 'complex',
     taskDimensionId: 'dw-task-clinical-triage',
-    dataDimensionIds: ['dw-data-patient-records', 'dw-data-treatment-codes'],
-    userProfileDimensionId: 'dw-up-clinical-staff',
+    dataDimensionIds: ['dw-data-patient-records', 'dw-data-clinical-guidelines'],
+    userProfileDimensionId: 'dw-up-nurse',
     patternType: 'branch',
     exampleQuestions: [
-      'Should this patient go to emergency or regular appointment?',
-      'What care pathway should this patient follow?'
+      'Should this patient go to ED or can they be seen in clinic?',
+      'What care pathway should be initiated for this clinical presentation?'
     ],
-    inferenceNotes: 'Requires symptom assessment and clinical judgment',
+    inferenceNotes: 'Requires symptom assessment, vital signs evaluation, and clinical pathway matching against guidelines',
     confidence: 72
   },
   {
     id: 'dental-pat-11',
-    name: 'Treatment Cost Estimation',
-    description: 'Calculate estimated treatment cost using procedures, codes, and insurance coverage.',
+    name: 'Procedure Cost Estimation with Insurance',
+    description: 'Calculate estimated patient responsibility using procedure codes, insurance plan coverage, and deductible status.',
     tier: 'complex',
     taskDimensionId: 'dw-task-treatment-cost-estimation',
-    dataDimensionIds: ['dw-data-treatment-codes', 'dw-data-insurance-plans'],
-    userProfileDimensionId: 'dw-up-office-staff',
+    dataDimensionIds: ['dw-data-clinical-guidelines', 'dw-data-insurance-benefits'],
+    userProfileDimensionId: 'dw-up-care-coordinator',
     patternType: 'aggregator',
     exampleQuestions: [
-      'What will the treatment cost after insurance?',
-      'Estimate the patient out-of-pocket expense'
+      'What will this procedure cost after insurance coverage?',
+      'Estimate the patient out-of-pocket expense given their coverage'
     ],
-    activatedComponents: ['cost-calculator', 'insurance-processor'],
+    activatedComponents: ['cost-calculator', 'insurance-processor', 'deductible-tracker'],
     confidence: 72
   },
   {
     id: 'dental-pat-12',
-    name: 'Emergency Patient Routing',
-    description: 'Route emergency patients to appropriate provider based on symptoms and availability.',
+    name: 'Emergency Patient Escalation & Notification',
+    description: 'Detect emergency conditions and immediately notify appropriate on-call provider with clinical context.',
     tier: 'complex',
     taskDimensionId: 'dw-task-emergency-routing',
-    dataDimensionIds: ['dw-data-patient-records', 'dw-data-treatment-codes'],
-    userProfileDimensionId: 'dw-up-clinical-staff',
+    dataDimensionIds: ['dw-data-patient-records', 'dw-data-provider-network'],
+    userProfileDimensionId: 'dw-up-nurse',
     patternType: 'hopping',
     exampleQuestions: [
-      'Which dentist can see this emergency patient today?',
-      'Route this emergency case to the appropriate provider'
+      'Which physician should handle this emergency and how do I escalate immediately?',
+      'Route this emergency case with full clinical context to on-call provider'
     ],
-    inferenceNotes: 'Requires availability data and clinical expertise matching',
+    inferenceNotes: 'Requires symptom matching to emergency protocols, on-call availability, and context packaging',
     confidence: 72
   },
   {
     id: 'dental-pat-13',
-    name: 'Comprehensive Patient Intake',
-    description: 'Gather and validate all patient intake information including demographics and consent.',
+    name: 'Comprehensive Patient Registration & Intake',
+    description: 'Collect and validate all required patient intake information including demographics, insurance, consent, and medical history.',
     tier: 'complex',
     taskDimensionId: 'dw-task-patient-intake',
-    dataDimensionIds: ['dw-data-patient-records', 'dw-data-insurance-plans'],
-    userProfileDimensionId: 'dw-up-office-staff',
+    dataDimensionIds: ['dw-data-patient-records', 'dw-data-insurance-benefits'],
+    userProfileDimensionId: 'dw-up-admin-staff',
     patternType: 'aggregator',
     exampleQuestions: [
-      'Is the patient intake complete and verified?',
-      'Collect all required patient intake information'
+      'Is patient registration complete and verified?',
+      'Collect all required intake information and validate for completeness'
     ],
-    activatedComponents: ['intake-validator'],
+    activatedComponents: ['intake-validator', 'insurance-collector', 'consent-manager'],
     confidence: 72
   },
   {
     id: 'dental-pat-14',
-    name: 'Insurance Pre-Authorization Check',
-    description: 'Determine if treatment requires pre-authorization and gather required information.',
+    name: 'Prior Authorization Submission & Tracking',
+    description: 'Determine if prior authorization is required, prepare submission package, and track approval status.',
     tier: 'complex',
     taskDimensionId: 'dw-task-coverage-lookup',
-    dataDimensionIds: ['dw-data-insurance-plans', 'dw-data-treatment-codes'],
+    dataDimensionIds: ['dw-data-insurance-benefits', 'dw-data-clinical-guidelines'],
     userProfileDimensionId: 'dw-up-insurance-coordinator',
     patternType: 'hopping',
     exampleQuestions: [
-      'Does this treatment need insurance pre-authorization?',
-      'What documentation is required for approval?'
+      'Does this procedure require prior authorization and what documents are needed?',
+      'Prepare and submit prior auth request and track status'
     ],
-    inferenceNotes: 'Rules vary by insurance plan and treatment type',
+    inferenceNotes: 'Rules vary by insurance plan, procedure code, and clinical indication. Tracking integrates with carrier APIs.',
     confidence: 72
   },
   {
     id: 'dental-pat-15',
-    name: 'Follow-up Scheduling Recommendation',
-    description: 'Recommend follow-up appointments based on treatment type and patient history.',
+    name: 'Post-Visit Follow-Up Scheduling',
+    description: 'Recommend and schedule follow-up appointments based on clinical pathway and patient history.',
     tier: 'complex',
     taskDimensionId: 'dw-task-followup-management',
-    dataDimensionIds: ['dw-data-patient-records', 'dw-data-treatment-codes'],
-    userProfileDimensionId: 'dw-up-dentist',
+    dataDimensionIds: ['dw-data-patient-records', 'dw-data-clinical-guidelines'],
+    userProfileDimensionId: 'dw-up-care-coordinator',
     patternType: 'aggregator',
     exampleQuestions: [
       'When should the patient return for follow-up?',
-      'What follow-up care is needed after this treatment?'
+      'Schedule appropriate post-discharge or post-procedure follow-up'
     ],
-    activatedComponents: ['followup-planner'],
+    activatedComponents: ['followup-planner', 'scheduling-engine', 'reminder-scheduler'],
     confidence: 72
   },
   {
     id: 'dental-pat-16',
-    name: 'Patient FAQ Resolution',
-    description: 'Answer common patient questions using treatment codes, insurance data, and procedures.',
+    name: 'Care Information & Patient Education',
+    description: 'Answer patient questions about appointments, procedures, insurance, recovery, and care coordination.',
     tier: 'complex',
     taskDimensionId: 'dw-task-patient-faq',
-    dataDimensionIds: ['dw-data-treatment-codes', 'dw-data-insurance-plans'],
+    dataDimensionIds: ['dw-data-clinical-guidelines', 'dw-data-insurance-benefits'],
     userProfileDimensionId: 'dw-up-patient',
     patternType: 'hopping',
     exampleQuestions: [
-      'What is root canal and what does it cost?',
-      'Is this treatment covered by my insurance?'
+      'What can I expect from this procedure and how does my insurance cover it?',
+      'What is the recovery process and when should I follow up?'
     ],
-    inferenceNotes: 'Requires combining multiple data sources for comprehensive answers',
+    inferenceNotes: 'Requires combining clinical pathway info, insurance coverage, and plain-language patient education materials',
     confidence: 72
   },
 
   // FUZZY PATTERNS (8)
   {
     id: 'dental-pat-17',
-    name: 'Ambiguous Symptom Classification',
-    description: 'Classify symptoms that could indicate multiple conditions or urgency levels.',
+    name: 'Ambiguous Clinical Presentation',
+    description: 'Patient presentation could indicate multiple conditions with different urgency levels and care pathways.',
     tier: 'fuzzy',
     taskDimensionId: 'dw-task-clinical-triage',
-    dataDimensionIds: ['dw-data-patient-records', 'dw-data-treatment-codes'],
-    userProfileDimensionId: 'dw-up-clinical-staff',
+    dataDimensionIds: ['dw-data-patient-records', 'dw-data-clinical-guidelines'],
+    userProfileDimensionId: 'dw-up-nurse',
     patternType: 'branch',
     exampleQuestions: [
-      'Is this tooth pain from decay or sensitivity?',
-      'Could this be an emergency or just a regular issue?'
+      'Is this chest discomfort cardiac or musculoskeletal?',
+      'Could this be an emergency or a routine visit?'
     ],
-    ambiguityNotes: 'Symptoms may overlap; requires clinical assessment and patient history context',
+    ambiguityNotes: 'Symptoms may overlap across conditions; requires physician assessment and patient history context',
     confidence: 50
   },
   {
     id: 'dental-pat-18',
-    name: 'Treatment Plan Recommendation',
-    description: 'Recommend optimal treatment plan when multiple options exist.',
+    name: 'Clinical Treatment Pathway Decision',
+    description: 'Multiple clinically-appropriate treatment pathways exist with different risk-benefit profiles.',
     tier: 'fuzzy',
-    taskDimensionId: 'dw-task-patient-faq',
-    dataDimensionIds: ['dw-data-patient-records', 'dw-data-treatment-codes', 'dw-data-insurance-plans'],
-    userProfileDimensionId: 'dw-up-dentist',
+    taskDimensionId: 'dw-task-patient-intake',
+    dataDimensionIds: ['dw-data-patient-records', 'dw-data-clinical-guidelines'],
+    userProfileDimensionId: 'dw-up-physician',
     patternType: 'reasoning',
     exampleQuestions: [
-      'What is the best treatment option for this patient?',
-      'Should we recommend root canal or extraction?'
+      'What is the best treatment option for this patient\'s condition?',
+      'Should we pursue conservative management or procedural intervention?'
     ],
-    ambiguityNotes: 'Treatment choice depends on subjective factors, patient preferences, and long-term prognosis',
+    ambiguityNotes: 'Treatment choice depends on clinical judgment, patient preferences, prognosis, and comorbidities',
     confidence: 50
   },
   {
     id: 'dental-pat-19',
-    name: 'Insurance Claim Denial Prediction',
-    description: 'Predict likelihood of insurance claim denial based on historical patterns.',
+    name: 'Insurance Prior Auth Denial Risk',
+    description: 'Assess likelihood of prior authorization denial based on medical necessity and coverage rules.',
     tier: 'fuzzy',
     taskDimensionId: 'dw-task-coverage-lookup',
-    dataDimensionIds: ['dw-data-insurance-plans', 'dw-data-treatment-codes', 'dw-data-patient-records'],
+    dataDimensionIds: ['dw-data-insurance-benefits', 'dw-data-clinical-guidelines', 'dw-data-patient-records'],
     userProfileDimensionId: 'dw-up-insurance-coordinator',
     patternType: 'reasoning',
     exampleQuestions: [
-      'Will this claim likely be denied?',
-      'What is the risk of denial for this treatment?'
+      'Will this prior auth likely be denied or approved?',
+      'What is the risk of denial for this procedure request?'
     ],
-    ambiguityNotes: 'Prediction depends on incomplete claim history and insurance company decision variability',
+    ambiguityNotes: 'Denial prediction depends on partial claim history, carrier decision patterns, and clinical documentation completeness',
     confidence: 50
   },
   {
     id: 'dental-pat-20',
-    name: 'Patient Compliance Risk Assessment',
-    description: 'Assess patient likelihood to comply with treatment plans.',
+    name: 'Patient Adherence Risk Assessment',
+    description: 'Assess likelihood patient will adhere to prescribed care plan and follow-up requirements.',
     tier: 'fuzzy',
-    taskDimensionId: 'dw-task-patient-intake',
+    taskDimensionId: 'dw-task-followup-management',
     dataDimensionIds: ['dw-data-patient-records'],
-    userProfileDimensionId: 'dw-up-dentist',
+    userProfileDimensionId: 'dw-up-physician',
     patternType: 'reasoning',
     exampleQuestions: [
-      'Will this patient comply with the recommended treatment?',
-      'What is the patient compliance risk level?'
+      'Will this patient comply with the treatment plan?',
+      'What is the patient adherence risk level?'
     ],
-    ambiguityNotes: 'Compliance depends on complex behavioral and socioeconomic factors',
+    ambiguityNotes: 'Adherence depends on complex behavioral, socioeconomic, and health literacy factors',
     confidence: 50
   },
   {
     id: 'dental-pat-21',
-    name: 'Optimal Appointment Scheduling',
-    description: 'Find optimal appointment time considering patient preferences and clinical needs.',
+    name: 'Optimal Appointment Slot Selection',
+    description: 'Find best appointment time balancing provider availability, patient preferences, and clinical appropriateness.',
     tier: 'fuzzy',
     taskDimensionId: 'dw-task-appointment-scheduling',
-    dataDimensionIds: ['dw-data-patient-records', 'dw-data-treatment-codes'],
-    userProfileDimensionId: 'dw-up-office-staff',
+    dataDimensionIds: ['dw-data-provider-network', 'dw-data-patient-records'],
+    userProfileDimensionId: 'dw-up-care-coordinator',
     patternType: 'branch',
     exampleQuestions: [
-      'What is the best time to schedule this patient?',
-      'When should we book this complex procedure?'
+      'What is the optimal time to schedule this complex procedure?',
+      'Which provider and time slot best fits this patient\'s clinical and personal needs?'
     ],
-    ambiguityNotes: 'Optimal scheduling balances patient convenience, provider expertise, and clinical timing',
+    ambiguityNotes: 'Optimal scheduling balances provider expertise, patient convenience, clinical urgency, and system capacity',
     confidence: 50
   },
   {
     id: 'dental-pat-22',
-    name: 'Consent Validity Assessment',
-    description: 'Assess whether patient consent is informed and valid given clinical complexity.',
+    name: 'Informed Consent Validity & Comprehension',
+    description: 'Assess whether patient truly understands procedure risks and benefits given clinical complexity.',
     tier: 'fuzzy',
     taskDimensionId: 'dw-task-consent-collection',
-    dataDimensionIds: ['dw-data-patient-records', 'dw-data-treatment-codes'],
-    userProfileDimensionId: 'dw-up-dentist',
+    dataDimensionIds: ['dw-data-patient-records', 'dw-data-clinical-guidelines'],
+    userProfileDimensionId: 'dw-up-physician',
     patternType: 'reasoning',
     exampleQuestions: [
-      'Did the patient understand the treatment risks?',
-      'Is the consent truly informed for this procedure?'
+      'Does the patient fully understand the procedure risks and alternatives?',
+      'Is the consent truly informed given the clinical complexity?'
     ],
-    ambiguityNotes: 'Validity depends on subjective assessment of patient understanding and capacity',
+    ambiguityNotes: 'Validity assessment requires subjective evaluation of patient understanding, cognitive capacity, and disclosure adequacy',
     confidence: 50
   },
   {
     id: 'dental-pat-23',
-    name: 'Insurance Coverage Negotiation',
-    description: 'Recommend negotiation strategy based on coverage, treatment, and patient circumstances.',
+    name: 'Insurance Coverage Appeal Strategy',
+    description: 'Develop appeal strategy for denied claims considering contractual terms and precedent.',
     tier: 'fuzzy',
     taskDimensionId: 'dw-task-insurance-verification',
-    dataDimensionIds: ['dw-data-insurance-plans', 'dw-data-patient-records', 'dw-data-treatment-codes'],
+    dataDimensionIds: ['dw-data-insurance-benefits', 'dw-data-clinical-guidelines', 'dw-data-patient-records'],
     userProfileDimensionId: 'dw-up-insurance-coordinator',
     patternType: 'reasoning',
     exampleQuestions: [
-      'How should we approach this coverage issue with the insurance?',
-      'What is our negotiation strategy for this denial?'
+      'How should we approach this coverage denial with the insurance company?',
+      'What is our best appeal strategy based on contract and precedent?'
     ],
-    ambiguityNotes: 'Negotiation depends on insurance company policies, contractual terms, and appeal outcomes',
+    ambiguityNotes: 'Appeal success depends on insurance company policies, contractual interpretation, precedent, and clinical documentation',
     confidence: 50
   },
   {
     id: 'dental-pat-24',
-    name: 'Patient Cancellation Risk Prediction',
-    description: 'Predict likelihood of patient cancellation based on history and booking characteristics.',
+    name: 'Patient No-Show & Cancellation Risk',
+    description: 'Predict likelihood of appointment no-show or cancellation based on patient history and factors.',
     tier: 'fuzzy',
     taskDimensionId: 'dw-task-appointment-scheduling',
     dataDimensionIds: ['dw-data-patient-records'],
-    userProfileDimensionId: 'dw-up-office-staff',
+    userProfileDimensionId: 'dw-up-care-coordinator',
     patternType: 'reasoning',
     exampleQuestions: [
-      'Is this patient likely to cancel their appointment?',
-      'What is the cancellation risk for this booking?'
+      'Is this patient likely to no-show or cancel their appointment?',
+      'What is the no-show risk for this appointment booking?'
     ],
-    ambiguityNotes: 'Cancellation prediction depends on behavioral patterns with incomplete historical data',
+    ambiguityNotes: 'No-show prediction depends on behavioral history, socioeconomic factors, appointment timing, and incomplete data',
     confidence: 50
   }
 ]

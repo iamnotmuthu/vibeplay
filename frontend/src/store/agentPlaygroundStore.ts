@@ -63,7 +63,7 @@ interface AgentPlaygroundState {
 }
 
 export const useAgentPlaygroundStore = create<AgentPlaygroundState>((set, get) => ({
-  currentStage: 'tiles',
+  currentStage: 'goal',
   completedStages: new Set(),
   viewMode: 'business',
   activeTileId: null,
@@ -155,7 +155,7 @@ export const useAgentPlaygroundStore = create<AgentPlaygroundState>((set, get) =
 
   reset: () =>
     set({
-      currentStage: 'tiles',
+      currentStage: 'goal',
       completedStages: new Set(),
       activeTileId: null,
       simulationOpen: false,
@@ -174,7 +174,7 @@ export const useAgentPlaygroundStore = create<AgentPlaygroundState>((set, get) =
 
   resetToTiles: () =>
     set({
-      currentStage: 'tiles',
+      currentStage: 'goal',
       completedStages: new Set(),
       activeTileId: null,
       simulationOpen: false,
