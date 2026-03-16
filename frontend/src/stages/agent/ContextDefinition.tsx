@@ -11,6 +11,7 @@ import {
   Pencil,
   Target,
   Zap,
+  Users,
 } from 'lucide-react'
 import { AgentTooltip } from '@/components/agent/AgentTooltip'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
