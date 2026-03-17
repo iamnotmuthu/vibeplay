@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronDown,
@@ -8,10 +8,20 @@ import {
   MessageSquare,
   FlaskConical,
 } from 'lucide-react'
-import type { PatternClassification, DiscoveredPattern } from '@/store/agentTypes'
+import type { PatternClassification, DiscoveredPattern, ScenarioTest, DimensionPattern } from '@/store/agentTypes'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
+import { getEvaluationData } from '@/lib/agent/evaluationData'
 import { getEvalMetrics, getMetricWhy } from '@/lib/agent/componentTechData'
+import { getCombinatorialPatternsData } from '@/lib/agent/combinatorialPatternsData'
 import { PATTERN_CLASSIFICATION_META } from '@/store/agentTypes'
+
+// ─── Map combinatorial tier → classification ────────────────────────────
+
+const TIER_TO_CLASSIFICATION: Record<string, PatternClassification> = {
+  simple: 'simple',
+  complex: 'complex',
+  fuzzy: 'fuzzy',
+}
 
 // ─── Tier color system for pattern ID badges ───────────────────────────────
 
@@ -26,6 +36,22 @@ function getTierFromPatternId(id: string): 'simple' | 'complex' | 'fuzzy' {
   if (id.includes('-C')) return 'complex'
   if (id.includes('-F')) return 'fuzzy'
   return 'fuzzy' // default
+}
+
+function mapDimensionToDiscovered(dp: DimensionPattern, idx: number): DiscoveredPattern {
+  return {
+    id: dp.id,
+    patternType: dp.patternType,
+    classification: TIER_TO_CLASSIFICATION[dp.tier] || 'fuzzy',
+    label: dp.name,
+    description: dp.description,
+    exampleQuestions: dp.exampleQuestions,
+    coveragePct: dp.confidence,
+    inferenceNote: dp.inferenceNotes,
+    ambiguityNote: dp.ambiguityNotes,
+    activatedComponents: dp.activatedComponents ?? [],
+    importanceRank: idx + 1,
+  }
 }
 
 interface PatternGroup {
@@ -320,138 +346,72 @@ function AgentMeasurementPlan({ tileId }: { tileId: string }) {
   )
 }
 
-// ─── Dummy Pattern Groups ────────────────────────────────────────────────
-
-const DUMMY_GROUPS: PatternGroup[] = [
-  {
-    classification: 'simple',
-    patterns: [
-      {
-        id: 'P-001-S', patternType: 'direct-retrieval', classification: 'simple',
-        label: 'Standard Document Processing',
-        description: 'Single-source, well-structured input with all required fields present. Agent extracts and validates data with high confidence.',
-        exampleQuestions: ['Process this invoice from a known vendor', 'Extract line items from a structured PDF', 'Validate totals against the purchase order'],
-        coveragePct: 94, inferenceNote: 'All required fields present, format recognized', ambiguityNote: undefined,
-        activatedComponents: ['input-validation', 'rag', 'output-guardrails'], importanceRank: 1,
-      },
-      {
-        id: 'P-002-S', patternType: 'direct-retrieval', classification: 'simple',
-        label: 'Known Vendor, Single Currency',
-        description: 'Invoice from a pre-approved vendor with a single currency and standard line-item format. No reconciliation needed.',
-        exampleQuestions: ['Process AWS invoice in USD', 'Match Staples invoice to open PO', 'Auto-approve invoice under threshold'],
-        coveragePct: 91, inferenceNote: 'Vendor whitelisted, currency resolved, PO matched', ambiguityNote: undefined,
-        activatedComponents: ['auth', 'rag', 'policy-enforcement'], importanceRank: 2,
-      },
-      {
-        id: 'P-003-S', patternType: 'direct-retrieval', classification: 'simple',
-        label: 'Full Match — No Discrepancy',
-        description: 'Invoice total, line items, and PO reference all match exactly. Routed for auto-payment without human review.',
-        exampleQuestions: ['Invoice #4821 matches PO #3310 exactly', 'Auto-pay approved vendor with zero variance', 'Route to payment queue after full match'],
-        coveragePct: 88, inferenceNote: 'Zero variance detected across all fields', ambiguityNote: undefined,
-        activatedComponents: ['workflow-orchestrator', 'output-guardrails', 'logging-analytics'], importanceRank: 3,
-      },
-      {
-        id: 'P-004-S', patternType: 'lookup', classification: 'simple',
-        label: 'Duplicate Detection — Exact',
-        description: 'Invoice number and vendor ID match a previously processed record. Agent flags as duplicate and halts processing.',
-        exampleQuestions: ['Is invoice #INV-2200 already in the system?', 'Detect re-submission of paid invoice', 'Block duplicate from entering approval queue'],
-        coveragePct: 97, inferenceNote: 'Exact match on invoice ID + vendor hash', ambiguityNote: undefined,
-        activatedComponents: ['input-validation', 'rag', 'failure-handling'], importanceRank: 4,
-      },
-      {
-        id: 'P-005-S', patternType: 'classification', classification: 'simple',
-        label: 'Cost Center Auto-Coding',
-        description: 'Line item categories map unambiguously to a single cost center. Agent assigns codes without prompting the user.',
-        exampleQuestions: ['Code AWS EC2 charges to Engineering budget', 'Assign office supplies to Facilities', 'Map SaaS subscription to Software budget'],
-        coveragePct: 86, inferenceNote: 'Category → cost center mapping resolved via policy table', ambiguityNote: undefined,
-        activatedComponents: ['rag', 'policy-enforcement', 'output-guardrails'], importanceRank: 5,
-      },
-    ],
-  },
-  {
-    classification: 'complex',
-    patterns: [
-      {
-        id: 'P-006-C', patternType: 'multi-step', classification: 'complex',
-        label: 'Multi-Vendor Consolidated Invoice',
-        description: 'Invoice bundles charges from multiple sub-vendors. Agent must split, attribute, and validate each vendor segment independently.',
-        exampleQuestions: ['Split AWS consolidated bill across accounts', 'Attribute GCP charges to project codes', 'Reconcile multi-vendor bundle with 3 POs'],
-        coveragePct: 72, inferenceNote: 'Requires vendor-segment extraction before PO matching', ambiguityNote: 'Sub-vendor boundaries may overlap in non-standard formats',
-        activatedComponents: ['input-validation', 'rag', 'cross-encoder-reranking', 'workflow-orchestrator'], importanceRank: 6,
-      },
-      {
-        id: 'P-007-C', patternType: 'multi-step', classification: 'complex',
-        label: 'Currency Conversion with Variance',
-        description: 'Invoice issued in a foreign currency with a spot rate that differs from the contracted rate. Agent calculates variance and escalates if above threshold.',
-        exampleQuestions: ['Process EUR invoice with 2.1% FX variance', 'Reconcile GBP invoice against USD PO', 'Flag EUR/USD spread exceeding policy limit'],
-        coveragePct: 68, inferenceNote: 'FX rate lookup required; variance formula applied', ambiguityNote: 'Rate date ambiguity if invoice spans month-end',
-        activatedComponents: ['api-gateway', 'rag', 'failure-handling', 'policy-enforcement'], importanceRank: 7,
-      },
-      {
-        id: 'P-008-C', patternType: 'conditional-routing', classification: 'complex',
-        label: 'Partial Goods Receipt — Pro-Rata',
-        description: 'Only a subset of ordered goods have been received. Agent calculates the pro-rata payable amount and holds the remainder pending receipt confirmation.',
-        exampleQuestions: ['Pay 60% of invoice pending delivery confirmation', 'Hold remainder until 3PL receipt is uploaded', 'Escalate if goods receipt exceeds invoice by >5%'],
-        coveragePct: 63, inferenceNote: 'Goods receipt % sourced from warehouse system', ambiguityNote: 'Delivery confirmation lag may cause false holds',
-        activatedComponents: ['workflow-orchestrator', 'rag', 'cross-encoder-reranking', 'failure-handling', 'output-guardrails'], importanceRank: 8,
-      },
-      {
-        id: 'P-009-C', patternType: 'multi-step', classification: 'complex',
-        label: 'Retroactive Price Adjustment',
-        description: 'Vendor applies a retroactive discount or surcharge referencing a prior period invoice. Agent traces back the original transaction and recalculates.',
-        exampleQuestions: ['Apply Q3 volume discount to current invoice', 'Reconcile retroactive fuel surcharge from Sept', 'Trace credit note to original PO and rebalance'],
-        coveragePct: 58, inferenceNote: 'Requires historical PO lookup + delta calculation', ambiguityNote: 'Prior period closure may prevent adjustment',
-        activatedComponents: ['rag', 'api-gateway', 'workflow-orchestrator', 'logging-analytics'], importanceRank: 9,
-      },
-    ],
-  },
-  {
-    classification: 'fuzzy',
-    patterns: [
-      {
-        id: 'P-010-F', patternType: 'ambiguous', classification: 'fuzzy',
-        label: 'Unrecognized Vendor Format',
-        description: 'Invoice arrives from an unregistered vendor in a non-standard layout. OCR confidence is below threshold and field extraction is incomplete.',
-        exampleQuestions: ['Process invoice from new vendor with handwritten totals', 'Handle scanned PDF with unclear line items', 'Route unrecognized format for manual review'],
-        coveragePct: 41, inferenceNote: 'OCR score below 0.72 threshold; fields partially extracted', ambiguityNote: 'Vendor onboarding may be pending; manual field verification required',
-        activatedComponents: ['input-validation', 'failure-handling', 'logging-analytics'], importanceRank: 10,
-      },
-      {
-        id: 'P-011-F', patternType: 'ambiguous', classification: 'fuzzy',
-        label: 'Disputed Line Item — No Prior Context',
-        description: 'A line item charge has no matching PO, no historical precedent, and the vendor contact is unresponsive. Agent cannot auto-resolve.',
-        exampleQuestions: ['Investigate $4,200 "miscellaneous services" charge', 'Hold invoice pending vendor clarification on item 7', 'Escalate disputed charge with no PO reference'],
-        coveragePct: 35, inferenceNote: 'No PO match found; vendor dispute log empty', ambiguityNote: 'Requires domain expert to determine if charge is valid or fraudulent',
-        activatedComponents: ['rag', 'failure-handling', 'workflow-orchestrator'], importanceRank: 11,
-      },
-      {
-        id: 'P-012-F', patternType: 'ambiguous', classification: 'fuzzy',
-        label: 'Split Cost Center — Policy Gap',
-        description: 'A charge spans two departments but the allocation policy does not specify a split ratio. Agent flags for finance team decision.',
-        exampleQuestions: ['Allocate shared IT infrastructure cost across 3 teams', 'Flag invoice that spans Engineering and Marketing budgets', 'Request split ratio approval from finance manager'],
-        coveragePct: 29, inferenceNote: 'Cost center policy table has no rule for this category combination', ambiguityNote: 'Finance team must define allocation ratio before processing can continue',
-        activatedComponents: ['policy-enforcement', 'workflow-orchestrator', 'logging-analytics'], importanceRank: 12,
-      },
-    ],
-  },
-]
-
 // ─── Main Component ─────────────────────────────────────────────────────
 
 export function AgentEvaluation() {
   const activeTileId = useAgentPlaygroundStore((s) => s.activeTileId)
   const [activeTab, setActiveTab] = useState<PatternClassification>('simple')
 
-  const groups: PatternGroup[] = DUMMY_GROUPS
-
-  const simpleCount = DUMMY_GROUPS.find((g) => g.classification === 'simple')?.patterns.length ?? 0
-  const complexCount = DUMMY_GROUPS.find((g) => g.classification === 'complex')?.patterns.length ?? 0
-  const fuzzyCount = DUMMY_GROUPS.find((g) => g.classification === 'fuzzy')?.patterns.length ?? 0
-
-  const activeGroup = groups.find((g) => g.classification === activeTab)
-  const patternValidationCounts = new Map(
-    (activeGroup?.patterns ?? []).map((p) => [p.id, p.exampleQuestions.length])
+  // Get evaluation & discovery data
+  const evalData = useMemo(
+    () => getEvaluationData(activeTileId || ''),
+    [activeTileId]
   )
+  const scenarios = evalData?.scenarios ?? []
+
+  // Use the SAME combinatorial patterns as the Patterns stage — counts must match exactly
+  const groups: PatternGroup[] = useMemo(() => {
+    const payload = getCombinatorialPatternsData(activeTileId || '')
+    if (!payload) return []
+    const byClassification = new Map<PatternClassification, DiscoveredPattern[]>()
+    payload.patterns.forEach((dp, idx) => {
+      const mapped = mapDimensionToDiscovered(dp, idx)
+      const existing = byClassification.get(mapped.classification) ?? []
+      existing.push(mapped)
+      byClassification.set(mapped.classification, existing)
+    })
+    // All tiles now have hand-crafted fuzzy patterns in the payload — no dummy needed
+    const result: PatternGroup[] = []
+    for (const cls of ['simple', 'complex', 'fuzzy'] as PatternClassification[]) {
+      const patterns = byClassification.get(cls) ?? []
+      if (patterns.length > 0) result.push({ classification: cls, patterns })
+    }
+    return result
+  }, [activeTileId])
+
+  // Filter scenarios by classification group's pattern types
+  const scenariosByClassification = useMemo(() => {
+    const map = new Map<PatternClassification, ScenarioTest[]>()
+    for (const group of groups) {
+      const types = new Set(group.patterns.map((p) => p.patternType))
+      const matching = scenarios.filter((s: ScenarioTest) => types.has(s.patternType))
+      const existing = map.get(group.classification) ?? []
+      map.set(group.classification, [...existing, ...matching])
+    }
+    return map
+  }, [groups, scenarios])
+
+  // Compute pattern counts for each classification
+  const simpleCount = groups
+    .find((g) => g.classification === 'simple')
+    ?.patterns.length ?? 0
+  const complexCount = groups
+    .find((g) => g.classification === 'complex')
+    ?.patterns.length ?? 0
+  const fuzzyCount = groups
+    .find((g) => g.classification === 'fuzzy')
+    ?.patterns.length ?? 0
+
+  // Get active group and compute validation counts for it
+  const activeGroup = groups.find((g) => g.classification === activeTab)
+  const patternValidationCounts = useMemo(() => {
+    if (!activeGroup) return new Map<string, number>()
+    const counts = new Map<string, number>()
+    for (const pattern of activeGroup.patterns) {
+      counts.set(pattern.id, pattern.exampleQuestions.length)
+    }
+    return counts
+  }, [activeGroup])
 
 
   return (
