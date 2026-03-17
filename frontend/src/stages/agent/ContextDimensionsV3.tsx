@@ -1306,10 +1306,10 @@ function StructuralDiscoveryExplorer({
             </div>
           </div>
 
-          {/* Tasks column — cards constrained to 80% width (right-aligned), lines enter with room */}
+          {/* Tasks column — label + cards share same right-aligned container so they stay aligned */}
           <div className="min-w-0 flex flex-col items-end">
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 self-start">Tasks</div>
-            <div className="space-y-2 w-full" style={{ maxWidth: '80%' }}>
+            <div className="space-y-2" style={{ width: '80%' }}>
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Tasks</div>
               {tasks.map((task: any) => {
                 const isActive = !hasSelection || activeTaskIds.has(task.id)
                 return (
