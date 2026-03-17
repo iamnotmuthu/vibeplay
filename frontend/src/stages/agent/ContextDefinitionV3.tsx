@@ -212,25 +212,6 @@ function TabBar({
 
 // ─── Stage Explainer ────────────────────────────────────────────────────
 
-function ContextExplainer({ viewMode }: { viewMode: 'business' | 'technical' }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="rounded-xl border border-blue-100 bg-blue-50/50 p-4"
-    >
-      <div className="flex items-start gap-3">
-        <FileText className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" aria-hidden="true" />
-        <p className="text-sm text-gray-700 leading-relaxed">
-          {viewMode === 'business'
-            ? 'The operational foundation of your agent. Define step-by-step instructions, data sources it can access, response types it can produce, which tools are available, and what boundaries it must respect. This is where you set the capabilities and constraints.'
-            : 'Six-vector operational specification: instruction graph (routing rules, escalation conditions), datasource bindings (format, access protocol, metadata), response type matrix (outcome states, probability distributions), tool capability matrix (4-state handlers), and constraint envelope (safety limits).'}
-        </p>
-      </div>
-    </motion.div>
-  )
-}
 
 // ─── Data Source Card ────────────────────────────────────────────────
 
@@ -521,7 +502,6 @@ export function ContextDefinitionV3() {
       </motion.div>
 
       {/* Stage explainer */}
-      <ContextExplainer viewMode={viewMode} />
 
       {/* Tab bar */}
       <TabBar

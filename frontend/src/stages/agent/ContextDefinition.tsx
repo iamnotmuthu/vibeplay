@@ -196,25 +196,6 @@ function TabBar({
 
 // ─── Stage Explainer ────────────────────────────────────────────────
 
-function ContextExplainer({ viewMode }: { viewMode: 'business' | 'technical' }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="rounded-xl border border-blue-100 bg-blue-50/50 p-4"
-    >
-      <div className="flex items-start gap-3">
-        <FileText className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" aria-hidden="true" />
-        <p className="text-sm text-gray-700 leading-relaxed">
-          {viewMode === 'business'
-            ? 'The operational foundation of your agent. Define step-by-step instructions, data sources it can access, who uses it, which tools are available, and what tasks it can perform. This is where you set the boundaries and capabilities.'
-            : 'Six-vector operational specification: instruction graph (routing rules, escalation conditions, error-handling paths), datasource bindings (format, access protocol, auth metadata), user profiles (proficiency tiers, permission scopes), tool capability matrix (input/output schemas, rate limits), task registry (trigger conditions, SLA targets), and constraint envelope (data residency, PII handling, cost ceilings).'}
-        </p>
-      </div>
-    </motion.div>
-  )
-}
 
 // ─── Coming Soon Card ────────────────────────────────────────────
 
@@ -741,7 +722,6 @@ export function ContextDefinition() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-5">
       {/* Stage explainer */}
-      <ContextExplainer viewMode={viewMode} />
 
       {/* Summary */}
       <motion.p
