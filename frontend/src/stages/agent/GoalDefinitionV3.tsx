@@ -581,8 +581,19 @@ function SharpeningQuestionsSection({
 }) {
   const resolvedTileId = resolveV3TileId(tileId, 'sharpeningQuestions')
   const questions = getSharpeningQuestions(resolvedTileId)
+  const [answers, setAnswers] = useState<Record<string, 'yes' | 'no' | null>>({})
 
   if (!questions || questions.length === 0) return null
+
+  const handleAnswer = (questionId: string, answer: 'yes' | 'no') => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: prev[questionId] === answer ? null : answer,
+    }))
+  }
+
+  const answeredCount = Object.values(answers).filter((v) => v !== null).length
+  const yesCount = Object.values(answers).filter((v) => v === 'yes').length
 
   return (
     <motion.div
@@ -591,15 +602,72 @@ function SharpeningQuestionsSection({
       transition={{ duration: 0.4, delay }}
       className="space-y-4"
     >
-      <div className="space-y-1">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Sharpening Questions</h3>
-        <p className="text-sm text-gray-600">Refine your goal definition. These unlock specific capabilities.</p>
+      {/* Agent-voice header */}
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center shrink-0">
+          <Sparkles className="w-3.5 h-3.5 text-white" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-gray-900">Before I map the full complexity, I need to understand a few things.</h3>
+          <p className="text-xs text-gray-500">
+            Your answers shape which execution paths, tool states, and meta-patterns get included in the analysis.
+          </p>
+        </div>
       </div>
 
-      <div className="space-y-3">
+      {/* Question cards */}
+      <div className="space-y-3 pl-10">
         {questions.slice(0, 3).map((q, idx) => (
-          <SharpeningQuestionCard key={q.id} question={q} index={idx} delay={delay + 0.1 + idx * 0.1} />
+          <SharpeningQuestionCard
+            key={q.id}
+            question={q}
+            index={idx}
+            delay={delay + 0.1 + idx * 0.1}
+            answer={answers[q.id] ?? null}
+            onAnswer={(a) => handleAnswer(q.id, a)}
+          />
         ))}
+      </div>
+
+      {/* Progress + next-step nudge */}
+      <div className="pl-10 space-y-2">
+        {answeredCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2"
+          >
+            <div className="flex gap-1">
+              {questions.slice(0, 3).map((q) => (
+                <div
+                  key={q.id}
+                  className="w-2 h-2 rounded-full transition-colors duration-300"
+                  style={{
+                    backgroundColor:
+                      answers[q.id] === 'yes'
+                        ? '#8b5cf6'
+                        : answers[q.id] === 'no'
+                          ? '#d1d5db'
+                          : '#e5e7eb',
+                  }}
+                />
+              ))}
+            </div>
+            <span className="text-[11px] text-gray-500">
+              {answeredCount}/{Math.min(questions.length, 3)} answered
+              {yesCount > 0 && (
+                <span className="text-violet-600 font-medium"> — {yesCount} will expand the analysis</span>
+              )}
+            </span>
+          </motion.div>
+        )}
+
+        <div className="flex items-center gap-1.5 pt-1">
+          <ArrowRight className="w-3 h-3 text-gray-400" />
+          <p className="text-[11px] text-gray-400">
+            Want to add something specific? You can refine tasks and data sources in the next step.
+          </p>
+        </div>
       </div>
     </motion.div>
   )
@@ -610,24 +678,91 @@ function SharpeningQuestionsSection({
 function SharpeningQuestionCard({
   question,
   delay,
+  answer,
+  onAnswer,
 }: {
   question: { id: string; question: string; impact: string; answerDependency: string }
   index: number
   delay: number
+  answer: 'yes' | 'no' | null
+  onAnswer: (answer: 'yes' | 'no') => void
 }) {
+  const isYes = answer === 'yes'
+  const isNo = answer === 'no'
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
-      className="rounded-lg border-l-4 border-l-purple-500 bg-white border border-gray-200 p-4 space-y-2"
+      className="rounded-lg border bg-white overflow-hidden transition-all duration-300"
+      style={{
+        borderColor: isYes ? '#8b5cf6' : isNo ? '#e5e7eb' : '#e5e7eb',
+        borderLeftWidth: '4px',
+        borderLeftColor: isYes ? '#8b5cf6' : isNo ? '#d1d5db' : '#c4b5fd',
+        opacity: isNo ? 0.6 : 1,
+      }}
     >
-      <p className="text-sm font-semibold text-gray-900">{question.question}</p>
-      <p className="text-xs text-gray-600">{question.impact}</p>
-      <div className="pt-2 border-t border-gray-100">
-        <p className="text-[11px] text-gray-500 font-mono">
-          {question.answerDependency}
+      <div className="p-4 space-y-3">
+        {/* Question + Yes/No toggles */}
+        <div className="flex items-start justify-between gap-4">
+          <p className="text-sm font-semibold text-gray-900 flex-1">{question.question}</p>
+          <div className="flex gap-1.5 shrink-0">
+            <button
+              onClick={() => onAnswer('yes')}
+              className="px-3 py-1 rounded-md text-xs font-medium transition-all duration-200"
+              style={{
+                backgroundColor: isYes ? '#8b5cf6' : '#f9fafb',
+                color: isYes ? '#ffffff' : '#6b7280',
+                border: isYes ? '1px solid #8b5cf6' : '1px solid #e5e7eb',
+              }}
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => onAnswer('no')}
+              className="px-3 py-1 rounded-md text-xs font-medium transition-all duration-200"
+              style={{
+                backgroundColor: isNo ? '#6b7280' : '#f9fafb',
+                color: isNo ? '#ffffff' : '#6b7280',
+                border: isNo ? '1px solid #6b7280' : '1px solid #e5e7eb',
+              }}
+            >
+              No
+            </button>
+          </div>
+        </div>
+
+        {/* Impact — always visible but styled differently based on answer */}
+        <p
+          className="text-xs transition-colors duration-300"
+          style={{ color: isYes ? '#6d28d9' : '#6b7280' }}
+        >
+          {isYes ? '✓ ' : ''}{question.impact}
         </p>
+
+        {/* Unlock details — expand when Yes */}
+        <AnimatePresence>
+          {isYes && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              <div
+                className="pt-2 border-t flex items-center gap-2"
+                style={{ borderColor: '#ede9fe' }}
+              >
+                <Zap className="w-3 h-3 text-violet-500 shrink-0" />
+                <p className="text-[11px] font-medium text-violet-600">
+                  {question.answerDependency}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   )

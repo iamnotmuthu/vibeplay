@@ -18,6 +18,7 @@ import { AgentGlossaryPanel } from './AgentGlossaryPanel'
 import { AgentTileSelector } from './AgentTileSelector'
 import { AgentStepperNav } from './AgentStepperNav'
 import { AgentBottomBar } from './AgentBottomBar'
+import { getGoalDataV3 } from '@/lib/agent/goalDataV3'
 // V3-enhanced stage components
 import { GoalDefinitionV3 } from '@/stages/agent/GoalDefinitionV3'
 import { ContextDefinitionV3 } from '@/stages/agent/ContextDefinitionV3'
@@ -127,6 +128,8 @@ export function AgentPlaygroundV3Shell({ onBack }: AgentPlaygroundV3ShellProps) 
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const tile = activeTileId ? AGENT_TILE_MAP[activeTileId] : null
+  const v3GoalData = activeTileId ? getGoalDataV3(activeTileId) : null
+  const goalBarText = v3GoalData?.goalStatement ?? tile?.goalStatement ?? ''
   const accentColor = tile?.color ?? '#f59e0b'
 
   // Sync viewMode with main playground store
@@ -326,8 +329,8 @@ export function AgentPlaygroundV3Shell({ onBack }: AgentPlaygroundV3ShellProps) 
         >
           <Target className="w-3.5 h-3.5 shrink-0" style={{ color: tile.color }} aria-hidden="true" />
           <span className="text-xs font-semibold text-gray-500">Goal:</span>
-          <span className="text-xs font-bold text-gray-800 truncate" title={tile.goalStatement}>
-            {tile.goalStatement}
+          <span className="text-xs font-bold text-gray-800 truncate" title={goalBarText}>
+            {goalBarText}
           </span>
         </div>
       )}

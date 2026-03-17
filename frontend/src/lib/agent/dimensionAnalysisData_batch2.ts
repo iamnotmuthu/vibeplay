@@ -240,7 +240,7 @@ export const OPS_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
       { id: 'ops-ts-mon-read-failure', label: 'Monitoring Failure', operation: 'read', outcome: 'failure', description: 'Unable to retrieve progress metrics' },
     ] },
   ],
-  summaryText: 'The Shipment Disruption Manager detects and responds to shipment disruptions by analyzing carrier data, detecting anomalies, and optimizing rerouting across supply networks. It synthesizes tracking events, carrier status, route metadata, and historical patterns to support logistics managers and operations teams in maintaining on-time delivery and minimizing customer impact. 9 output dimensions across 4 core outputs. 3 tools with 9 state transitions.'
+  summaryText: 'The Shipment Disruption Manager detects and responds to shipment disruptions by analyzing carrier data, detecting anomalies, and optimizing rerouting across supply networks. It synthesizes tracking events, carrier status, route metadata, and historical patterns to support logistics managers and operations teams in maintaining on-time delivery and minimizing customer impact. 9 response dimensions across 4 core outputs. 3 tools with 9 state transitions.'
 }
 
 export const ONPREM_ASSISTANT_DIMENSIONS: DimensionAnalysisPayload = {
@@ -468,7 +468,7 @@ export const ONPREM_ASSISTANT_DIMENSIONS: DimensionAnalysisPayload = {
       { id: 'onprem-ts-ms-create-failure', label: 'Scheduling Failed', operation: 'create', outcome: 'failure', description: 'No available maintenance window or technician availability conflict' },
     ] },
   ],
-  summaryText: 'The Predictive Maintenance Agent monitors 287 equipment units in real-time, detects sensor anomalies via LSTM analysis (89% accuracy), predicts bearing wear and motor failures within 7 days, auto-generates work orders with spare parts optimization, and schedules preventive maintenance within production constraints. Supports 6 user roles including maintenance technicians, plant engineers, and supply chain managers. 9 output dimensions across 5 core outputs. 3 tools with 8 state transitions.'
+  summaryText: 'The Predictive Maintenance Agent monitors 287 equipment units in real-time, detects sensor anomalies via LSTM analysis (89% accuracy), predicts bearing wear and motor failures within 7 days, auto-generates work orders with spare parts optimization, and schedules preventive maintenance within production constraints. Supports 6 user roles including maintenance technicians, plant engineers, and supply chain managers. 9 response dimensions across 5 core outputs. 3 tools with 8 state transitions.'
 }
 
 export const MULTIMODAL_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
@@ -703,7 +703,7 @@ export const MULTIMODAL_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
       { id: 'multimodal-ts-pm-create-success', label: 'Decision Logged', operation: 'create', outcome: 'success', description: 'Moderation decision recorded with audit trail' },
     ] },
   ],
-  summaryText: 'The Content Moderation Agent reviews 8,000-50,000 flagged items daily, classifies policy violations across text/image/audio/video, matches violations against jurisdiction-specific policies, auto-removes high-confidence violations (<3% false positive rate), escalates ambiguous cases to human moderators (<24h SLA), and handles user appeals. Supports 6 roles including content moderators, legal specialists, and appeals specialists. 8 output dimensions across 5 core outputs. 3 tools with 8 state transitions.'
+  summaryText: 'The Content Moderation Agent reviews 8,000-50,000 flagged items daily, classifies policy violations across text/image/audio/video, matches violations against jurisdiction-specific policies, auto-removes high-confidence violations (<3% false positive rate), escalates ambiguous cases to human moderators (<24h SLA), and handles user appeals. Supports 6 roles including content moderators, legal specialists, and appeals specialists. 8 response dimensions across 5 core outputs. 3 tools with 8 state transitions.'
 }
 
 export const CONSUMER_CHAT_DIMENSIONS: DimensionAnalysisPayload = {
@@ -944,5 +944,5 @@ export const CONSUMER_CHAT_DIMENSIONS: DimensionAnalysisPayload = {
       { id: 'consumer-ts-cc-read-failure', label: 'Compliance Issue Flagged', operation: 'read', outcome: 'failure', description: 'State law concern identified; escalation needed' },
     ] },
   ],
-  summaryText: 'The Employee Support Agent answers HR policy questions with handbook citations, processes PTO requests with accrual calculations, manages benefits enrollments, and validates state employment law compliance (CA/NY/TX FMLA/ADA). Answers 24,000 employees with 71% first-turn resolution. Escalates policy exceptions and legal concerns to HR business partners. Supports 6 roles including employees, managers, and HR admins. 9 output dimensions across 5 core outputs. 4 tools with 11 state transitions.'
+  summaryText: 'The Employee Support Agent answers HR policy questions with handbook citations, processes PTO requests with accrual calculations, manages benefits enrollments, and validates state employment law compliance (CA/NY/TX FMLA/ADA). Answers 24,000 employees with 71% first-turn resolution. Escalates policy exceptions and legal concerns to HR business partners. Supports 6 roles including employees, managers, and HR admins. 9 response dimensions across 5 core outputs. 4 tools with 11 state transitions.'
 }

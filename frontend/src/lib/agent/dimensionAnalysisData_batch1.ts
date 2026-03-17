@@ -247,7 +247,7 @@ export const DOC_INTELLIGENCE_DIMENSIONS: DimensionAnalysisPayload = {
       { id: 'doci-ts-ce-read-failure', label: 'Compliance Flag', operation: 'read', outcome: 'failure', description: 'Potential fair lending or regulatory concern detected' },
     ] },
   ],
-  summaryText: 'The Loan Underwriting Agent processes loan applications to extract financial data, validate eligibility, calculate risk metrics, and route decisions with full fair lending and HMDA compliance. It serves loan officers, borrowers, underwriters, and compliance auditors with automated eligibility screening, DTI/LTV calculations, risk scoring, conditions generation, and adverse-action notice creation. 10 output dimensions across 6 core outputs. 4 tools with 10 state transitions.',
+  summaryText: 'The Loan Underwriting Agent processes loan applications to extract financial data, validate eligibility, calculate risk metrics, and route decisions with full fair lending and HMDA compliance. It serves loan officers, borrowers, underwriters, and compliance auditors with automated eligibility screening, DTI/LTV calculations, risk scoring, conditions generation, and adverse-action notice creation. 10 response dimensions across 6 core outputs. 4 tools with 10 state transitions.',
 }
 
 export const DECISION_WORKFLOW_DIMENSIONS: DimensionAnalysisPayload = {
@@ -507,7 +507,7 @@ export const DECISION_WORKFLOW_DIMENSIONS: DimensionAnalysisPayload = {
       { id: 'dw-ts-ref-no-match', label: 'No Match Found', operation: 'read', outcome: 'failure', description: 'No in-network specialist matches referral criteria' },
     ] },
   ],
-  summaryText: 'The Care Coordination Agent streamlines healthcare delivery by orchestrating appointment scheduling, referrals, insurance verification, emergency triage, and follow-up management across provider networks. It empowers care coordinators, patients, and providers with automated workflows that reduce administrative burden while ensuring clinical safety and care continuity. 9 output dimensions across 5 core outputs. 4 tools with 13 state transitions. HL7-FHIR interoperability across EHR systems.',
+  summaryText: 'The Care Coordination Agent streamlines healthcare delivery by orchestrating appointment scheduling, referrals, insurance verification, emergency triage, and follow-up management across provider networks. It empowers care coordinators, patients, and providers with automated workflows that reduce administrative burden while ensuring clinical safety and care continuity. 9 response dimensions across 5 core outputs. 4 tools with 13 state transitions. HL7-FHIR interoperability across EHR systems.',
 }
 
 export const CODING_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
@@ -751,5 +751,5 @@ export const CODING_AGENT_DIMENSIONS: DimensionAnalysisPayload = {
       { id: 'ca-ts-sast-read-timeout', label: 'Scan Timeout', operation: 'read', outcome: 'timeout', description: 'Security scan exceeded time limit' },
     ] },
   ],
-  summaryText: 'The Incident Response Automation Agent accelerates incident resolution by analyzing metrics, logs, and runbooks to automate alert triage, root cause analysis, service recovery, and blast radius assessment. It serves incident responders at all levels with intelligent remediation recommendations, automated rollback procedures, and postmortem generation integrated into on-call workflows and SLO tracking. 9 output dimensions across 4 core outputs. 4 tools with 12 state transitions.',
+  summaryText: 'The Incident Response Automation Agent accelerates incident resolution by analyzing metrics, logs, and runbooks to automate alert triage, root cause analysis, service recovery, and blast radius assessment. It serves incident responders at all levels with intelligent remediation recommendations, automated rollback procedures, and postmortem generation integrated into on-call workflows and SLO tracking. 9 response dimensions across 4 core outputs. 4 tools with 12 state transitions.',
 }

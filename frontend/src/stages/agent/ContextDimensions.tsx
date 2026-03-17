@@ -39,7 +39,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { id: 'task', label: 'Task Dimensions', icon: Target, goalLink: 'What the agent does', dimensionColor: DIMENSION_COLORS.task.primary },
   { id: 'data', label: 'Data Dimensions', icon: Database, goalLink: 'What the agent knows', dimensionColor: DIMENSION_COLORS.data.primary },
-  { id: 'output', label: 'Output Dimensions', icon: Users, goalLink: 'What the agent produces', dimensionColor: DIMENSION_COLORS.output.primary },
+  { id: 'output', label: 'Response Dimensions', icon: Users, goalLink: 'What the agent produces', dimensionColor: DIMENSION_COLORS.output.primary },
   { id: 'tool', label: 'Tool Dimensions', icon: Layers, goalLink: 'How the agent operates', dimensionColor: DIMENSION_COLORS.tool.primary },
 ]
 
@@ -968,7 +968,7 @@ export function ContextDimensions() {
               className="space-y-3"
             >
               <p className="text-xs text-gray-500 leading-relaxed">
-                Output dimensions decompose agent outputs along three axes: Outcome (success/partial/failure/escalation),
+                Response dimensions decompose agent outputs along three axes: Outcome (success/partial/failure/escalation),
                 Complexity (direct/cross-referenced/inferred), and Interaction (one-shot/conversational/proactive).
                 Each dimension traces back to the underlying agent output definition.
               </p>

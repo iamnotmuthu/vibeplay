@@ -145,7 +145,7 @@ export interface AgentTool {
 
 // ─── Agent Outputs (replaces User Profiles) ──────────────────────────────
 // Defines WHAT the agent produces — domain-specific output types per tile.
-// Each output is decomposed into Output Dimensions in the Dimension Analysis.
+// Each output is decomposed into Response Dimensions in the Dimension Analysis.
 
 export interface AgentOutput {
   id: string
@@ -241,7 +241,7 @@ export interface ToolDimension {
   states: ToolState[]
 }
 
-// ─── Output Dimensions (Step 3) ──────────────────────────────────────────
+// ─── Response Dimensions (Step 3) ──────────────────────────────────────────
 // Decomposition of Agent Outputs along 3 axes: Outcome × Complexity × Interaction
 // Replaces UserProfileDimension in the combinatorial formula.
 
@@ -260,11 +260,24 @@ export interface OutputDimension {
   interaction: OutputInteraction
 }
 
+export interface FormatDimension {
+  id: string
+  label: string                   // e.g., "Tabular (CSV/Parquet)"
+  description: string             // What parsing challenge this format presents
+  formatType: 'tabular' | 'hierarchical' | 'document' | 'image' | 'relational' | 'mixed'
+  parsingChallenge: string        // The core difficulty
+  failureModes: string[]          // What can go wrong
+  toolsRequired: string[]         // What tools/libraries are needed
+  sourcesUsing: string[]          // Which data sources use this format
+  confidenceRange: string         // e.g., "95-99%" or "78-96%"
+}
+
 export interface DimensionAnalysisPayload {
   tileId: string
   agentName: string
   taskDimensions: TaskDimension[]
   dataDimensions: DataDimension[]
+  formatDimensions?: FormatDimension[]           // V3: format-level data dimensions
   userProfileDimensions: UserProfileDimension[]  // KEEP for backward compat
   outputDimensions: OutputDimension[]            // NEW
   toolDimensions: ToolDimension[]                // NEW

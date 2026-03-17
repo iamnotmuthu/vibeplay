@@ -229,7 +229,7 @@ const faqUserProfileDimensions: UserProfileDimension[] = [
   },
 ]
 
-// Output Dimensions — decomposed across Outcome × Complexity × Interaction axes
+// Response Dimensions — decomposed across Outcome × Complexity × Interaction axes
 // Core outputs: Order Status Update, Refund Confirmation, Return Label, Escalation Ticket
 
 const faqOutputDimensions: OutputDimension[] = [
@@ -317,7 +317,7 @@ const faqAnalysis: DimensionAnalysisPayload = {
   outputDimensions: faqOutputDimensions,
   toolDimensions: faqToolDimensions,
   summaryText:
-    '10 task dimensions spanning order tracking, refund processing, return coordination, carrier investigation, and escalation. 6 behavioral user profiles defined on Context × Posture × Channel axes (customer types, fraud flags, VIP status). 15 output dimensions decomposing 8 core agent outputs across Outcome × Complexity × Interaction. 4 tools with 19 distinct state transitions. 2 fuzzy patterns for multi-carrier splits and fraudulent return claims.',
+    '10 task dimensions spanning order tracking, refund processing, return coordination, carrier investigation, and escalation. 6 behavioral user profiles defined on Context × Posture × Channel axes (customer types, fraud flags, VIP status). 15 response dimensions decomposing 8 core agent outputs across Outcome × Complexity × Interaction. 4 tools with 19 distinct state transitions. 2 fuzzy patterns for multi-carrier splits and fraudulent return claims.',
 }
 
 // ============================================================================
@@ -553,7 +553,7 @@ const saasUserProfileDimensions: UserProfileDimension[] = [
   },
 ]
 
-// Output Dimensions — decomposed across Outcome × Complexity × Interaction axes
+// Response Dimensions — decomposed across Outcome × Complexity × Interaction axes
 // Core outputs: Query Result, Report Generation, Workflow Setup, Escalation Handoff
 
 const saasOutputDimensions: OutputDimension[] = [
@@ -648,7 +648,7 @@ const saasAnalysis: DimensionAnalysisPayload = {
   outputDimensions: saasOutputDimensions,
   toolDimensions: saasToolDimensions,
   summaryText:
-    '5 task dimensions sliced from 5 parent tasks across usage-analytics, churn-detection, health-scoring, and retention domains. 5 user profiles defined on Role × Seniority axes (CSM, AE, PM, support, admin). 6 output dimensions covering health-scores, churn-alerts, retention-actions, segment-analysis, and executive summaries. 3 tools with real-time event ingestion and anomaly detection. 1 validation gap flagged in multi-signal confirmation logic.',
+    '5 task dimensions sliced from 5 parent tasks across usage-analytics, churn-detection, health-scoring, and retention domains. 5 user profiles defined on Role × Seniority axes (CSM, AE, PM, support, admin). 6 response dimensions covering health-scores, churn-alerts, retention-actions, segment-analysis, and executive summaries. 3 tools with real-time event ingestion and anomaly detection. 1 validation gap flagged in multi-signal confirmation logic.',
 }
 
 // ============================================================================
@@ -892,7 +892,7 @@ const researchUserProfileDimensions: UserProfileDimension[] = [
   },
 ]
 
-// Output Dimensions — decomposed across Outcome × Complexity × Interaction axes
+// Response Dimensions — decomposed across Outcome × Complexity × Interaction axes
 // Core outputs: Comparative Analysis, Citation Summary, Methodology Review, Escalation Handoff
 
 const researchOutputDimensions: OutputDimension[] = [
@@ -969,7 +969,7 @@ const researchAnalysis: DimensionAnalysisPayload = {
   outputDimensions: researchOutputDimensions,
   toolDimensions: researchToolDimensions,
   summaryText:
-    '10 task dimensions sliced from 3 parent tasks across 5 knowledge domains. 6 behavioral user profiles defined on Context × Posture × Channel axes. 15 output dimensions decomposing 4 core agent outputs across Outcome × Complexity × Interaction. 3 tools with 12 distinct state transitions. 3 coverage gaps flagged in methodology, statistical data, and vendor intelligence.',
+    '10 task dimensions sliced from 3 parent tasks across 5 knowledge domains. 6 behavioral user profiles defined on Context × Posture × Channel axes. 15 response dimensions decomposing 4 core agent outputs across Outcome × Complexity × Interaction. 3 tools with 12 distinct state transitions. 3 coverage gaps flagged in methodology, statistical data, and vendor intelligence.',
 }
 
 // ============================================================================

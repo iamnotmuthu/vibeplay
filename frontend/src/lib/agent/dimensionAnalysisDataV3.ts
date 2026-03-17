@@ -1,6 +1,7 @@
 import type {
   TaskDimension,
   DataDimension,
+  FormatDimension,
   UserProfileDimension,
   OutputDimension,
   ToolDimension,
@@ -251,6 +252,65 @@ const invoiceDataDimensions: DataDimension[] = [
   },
 ]
 
+// Format Dimensions — the structural data challenges the agent must handle
+const invoiceFormatDimensions: FormatDimension[] = [
+  {
+    id: 'inv-fmt-tabular',
+    label: 'Tabular (CSV/Parquet)',
+    description: 'Flat row-column data with headers, delimiters, and type inference. Primary format for cloud billing exports.',
+    formatType: 'tabular',
+    parsingChallenge: 'Column count varies by billing period (AWS adds new service columns). Delimiter inconsistencies in vendor-exported CSVs. Parquet schema evolution across months.',
+    failureModes: ['Column mismatch on schema change', 'Encoding errors (UTF-8 vs Latin-1)', 'Truncated rows on large exports', 'Type coercion failures (string amounts)'],
+    toolsRequired: ['CSV parser', 'Parquet reader', 'Schema validator', 'Type inference engine'],
+    sourcesUsing: ['AWS Cost & Usage Reports', 'Historical Invoice Archive (CSV portion)'],
+    confidenceRange: '97-99%',
+  },
+  {
+    id: 'inv-fmt-hierarchical',
+    label: 'Hierarchical (JSON)',
+    description: 'Nested object structures with 3-level hierarchy (service > SKU > project). Requires recursive traversal and flattening.',
+    formatType: 'hierarchical',
+    parsingChallenge: 'GCP exports use 3-level nesting. Key paths change across API versions. Null vs missing field semantics differ. Array elements require positional awareness.',
+    failureModes: ['Depth overflow on deeply nested records', 'Missing required keys silently omitted', 'Array-vs-object ambiguity', 'API version schema drift'],
+    toolsRequired: ['JSON parser', 'JSONPath resolver', 'Schema flattener', 'Nested-to-tabular transformer'],
+    sourcesUsing: ['GCP Cloud Billing Export'],
+    confidenceRange: '95-98%',
+  },
+  {
+    id: 'inv-fmt-document',
+    label: 'Document (PDF)',
+    description: 'Structured and semi-structured PDF documents containing tables, headers, footers, and variable page layouts.',
+    formatType: 'document',
+    parsingChallenge: 'Table boundaries are visually implied, not semantically marked. Headers repeat across pages inconsistently. Multi-page tables split mid-row. 8+ distinct layout templates from Staples alone.',
+    failureModes: ['Table boundary misdetection', 'Merged cell extraction failure', 'Header/footer bleed into data', 'Multi-page table row splitting'],
+    toolsRequired: ['PDF parser', 'Table extraction engine', 'Layout analyzer', 'Template classifier'],
+    sourcesUsing: ['Staples Business Advantage Portal', 'Historical Invoice Archive (PDF portion)'],
+    confidenceRange: '88-95%',
+  },
+  {
+    id: 'inv-fmt-image',
+    label: 'Image (Scanned/Embedded)',
+    description: 'Scanned invoice images and embedded graphics requiring OCR with confidence scoring and handwriting detection.',
+    formatType: 'image',
+    parsingChallenge: 'Variable scan quality (DPI ranges 150-600). Handwritten annotations on printed forms. Skew correction needed. Faded ink on older documents reduces OCR accuracy below 90%.',
+    failureModes: ['OCR confidence below threshold', 'Handwriting misread as printed text', 'Skew causes column misalignment', 'Low-DPI scan produces unreadable regions'],
+    toolsRequired: ['OCR engine', 'Image preprocessor (deskew, denoise)', 'Confidence scorer', 'Handwriting classifier'],
+    sourcesUsing: ['Historical Invoice Archive (scanned PDFs)', 'Staples (occasional embedded images)'],
+    confidenceRange: '78-96%',
+  },
+  {
+    id: 'inv-fmt-relational',
+    label: 'Relational (SQL)',
+    description: 'Normalized relational tables with foreign keys, joins, and referential integrity constraints.',
+    formatType: 'relational',
+    parsingChallenge: 'PO data spans 4 normalized tables requiring multi-join queries. Vendor master has 47 entries with inconsistent naming. Historical POs use deprecated status codes.',
+    failureModes: ['Join produces duplicates on many-to-many PO-line relationships', 'Null foreign keys on orphaned records', 'Status code mapping failure on legacy POs', 'Query timeout on full table scans'],
+    toolsRequired: ['SQL query engine', 'Join optimizer', 'Schema introspector', 'Referential integrity checker'],
+    sourcesUsing: ['Purchase Order Database'],
+    confidenceRange: '98-99%',
+  },
+]
+
 const invoiceUserProfileDimensions: UserProfileDimension[] = [
   {
     id: 'inv-up-finance-analyst',
@@ -369,11 +429,12 @@ const invoiceAnalysis: DimensionAnalysisPayload = {
   agentName: 'Invoice Processing Agent',
   taskDimensions: invoiceTaskDimensions,
   dataDimensions: invoiceDataDimensions,
+  formatDimensions: invoiceFormatDimensions,
   userProfileDimensions: invoiceUserProfileDimensions,
   outputDimensions: invoiceOutputDimensions,
   toolDimensions: invoiceToolDimensions,
   summaryText:
-    '16 task dimensions spanning 8 parent tasks (ingestion, extraction, normalization, matching, validation, aggregation, analysis, reporting). 5 data dimensions covering AWS CSV (450MB/month, 384K items), GCP BigQuery (892K records, hourly), Staples PDF (36 invoices, mixed formats), PO database (2.8K POs, 8.9K items), and archive (120 files, 6-year history). 3 behavioral user profiles (analyst, executive, procurement). 11 output dimensions across 5 core agent outputs. 6 tools with 24 state transitions handling cloud APIs, PDF extraction, OCR, SQL queries, and calculations. Supports complex multi-vendor cost comparison, PO validation, anomaly detection, and historical trend analysis.',
+    '16 task dimensions spanning 8 parent tasks (ingestion, extraction, normalization, matching, validation, aggregation, analysis, reporting). 5 data dimensions covering AWS CSV (450MB/month, 384K items), GCP BigQuery (892K records, hourly), Staples PDF (36 invoices, mixed formats), PO database (2.8K POs, 8.9K items), and archive (120 files, 6-year history). 3 behavioral user profiles (analyst, executive, procurement). 11 response dimensions across 5 core agent outputs. 6 tools with 24 state transitions handling cloud APIs, PDF extraction, OCR, SQL queries, and calculations. Supports complex multi-vendor cost comparison, PO validation, anomaly detection, and historical trend analysis.',
 }
 
 // ============================================================================
@@ -561,6 +622,53 @@ const ragDataDimensions: DataDimension[] = [
   },
 ]
 
+const ragFormatDimensions: FormatDimension[] = [
+  {
+    id: 'rag-fmt-richtext',
+    label: 'Rich Text (HTML/Markdown)',
+    description: 'Wiki pages, Confluence docs, and Slack messages with formatting, embedded media, and cross-references.',
+    formatType: 'document',
+    parsingChallenge: 'Confluence uses storage format (XHTML-based) with macros. Markdown in Slack varies by client. Embedded images and code blocks need separate handling. Cross-page links must resolve.',
+    failureModes: ['Macro expansion failure', 'Broken cross-page links', 'Embedded media loss', 'Code block language detection miss'],
+    toolsRequired: ['HTML parser', 'Markdown parser', 'Macro expander', 'Link resolver'],
+    sourcesUsing: ['Confluence Knowledge Base', 'Slack Workspace'],
+    confidenceRange: '92-98%',
+  },
+  {
+    id: 'rag-fmt-threaded',
+    label: 'Threaded Messages (JSON)',
+    description: 'Slack threads and comments as nested JSON with timestamps, reactions, edits, and file attachments.',
+    formatType: 'hierarchical',
+    parsingChallenge: 'Thread depth varies. Edited messages have revision history. Reactions and emoji contain signal. File attachments are references, not inline content. User mentions need resolution.',
+    failureModes: ['Thread context loss on deep nesting', 'Edited message ambiguity', 'File attachment unreachable', 'User ID resolution failure'],
+    toolsRequired: ['Slack API client', 'Thread reconstructor', 'User resolver', 'Attachment fetcher'],
+    sourcesUsing: ['Slack Workspace'],
+    confidenceRange: '90-95%',
+  },
+  {
+    id: 'rag-fmt-structured',
+    label: 'Structured Records (JSON/REST)',
+    description: 'Jira tickets and Drive metadata as structured JSON objects with typed fields, status enums, and relationships.',
+    formatType: 'hierarchical',
+    parsingChallenge: 'Jira custom fields vary per project. Status transitions have workflow constraints. Drive permissions layer affects visibility. Relationship graphs (blocks, relates-to) require traversal.',
+    failureModes: ['Custom field schema mismatch', 'Permission-denied on linked items', 'Workflow state inconsistency', 'Circular dependency in issue links'],
+    toolsRequired: ['REST API client', 'Schema introspector', 'Permission checker', 'Graph traverser'],
+    sourcesUsing: ['Jira Project Tracker', 'Google Drive'],
+    confidenceRange: '95-99%',
+  },
+  {
+    id: 'rag-fmt-relational',
+    label: 'Relational (SQL)',
+    description: 'Employee directory and org structure as normalized SQL tables with foreign keys across departments, roles, and skills.',
+    formatType: 'relational',
+    parsingChallenge: 'Org hierarchy is recursive (manager-of-manager). Skills are many-to-many. Department names change over time. Some employees appear in multiple teams.',
+    failureModes: ['Recursive query depth limit', 'Stale department mappings', 'Duplicate employee entries across teams', 'Null manager for top-level'],
+    toolsRequired: ['SQL query engine', 'Recursive CTE support', 'Deduplication logic'],
+    sourcesUsing: ['Employee Directory'],
+    confidenceRange: '97-99%',
+  },
+]
+
 const ragUserProfileDimensions: UserProfileDimension[] = [
   {
     id: 'rag-up-general-query',
@@ -676,11 +784,12 @@ const ragAnalysis: DimensionAnalysisPayload = {
   agentName: 'Enterprise RAG Copilot',
   taskDimensions: ragTaskDimensions,
   dataDimensions: ragDataDimensions,
+  formatDimensions: ragFormatDimensions,
   userProfileDimensions: ragUserProfileDimensions,
   outputDimensions: ragOutputDimensions,
   toolDimensions: ragToolDimensions,
   summaryText:
-    '11 task dimensions spanning 7 parent tasks (query understanding, source routing, multi-source retrieval, correlation, synthesis, access control, freshness assessment). 5 data dimensions covering Confluence (8.4K pages, 45 spaces), Slack (2.1M messages, 156 channels), Google Drive (23K files, 12 shared drives), Jira (12.4K issues, 3 projects), and employee directory (340 employees, 127 skills). 3 user profiles (general employee, project lead, executive). 8 output dimensions across 5 core response types. 6 tools with 22 state transitions handling API searches, semantic embeddings, and SQL queries. Supports parallel multi-source retrieval, cross-source correlation, access-aware filtering, and freshness assessment.',
+    '11 task dimensions spanning 7 parent tasks (query understanding, source routing, multi-source retrieval, correlation, synthesis, access control, freshness assessment). 5 data dimensions covering Confluence (8.4K pages, 45 spaces), Slack (2.1M messages, 156 channels), Google Drive (23K files, 12 shared drives), Jira (12.4K issues, 3 projects), and employee directory (340 employees, 127 skills). 3 user profiles (general employee, project lead, executive). 8 response dimensions across 5 core response types. 6 tools with 22 state transitions handling API searches, semantic embeddings, and SQL queries. Supports parallel multi-source retrieval, cross-source correlation, access-aware filtering, and freshness assessment.',
 }
 
 // ============================================================================
@@ -810,6 +919,42 @@ const supportDataDimensions: DataDimension[] = [
   },
 ]
 
+const supportFormatDimensions: FormatDimension[] = [
+  {
+    id: 'scs-fmt-markdown',
+    label: 'Rich Text (Markdown/HTML)',
+    description: 'Knowledge base articles in Markdown with embedded code blocks, links, images, and structured headings.',
+    formatType: 'document',
+    parsingChallenge: 'Articles mix Markdown variants (GFM, MDX). Code blocks need language-aware parsing. Internal links require resolution. Some articles embed HTML tables directly.',
+    failureModes: ['Markdown dialect mismatch', 'Broken internal links', 'Code block language misclassification', 'HTML table extraction in Markdown context'],
+    toolsRequired: ['Markdown parser', 'HTML sanitizer', 'Link resolver', 'Code block extractor'],
+    sourcesUsing: ['Knowledge Base (Articles)'],
+    confidenceRange: '94-99%',
+  },
+  {
+    id: 'scs-fmt-relational',
+    label: 'Relational (SQL)',
+    description: 'Customer accounts, subscriptions, and ticket history in normalized PostgreSQL tables.',
+    formatType: 'relational',
+    parsingChallenge: 'Ticket history is append-only with status transitions. Subscription table has temporal validity (start/end dates). Account-to-user is one-to-many. Usage analytics aggregated hourly.',
+    failureModes: ['Temporal join produces duplicate rows', 'Orphaned tickets from deleted accounts', 'Subscription gap periods', 'Usage data lag (1-2 hour delay)'],
+    toolsRequired: ['SQL query engine', 'Temporal join logic', 'Account resolver', 'Usage aggregator'],
+    sourcesUsing: ['Customer Database'],
+    confidenceRange: '97-99%',
+  },
+  {
+    id: 'scs-fmt-api',
+    label: 'API (REST/JSON)',
+    description: 'Action endpoints returning JSON responses with status codes, error objects, and async confirmation patterns.',
+    formatType: 'hierarchical',
+    parsingChallenge: 'Some actions are synchronous (password reset), others async (data export). Error responses vary by endpoint. Rate limiting returns 429 with retry-after headers. Precondition checks require chained calls.',
+    failureModes: ['Async action timeout', 'Rate limit exceeded mid-flow', 'Precondition check failure', 'Partial success (some actions complete, others fail)'],
+    toolsRequired: ['REST client', 'Retry handler', 'Async poller', 'Error normalizer'],
+    sourcesUsing: ['Action API'],
+    confidenceRange: '95-98%',
+  },
+]
+
 const supportUserProfileDimensions: UserProfileDimension[] = [
   {
     id: 'scs-up-self-service',
@@ -890,11 +1035,12 @@ const supportAnalysis: DimensionAnalysisPayload = {
   agentName: 'SaaS Customer Support Agent',
   taskDimensions: supportTaskDimensions,
   dataDimensions: supportDataDimensions,
+  formatDimensions: supportFormatDimensions,
   userProfileDimensions: supportUserProfileDimensions,
   outputDimensions: supportOutputDimensions,
   toolDimensions: supportToolDimensions,
   summaryText:
-    '8 task dimensions spanning 5 parent tasks (ticket triage, KB search, action execution, response drafting, escalation routing). 3 data dimensions covering knowledge base (450 articles, 12 categories, vector embeddings), customer database (8.5K accounts, 45K tickets, 34K users), and action API (6 action endpoints). 3 user profiles (self-service, frustrated, VIP). 6 output dimensions across 4 core response types. 3 tools with 12 state transitions handling KB search, customer lookup, and action execution. Supports rapid ticket triage, KB-based self-service, customer action execution (password reset, plan upgrade, feature toggle), precondition validation, and intelligent escalation routing.',
+    '8 task dimensions spanning 5 parent tasks (ticket triage, KB search, action execution, response drafting, escalation routing). 3 data dimensions covering knowledge base (450 articles, 12 categories, vector embeddings), customer database (8.5K accounts, 45K tickets, 34K users), and action API (6 action endpoints). 3 user profiles (self-service, frustrated, VIP). 6 response dimensions across 4 core response types. 3 tools with 12 state transitions handling KB search, customer lookup, and action execution. Supports rapid ticket triage, KB-based self-service, customer action execution (password reset, plan upgrade, feature toggle), precondition validation, and intelligent escalation routing.',
 }
 
 // ============================================================================
@@ -966,6 +1112,42 @@ const faqDataDimensions: DataDimension[] = [
   },
 ]
 
+const faqFormatDimensions: FormatDimension[] = [
+  {
+    id: 'faq-fmt-markdown',
+    label: 'Text (Markdown)',
+    description: 'Plain text and Markdown documents with headings, lists, links, and occasional code blocks.',
+    formatType: 'document',
+    parsingChallenge: 'Heading hierarchy used for section-level retrieval. Lists contain policy steps that must stay ordered. Internal links reference other KB articles. Some docs use inconsistent heading levels.',
+    failureModes: ['Section boundary misdetection', 'List ordering loss', 'Broken cross-doc links', 'Heading level inconsistency confuses hierarchy'],
+    toolsRequired: ['Markdown parser', 'Section splitter', 'Link resolver', 'Heading normalizer'],
+    sourcesUsing: ['Company Knowledge Base (220 Markdown docs)'],
+    confidenceRange: '96-99%',
+  },
+  {
+    id: 'faq-fmt-pdf',
+    label: 'Document (PDF)',
+    description: 'Policy documents and benefit guides in PDF format with headers, tables, and occasional form fields.',
+    formatType: 'document',
+    parsingChallenge: 'Benefits PDFs contain comparison tables. Some policies are scanned (image-based). Form-fill PDFs have field annotations. Page headers/footers vary by department.',
+    failureModes: ['Table extraction from PDF fails on complex layouts', 'Scanned PDF requires OCR fallback', 'Form field values missed', 'Page number in header parsed as content'],
+    toolsRequired: ['PDF parser', 'Table extractor', 'OCR fallback', 'Form field reader'],
+    sourcesUsing: ['Company Knowledge Base (45 PDFs)'],
+    confidenceRange: '88-96%',
+  },
+  {
+    id: 'faq-fmt-gdoc',
+    label: 'Cloud Document (Google Docs)',
+    description: 'Living documents in Google Docs format with comments, suggestions, and version history.',
+    formatType: 'document',
+    parsingChallenge: 'Comments and suggestions contain context but are separate from body text. Version history means content changes between retrieval and display. Sharing permissions vary.',
+    failureModes: ['Stale content from cached version', 'Comment context loss', 'Permission-denied on restricted docs', 'Suggestion-mode content ambiguity (accepted vs pending)'],
+    toolsRequired: ['Google Docs API', 'Version resolver', 'Comment extractor', 'Permission checker'],
+    sourcesUsing: ['Company Knowledge Base (15 Google Docs)'],
+    confidenceRange: '92-97%',
+  },
+]
+
 const faqUserProfileDimensions: UserProfileDimension[] = [
   {
     id: 'faq-up-general-employee',
@@ -1025,11 +1207,12 @@ const faqAnalysis: DimensionAnalysisPayload = {
   agentName: 'FAQ Knowledge Agent',
   taskDimensions: faqTaskDimensions,
   dataDimensions: faqDataDimensions,
+  formatDimensions: faqFormatDimensions,
   userProfileDimensions: faqUserProfileDimensions,
   outputDimensions: faqOutputDimensions,
   toolDimensions: faqToolDimensions,
   summaryText:
-    '5 task dimensions spanning 3 parent tasks (query understanding, document retrieval, answer generation). 1 data dimension covering knowledge base (280 documents, 12 categories, markdown + PDF, 2,847 unique keywords). 2 user profiles (general employee, new hire). 5 output dimensions across 3 core response types (direct answer, document excerpt, not found). 2 tools with 8 state transitions handling KB search and document retrieval. Supports rapid FAQ lookups, multi-document synthesis, and graceful fallback when information unavailable.',
+    '5 task dimensions spanning 3 parent tasks (query understanding, document retrieval, answer generation). 1 data dimension covering knowledge base (280 documents, 12 categories, markdown + PDF, 2,847 unique keywords). 2 user profiles (general employee, new hire). 5 response dimensions across 3 core response types (direct answer, document excerpt, not found). 2 tools with 8 state transitions handling KB search and document retrieval. Supports rapid FAQ lookups, multi-document synthesis, and graceful fallback when information unavailable.',
 }
 
 // ============================================================================
@@ -1037,9 +1220,10 @@ const faqAnalysis: DimensionAnalysisPayload = {
 // ============================================================================
 
 const DIMENSION_ANALYSIS_MAP_V3: Record<string, DimensionAnalysisPayload> = {
-  'invoice-processing': invoiceAnalysis,
-  'enterprise-rag': ragAnalysis,
-  'saas-customer-support': supportAnalysis,
+  // Keyed by real AGENT_TILE_MAP tileIds (what the store uses)
+  'doc-intelligence': invoiceAnalysis,
+  'saas-copilot': ragAnalysis,
+  'consumer-chat': supportAnalysis,
   'faq-knowledge': faqAnalysis,
 }
 
