@@ -2,7 +2,6 @@ import type {
   CombinationCell,
   DimensionAnalysisPayload,
   DimensionPattern,
-  OutputDimension,
   PatternTier,
   PatternType,
   PatternsPayload,
@@ -128,23 +127,6 @@ function classifyPatternType(
   return 'hopping'
 }
 
-/**
- * Compute a confidence score (0-100) from combo characteristics.
- */
-function computeConfidence(
-  dataComboSize: number,
-  taskConfidence: 'high' | 'medium' | 'low',
-  avgDataDepth: number
-): number {
-  let base = taskConfidence === 'high' ? 85 : taskConfidence === 'medium' ? 65 : 45
-  // Deeper data = higher confidence
-  base += Math.min((avgDataDepth - 2) * 3, 10)
-  // More data sources = lower confidence (cross-referencing uncertainty)
-  base -= (dataComboSize - 1) * 12
-  // Clamp to 15-98 range
-  return Math.max(15, Math.min(98, base))
-}
-
 // ─── Seeded PRNG for deterministic example questions ────────────────────────
 
 function seededRandom(seed: number): () => number {
@@ -196,21 +178,15 @@ export function generatePowerSetPatterns(
   // Track per-tier pattern counters for new ID format
   const tierCounters = { S: 0, C: 0, F: 0 }
 
-  // ─────── 4D Pattern Generation: Task × DataPowerSet × OutputDimension × ToolState ───────
+  // ─────── 4D Pattern Generation: Task × DataPowerSet × ResponseDimension × ToolDimension ───────
   // When output and tool dimensions exist, generate ONLY 4D patterns (no 3D fallback).
-  // For each tool dimension, use success + failure states (filter by outcome, not id).
-  const has4D = (analysis.outputDimensions?.length ?? 0) > 0 && (analysis.toolDimensions?.length ?? 0) > 0
+  // Use responseDimensions (or fall back to outputDimensions) and toolDimensions themselves.
+  const responseDims = analysis.responseDimensions?.length ?? 0 > 0 ? analysis.responseDimensions : analysis.outputDimensions
+  const has4D = (responseDims?.length ?? 0) > 0 && (analysis.toolDimensions?.length ?? 0) > 0
 
   if (has4D) {
-    // Collect all tool states filtered by outcome (success + failure only for combinatorial)
-    const allRelevantToolStates: { toolDim: ToolDimension; state: ToolState }[] = []
-    for (const toolDim of analysis.toolDimensions ?? []) {
-      for (const state of toolDim.states ?? []) {
-        if (state.outcome === 'success' || state.outcome === 'failure') {
-          allRelevantToolStates.push({ toolDim, state })
-        }
-      }
-    }
+    // Use tool dimensions directly (not their states)
+    const toolDimsForPattern = analysis.toolDimensions ?? []
 
     for (const task of analysis.taskDimensions) {
       for (const dataIds of dataSubsets) {
@@ -237,8 +213,8 @@ export function generatePowerSetPatterns(
         const avgDepth = dataDims.reduce((s, d) => s + d.depthScore, 0) / dataDims.length
         const hasGaps = dataDims.some((d) => d.gapNote != null)
 
-        for (const outputDim of analysis.outputDimensions ?? []) {
-          for (const { toolDim, state: toolState } of allRelevantToolStates) {
+        for (const responseDim of responseDims ?? []) {
+          for (const toolDim of toolDimsForPattern) {
             const tier = classifyTier(dataIds.length, task.confidence, avgDepth)
             const letter = tierLetter(tier)
             tierCounters[letter as keyof typeof tierCounters]++
@@ -246,7 +222,6 @@ export function generatePowerSetPatterns(
             const patId = `${tilePrefix}-${letter}${seqNum}`
 
             const patternType = classifyPatternType(dataIds.length, task.confidence, hasGaps)
-            const confidence = computeConfidence(dataIds.length, task.confidence, avgDepth)
 
             const dataLabel = dataDims.length === 1
               ? dataDims[0].label
@@ -254,19 +229,19 @@ export function generatePowerSetPatterns(
                 ? `${dataDims[0].label} + ${dataDims[1].label}`
                 : `${dataDims[0].label} + ${dataDims.length - 1} more`
 
-            const name = `${task.label} via ${dataLabel} → ${outputDim.agentOutputLabel} [${toolDim.toolName}: ${toolState.label}]`
+            const name = `${task.label} via ${dataLabel} → ${responseDim.agentOutputLabel ?? responseDim.label} [${toolDim.toolName}]`
 
-            const desc = `${task.label} using ${dataLabel.toLowerCase()} produces ${outputDim.agentOutputLabel.toLowerCase()} (${outputDim.outcome}) when ${toolDim.toolName.toLowerCase()} ${toolState.outcome === 'success' ? 'succeeds' : 'fails'}.`
+            const desc = `${task.label} using ${dataLabel.toLowerCase()} with ${toolDim.toolName.toLowerCase()}.`
 
             const rng = seededRandom(hashString(patId))
-            const exampleQuestions = generateExampleQuestions(task, dataDims, { label: outputDim.agentOutputLabel, description: outputDim.description }, rng)
+            const exampleQuestions = generateExampleQuestions(task, dataDims, { label: responseDim.agentOutputLabel ?? responseDim.label, description: responseDim.description }, rng)
 
             const inferenceNotes = tier === 'complex'
-              ? `Cross-references ${dataDims.length} source${dataDims.length > 1 ? 's' : ''}: ${dataDims.map((d) => d.label).join(', ')}. Tool: ${toolDim.toolName} (${toolState.outcome}).`
+              ? `Cross-references ${dataDims.length} source${dataDims.length > 1 ? 's' : ''}: ${dataDims.map((d) => d.label).join(', ')}. Tool: ${toolDim.toolName}.`
               : undefined
 
             const ambiguityNotes = tier === 'fuzzy'
-              ? `${dataDims.length} sources, avg depth ${avgDepth.toFixed(1)}/5. Output: ${outputDim.agentOutputLabel}. ${hasGaps ? 'Coverage gaps exist. ' : ''}May need review.`
+              ? `${dataDims.length} sources, avg depth ${avgDepth.toFixed(1)}/5. Response: ${responseDim.agentOutputLabel ?? responseDim.label}. ${hasGaps ? 'Coverage gaps exist. ' : ''}May need review.`
               : undefined
 
             const activatedComponents = deriveActivatedComponents(tier, dataIds.length, hasGaps)
@@ -278,15 +253,13 @@ export function generatePowerSetPatterns(
               tier,
               taskDimensionId: task.id,
               dataDimensionIds: dataIds,
-              userProfileDimensionId: analysis.userProfileDimensions[0]?.id || '',
-              outputDimensionId: outputDim.id,
-              toolStateDimensionId: toolState.id,
+              responseDimensionId: responseDim.id,
+              toolDimensionIds: [toolDim.id],
               patternType,
               exampleQuestions,
               activatedComponents,
               inferenceNotes,
               ambiguityNotes,
-              confidence,
             })
           }
         }
@@ -326,7 +299,6 @@ export function generatePowerSetPatterns(
           const patId = `${tilePrefix}-${letter}${seqNum}`
 
           const patternType = classifyPatternType(dataIds.length, task.confidence, hasGaps)
-          const confidence = computeConfidence(dataIds.length, task.confidence, avgDepth)
 
           const dataLabel = dataDims.length === 1
             ? dataDims[0].label
@@ -359,13 +331,13 @@ export function generatePowerSetPatterns(
             tier,
             taskDimensionId: task.id,
             dataDimensionIds: dataIds,
-            userProfileDimensionId: up.id,
+            responseDimensionId: up.id,
+            toolDimensionIds: [],
             patternType,
             exampleQuestions,
             activatedComponents,
             inferenceNotes,
             ambiguityNotes,
-            confidence,
           })
         }
       }
@@ -462,8 +434,8 @@ export function buildPatternsPayload(
 
   const taskIds = analysis.taskDimensions.map((t) => t.id)
   const dataIds = analysis.dataDimensions.map((d) => d.id)
+  const responseDimensionIds = (analysis.responseDimensions ?? analysis.outputDimensions ?? []).map((r) => r.id)
   const userProfileIds = analysis.userProfileDimensions.map((u) => u.id)
-  const outputIds = (analysis.outputDimensions ?? []).map((o) => o.id)
   const toolIds = (analysis.toolDimensions ?? []).map((t) => t.id)
 
   // Collect all unique data combo IDs from patterns (includes multi-data combos)
@@ -476,12 +448,14 @@ export function buildPatternsPayload(
     }
   }
 
-  // Collect all unique output dimension IDs and tool state IDs from patterns
-  const allOutputIds = new Set<string>()
-  const allToolStateIds = new Set<string>()
+  // Collect all unique response dimension IDs and tool dimension IDs from patterns
+  const allResponseIds = new Set<string>()
+  const allToolIds = new Set<string>()
   for (const p of finalPatterns) {
-    if (p.outputDimensionId) allOutputIds.add(p.outputDimensionId)
-    if (p.toolStateDimensionId) allToolStateIds.add(p.toolStateDimensionId)
+    if (p.responseDimensionId) allResponseIds.add(p.responseDimensionId)
+    if (p.toolDimensionIds) {
+      p.toolDimensionIds.forEach((id) => allToolIds.add(id))
+    }
   }
 
   // Build matrix: rows = tasks, cols = single data dimensions
@@ -511,8 +485,8 @@ export function buildPatternsPayload(
         }
       }
 
-      // Collect user profile IDs from matching patterns
-      const upIds = [...new Set(matching.map((p) => p.userProfileDimensionId))]
+      // Collect response dimension IDs from matching patterns
+      const respIds = [...new Set(matching.map((p) => p.responseDimensionId))]
 
       return {
         taskDimensionId: taskId,
@@ -520,7 +494,7 @@ export function buildPatternsPayload(
         isValid: count > 0,
         patternCount: count,
         primaryTier,
-        userProfileDimensionIds: upIds,
+        responseDimensionIds: respIds,
       } satisfies CombinationCell
     })
   })
@@ -532,20 +506,12 @@ export function buildPatternsPayload(
   })
 
   // Total combinations formula
-  // 4D: tasks × power-set data × output dims × tool states (success + failure only)
+  // 4D: tasks × power-set data × response dims × tool dims
   // 3D fallback: tasks × power-set data × user profiles
   let totalCombinations: number
   const dataSubsetCount = (1 << dataIds.length) - 1 // 2^N - 1
-  if (outputIds.length > 0 && toolIds.length > 0) {
-    // Count success + failure tool states by filtering on outcome field
-    let totalToolStates = 0
-    for (const toolDim of analysis.toolDimensions ?? []) {
-      const successFailureStates = (toolDim.states ?? []).filter(
-        (s: ToolState) => s.outcome === 'success' || s.outcome === 'failure'
-      ).length
-      totalToolStates += successFailureStates
-    }
-    totalCombinations = taskIds.length * dataSubsetCount * outputIds.length * totalToolStates
+  if (responseDimensionIds.length > 0 && toolIds.length > 0) {
+    totalCombinations = taskIds.length * dataSubsetCount * responseDimensionIds.length * toolIds.length
   } else {
     totalCombinations = taskIds.length * dataSubsetCount * userProfileIds.length
   }
@@ -560,8 +526,8 @@ export function buildPatternsPayload(
     taskDimensions: taskIds,
     dataDimensions: [...allDataComboIds],
     userProfileDimensions: userProfileIds,
-    outputDimensions: [...allOutputIds],
-    toolStateDimensions: [...allToolStateIds],
+    responseDimensions: [...allResponseIds],
+    toolDimensions: [...allToolIds],
     totalCombinations,
     validPatterns,
     matrix,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useMemo, useEffect } from 'react'
+import { useState, useRef, useMemo, useEffect, useLayoutEffect, useCallback } from 'react'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
   GitBranch,
@@ -27,6 +27,11 @@ import type {
 } from '@/store/agentTypes'
 import { DIMENSION_COLORS } from '@/store/agentTypes'
 import type { StructuralDiscovery } from '@/lib/agent/structuralDiscoveryDataV3'
+
+// ─── Feature Flags ───────────────────────────────────────────────────────────
+// The structural discovery graph (data sources ↔ challenges ↔ tasks) is hidden
+// while we redesign it as an interactive explorer. Set to true to re-enable.
+const SHOW_STRUCTURAL_DISCOVERY_GRAPH = false
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
@@ -279,7 +284,7 @@ function SourceDimensionsGroup({
 
             {/* Sub-topic dimension cards */}
             <div className="space-y-1 pl-4">
-              {dim.subTopics.map((st) => {
+              {(dim.subTopics ?? []).map((st) => {
                 const currentIdx = cardIdx++
                 return (
                   <motion.div
@@ -592,12 +597,13 @@ function StructuralDiscoveryCanvas({
   viewMode: 'business' | 'technical'
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const svgContainerRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
   const [hoveredDiscovery, setHoveredDiscovery] = useState<string | null>(null)
   const [animatedCount, setAnimatedCount] = useState(0)
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null)
-  const [svgActualW, setSvgActualW] = useState(240)
+
+  // Fixed SVG coordinate space — viewBox matches this, preserveAspectRatio handles scaling
+  const svgCoordW = 300
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -612,28 +618,6 @@ function StructuralDiscoveryCanvas({
     if (containerRef.current) observer.observe(containerRef.current)
     return () => observer.disconnect()
   }, [])
-
-  // Measure actual SVG container width so viewBox matches pixel dimensions
-  useEffect(() => {
-    if (!svgContainerRef.current) return
-    const ro = new ResizeObserver(([entry]) => {
-      const w = entry.contentRect.width
-      if (w > 0) setSvgActualW(w)
-    })
-    ro.observe(svgContainerRef.current)
-    return () => ro.disconnect()
-  }, [])
-
-  // Stagger path animations — must count up to uniqueConnections.length
-  const totalConns = uniqueConnections.length
-  useEffect(() => {
-    if (!isVisible) return
-    if (animatedCount >= totalConns) return
-    // Faster stagger for larger connection counts (min 80ms, max 300ms)
-    const delay = Math.max(80, 300 - totalConns * 8)
-    const timer = setTimeout(() => setAnimatedCount((c) => c + 1), delay)
-    return () => clearTimeout(timer)
-  }, [isVisible, animatedCount, totalConns])
 
   // Risk colors
   const riskColor: Record<string, string> = {
@@ -703,9 +687,19 @@ function StructuralDiscoveryCanvas({
     uniqueConnections.filter((c) => c.sourceIdx === idx).length
   )
 
-  // Generate cubic Bezier path using measured container width
+  // Stagger path animations — must count up to uniqueConnections.length
+  const totalConns = uniqueConnections.length
+  useEffect(() => {
+    if (!isVisible) return
+    if (animatedCount >= totalConns) return
+    const delay = Math.max(80, 300 - totalConns * 8)
+    const timer = setTimeout(() => setAnimatedCount((c) => c + 1), delay)
+    return () => clearTimeout(timer)
+  }, [isVisible, animatedCount, totalConns])
+
+  // Generate cubic Bezier path in SVG coordinate space
   const makePath = (si: number, ti: number) => {
-    const w = svgActualW
+    const w = svgCoordW
     const x1 = 0
     const y1 = sourceYCenter(si)
     const x2 = w
@@ -715,11 +709,11 @@ function StructuralDiscoveryCanvas({
     return `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`
   }
 
-  // Bezier midpoint for tooltip positioning
+  // Bezier midpoint for tooltip positioning (percentage-based for CSS positioning)
   const bezierMidpoint = (si: number, ti: number) => {
     const y1 = sourceYCenter(si)
     const y2 = taskYCenter(ti)
-    return { x: svgActualW / 2, y: (y1 + y2) / 2 }
+    return { xPct: 50, y: (y1 + y2) / 2 }
   }
 
   // Determine which connections to highlight on hover
@@ -738,7 +732,7 @@ function StructuralDiscoveryCanvas({
   const handleHover = (discoveryId: string, sourceIdx: number, taskIdx: number) => {
     setHoveredDiscovery(discoveryId)
     const mid = bezierMidpoint(sourceIdx, taskIdx)
-    setTooltipPos(mid)
+    setTooltipPos({ x: mid.xPct, y: mid.y })
   }
   const handleHoverEnd = () => {
     setHoveredDiscovery(null)
@@ -864,7 +858,6 @@ function StructuralDiscoveryCanvas({
 
         {/* ── Center: SVG Bezier connections ── */}
         <div
-          ref={svgContainerRef}
           className="absolute top-0"
           style={{ left: sourceColW, right: taskColW, height: canvasH + 24 }}
         >
@@ -888,9 +881,11 @@ function StructuralDiscoveryCanvas({
 
           <svg
             width="100%"
-            height="100%"
-            viewBox={`0 0 ${svgActualW} ${canvasH + 24}`}
+            height={canvasH + 24}
+            viewBox={`0 0 ${svgCoordW} ${canvasH + 24}`}
+            preserveAspectRatio="none"
             className="overflow-visible"
+            style={{ display: 'block' }}
           >
             {uniqueConnections.map((conn, idx) => {
               const isHovered = hoveredDiscovery === conn.discoveryId
@@ -898,7 +893,8 @@ function StructuralDiscoveryCanvas({
               const isAnimated = idx < animatedCount
               const pathD = makePath(conn.sourceIdx, conn.taskIdx)
               const color = riskColor[conn.riskLevel]
-              const mid = bezierMidpoint(conn.sourceIdx, conn.taskIdx)
+              const midY = (sourceYCenter(conn.sourceIdx) + taskYCenter(conn.taskIdx)) / 2
+              const midX = svgCoordW / 2
 
               return (
                 <g
@@ -908,14 +904,15 @@ function StructuralDiscoveryCanvas({
                   style={{ cursor: 'pointer' }}
                 >
                   {/* Invisible wider hit area */}
-                  <path d={pathD} fill="none" stroke="transparent" strokeWidth="18" />
+                  <path d={pathD} fill="none" stroke="transparent" strokeWidth="24" vectorEffect="non-scaling-stroke" />
                   {/* Visible path */}
                   <motion.path
                     d={pathD}
                     fill="none"
                     stroke={color}
-                    strokeWidth={isHovered ? 3.5 : 2}
+                    strokeWidth={isHovered ? 3 : 1.5}
                     strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
                     initial={{ pathLength: 0, opacity: 0 }}
                     animate={isAnimated ? {
                       pathLength: 1,
@@ -929,10 +926,11 @@ function StructuralDiscoveryCanvas({
                   {/* Risk dot at midpoint */}
                   {isAnimated && (
                     <motion.circle
-                      cx={mid.x}
-                      cy={mid.y}
-                      r={isHovered ? 6 : 3.5}
+                      cx={midX}
+                      cy={midY}
+                      r={isHovered ? 5 : 3}
                       fill={color}
+                      vectorEffect="non-scaling-stroke"
                       initial={{ opacity: 0, scale: 0 }}
                       animate={{
                         opacity: isOtherHovered ? 0.12 : isHovered ? 1 : 0.6,
@@ -954,9 +952,9 @@ function StructuralDiscoveryCanvas({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.12 }}
-                className="absolute z-20 w-[260px] rounded-lg border shadow-lg p-3 pointer-events-none"
+                className="absolute z-20 w-[260px] rounded-lg border shadow-lg p-3 pointer-events-none -translate-x-1/2"
                 style={{
-                  left: tooltipPos.x - 130,
+                  left: `${tooltipPos.x}%`,
                   top: tooltipPos.y + 16,
                   borderColor: riskColor[activeDiscovery.riskLevel],
                   background: '#ffffff',
@@ -1025,6 +1023,335 @@ function StructuralDiscoveryCanvas({
   )
 }
 
+// ─── Interactive Structural Discovery Explorer (V3 Redesign) ─────────────────
+// Click a data source, challenge, or task to see ONLY its connections.
+// No spaghetti — one relationship at a time.
+
+function StructuralDiscoveryExplorer({
+  discoveries,
+  dataSources,
+  tasks,
+  viewMode,
+}: {
+  discoveries: StructuralDiscovery[]
+  dataSources: any[]
+  tasks: any[]
+  viewMode: 'business' | 'technical'
+}) {
+  const [selected, setSelected] = useState<{ type: 'source' | 'challenge' | 'task'; id: string } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  // Ref maps for each card DOM element
+  const sourceRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const challengeRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const taskRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+
+  // Connection line state — computed from actual DOM positions
+  const [connections, setConnections] = useState<{ x1: number; y1: number; x2: number; y2: number; color: string; key: string }[]>([])
+
+  const riskColor: Record<string, string> = { green: '#22c55e', amber: '#f59e0b', red: '#ef4444' }
+  const riskBg: Record<string, string> = { green: 'rgba(34,197,94,0.08)', amber: 'rgba(245,158,11,0.08)', red: 'rgba(239,68,68,0.08)' }
+
+  // Determine which nodes are "active" based on selection
+  const activeSourceIds = useMemo(() => {
+    if (!selected) return new Set<string>()
+    if (selected.type === 'source') return new Set([selected.id])
+    if (selected.type === 'challenge') {
+      const d = discoveries.find(x => x.id === selected.id)
+      return new Set(d?.affectedDataSources ?? [])
+    }
+    const relevantDiscs = discoveries.filter(d => d.affectedTasks.includes(selected.id))
+    return new Set(relevantDiscs.flatMap(d => d.affectedDataSources))
+  }, [selected, discoveries])
+
+  const activeChallengeIds = useMemo(() => {
+    if (!selected) return new Set<string>()
+    if (selected.type === 'challenge') return new Set([selected.id])
+    if (selected.type === 'source') {
+      return new Set(discoveries.filter(d => d.affectedDataSources.includes(selected.id)).map(d => d.id))
+    }
+    return new Set(discoveries.filter(d => d.affectedTasks.includes(selected.id)).map(d => d.id))
+  }, [selected, discoveries])
+
+  const activeTaskIds = useMemo(() => {
+    if (!selected) return new Set<string>()
+    if (selected.type === 'task') return new Set([selected.id])
+    if (selected.type === 'challenge') {
+      const d = discoveries.find(x => x.id === selected.id)
+      return new Set(d?.affectedTasks ?? [])
+    }
+    const relevantDiscs = discoveries.filter(d => d.affectedDataSources.includes(selected.id))
+    return new Set(relevantDiscs.flatMap(d => d.affectedTasks))
+  }, [selected, discoveries])
+
+  const hasSelection = selected !== null
+
+  // Click outside to deselect
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setSelected(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Compute SVG connections from actual DOM positions
+  const computeConnections = useCallback(() => {
+    if (!hasSelection || !gridRef.current) {
+      setConnections([])
+      return
+    }
+    const gridRect = gridRef.current.getBoundingClientRect()
+    const lines: typeof connections = []
+
+    const getCenter = (el: HTMLDivElement | undefined, side: 'right' | 'left') => {
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return {
+        x: side === 'right' ? r.right - gridRect.left : r.left - gridRect.left,
+        y: r.top - gridRect.top + r.height / 2,
+      }
+    }
+
+    discoveries.forEach(d => {
+      if (!activeChallengeIds.has(d.id)) return
+      const chalEl = challengeRefs.current.get(d.id)
+
+      // Source → Challenge connections
+      d.affectedDataSources.forEach(sid => {
+        if (!activeSourceIds.has(sid)) return
+        const srcEl = sourceRefs.current.get(sid)
+        const from = getCenter(srcEl, 'right')
+        const to = getCenter(chalEl, 'left')
+        if (from && to) {
+          lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, color: riskColor[d.riskLevel] || '#94a3b8', key: `s-${sid}-c-${d.id}` })
+        }
+      })
+
+      // Challenge → Task connections
+      d.affectedTasks.forEach(tid => {
+        if (!activeTaskIds.has(tid)) return
+        const taskEl = taskRefs.current.get(tid)
+        const from = getCenter(chalEl, 'right')
+        const to = getCenter(taskEl, 'left')
+        if (from && to) {
+          lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, color: riskColor[d.riskLevel] || '#94a3b8', key: `c-${d.id}-t-${tid}` })
+        }
+      })
+    })
+
+    setConnections(lines)
+  }, [hasSelection, activeChallengeIds, activeSourceIds, activeTaskIds, discoveries])
+
+  // Recalculate connections whenever selection changes
+  useLayoutEffect(() => {
+    computeConnections()
+  }, [computeConnections])
+
+  // Also recalculate on window resize
+  useEffect(() => {
+    const onResize = () => computeConnections()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [computeConnections])
+
+  const handleClick = (type: 'source' | 'challenge' | 'task', id: string) => {
+    if (selected?.type === type && selected?.id === id) {
+      setSelected(null)
+    } else {
+      setSelected({ type, id })
+    }
+  }
+
+  const nodeOpacity = (isActive: boolean) => hasSelection ? (isActive ? 1 : 0.25) : 1
+  const nodeBorder = (isActive: boolean, accent?: string) => hasSelection && isActive ? (accent || '#3b82f6') : '#e5e7eb'
+
+  // Ref callback helpers
+  const setSourceRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    if (el) sourceRefs.current.set(id, el)
+    else sourceRefs.current.delete(id)
+  }, [])
+  const setChallengeRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    if (el) challengeRefs.current.set(id, el)
+    else challengeRefs.current.delete(id)
+  }, [])
+  const setTaskRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    if (el) taskRefs.current.set(id, el)
+    else taskRefs.current.delete(id)
+  }, [])
+
+  return (
+    <motion.div
+      ref={containerRef}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="mt-6 rounded-xl border bg-white p-5"
+      style={{ borderColor: '#e5e7eb' }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">Structural Discovery Map</h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Click any node to explore its connections. {discoveries.length} challenges across {dataSources.length} data sources and {tasks.length} tasks.
+          </p>
+        </div>
+        {hasSelection && (
+          <button
+            onClick={() => setSelected(null)}
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 rounded border border-gray-200 hover:border-gray-300"
+          >
+            Clear selection
+          </button>
+        )}
+      </div>
+
+      {/* 3-Column Explorer with SVG overlay */}
+      <div ref={gridRef} className="relative">
+        {/* SVG layer for bezier curves — sized to match grid */}
+        <svg
+          ref={svgRef}
+          className="absolute inset-0 pointer-events-none z-10"
+          style={{ width: '100%', height: '100%', overflow: 'visible' }}
+        >
+          <AnimatePresence>
+            {connections.map(conn => {
+              const dx = Math.abs(conn.x2 - conn.x1)
+              return (
+                <motion.path
+                  key={conn.key}
+                  d={`M ${conn.x1} ${conn.y1} C ${conn.x1 + dx * 0.4} ${conn.y1}, ${conn.x2 - dx * 0.4} ${conn.y2}, ${conn.x2} ${conn.y2}`}
+                  fill="none"
+                  stroke={conn.color}
+                  strokeWidth={2}
+                  strokeOpacity={0.55}
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  exit={{ pathLength: 0, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: 'easeOut' }}
+                />
+              )
+            })}
+          </AnimatePresence>
+        </svg>
+
+        {/* Grid layout — 3 equal-flex columns */}
+        <div className="grid grid-cols-3 gap-6">
+          {/* Data Sources column */}
+          <div className="min-w-0">
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Data Sources</div>
+            <div className="space-y-2">
+              {dataSources.map((src: any) => {
+                const isActive = !hasSelection || activeSourceIds.has(src.id)
+                return (
+                  <div
+                    key={src.id}
+                    ref={(el) => setSourceRef(src.id, el)}
+                    onClick={() => handleClick('source', src.id)}
+                    className="rounded-lg border px-3 py-2.5 cursor-pointer transition-all duration-200 hover:shadow-sm"
+                    style={{
+                      borderColor: nodeBorder(isActive, '#3b82f6'),
+                      opacity: nodeOpacity(isActive),
+                      boxShadow: selected?.type === 'source' && selected?.id === src.id ? '0 0 0 2px rgba(59,130,246,0.3)' : 'none',
+                      background: selected?.type === 'source' && selected?.id === src.id ? 'rgba(59,130,246,0.04)' : '#fff',
+                    }}
+                  >
+                    <div className="text-xs font-medium text-gray-900 truncate">{src.name || src.label}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5 truncate">{src.format || (Array.isArray(src.detectedFormats) ? src.detectedFormats.join(', ') : src.detectedFormats) || ''}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Challenges column */}
+          <div className="min-w-0">
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Challenges</div>
+            <div className="space-y-2">
+              {discoveries.map((d) => {
+                const isActive = !hasSelection || activeChallengeIds.has(d.id)
+                const color = riskColor[d.riskLevel] || '#94a3b8'
+                return (
+                  <div
+                    key={d.id}
+                    ref={(el) => setChallengeRef(d.id, el)}
+                    onClick={() => handleClick('challenge', d.id)}
+                    className="rounded-lg border px-3 py-2.5 cursor-pointer transition-all duration-200 hover:shadow-sm"
+                    style={{
+                      borderColor: nodeBorder(isActive, color),
+                      opacity: nodeOpacity(isActive),
+                      boxShadow: selected?.type === 'challenge' && selected?.id === d.id ? `0 0 0 2px ${color}40` : 'none',
+                      background: selected?.type === 'challenge' && selected?.id === d.id ? riskBg[d.riskLevel] : '#fff',
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                      <span className="text-xs font-medium text-gray-900 truncate">{d.title}</span>
+                    </div>
+                    <div className="text-[10px] text-gray-500 line-clamp-2">
+                      {viewMode === 'technical' ? d.technicalDetail : d.description}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[9px] font-medium uppercase" style={{ color }}>{d.riskLevel} risk</span>
+                      <span className="text-[9px] text-gray-400">{d.relationType}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Tasks column */}
+          <div className="min-w-0">
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Tasks</div>
+            <div className="space-y-2">
+              {tasks.map((task: any) => {
+                const isActive = !hasSelection || activeTaskIds.has(task.id)
+                return (
+                  <div
+                    key={task.id}
+                    ref={(el) => setTaskRef(task.id, el)}
+                    onClick={() => handleClick('task', task.id)}
+                    className="rounded-lg border px-3 py-2.5 cursor-pointer transition-all duration-200 hover:shadow-sm"
+                    style={{
+                      borderColor: nodeBorder(isActive, '#7c3aed'),
+                      opacity: nodeOpacity(isActive),
+                      boxShadow: selected?.type === 'task' && selected?.id === task.id ? '0 0 0 2px rgba(124,58,237,0.3)' : 'none',
+                      background: selected?.type === 'task' && selected?.id === task.id ? 'rgba(124,58,237,0.04)' : '#fff',
+                    }}
+                  >
+                    <div className="text-xs font-medium text-gray-900 truncate">{task.name || task.id}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5 truncate">{task.triggerCondition || task.description || ''}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Risk summary */}
+      <div className="flex items-center gap-4 mt-4 pt-3 border-t text-[10px]" style={{ borderColor: '#f3f4f6' }}>
+        <span className="font-medium text-gray-500 uppercase tracking-wider">Risk Level</span>
+        {(['red', 'amber', 'green'] as const).map(level => {
+          const count = discoveries.filter(d => d.riskLevel === level).length
+          return (
+            <span key={level} className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: riskColor[level] }} />
+              {level === 'red' ? 'High' : level === 'amber' ? 'Medium' : 'Low'} ({count})
+            </span>
+          )
+        })}
+      </div>
+    </motion.div>
+  )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ContextDimensionsV3() {
@@ -1047,8 +1374,8 @@ export function ContextDimensionsV3() {
     if (!dimensionsData) return { task: 0, data: 0, output: 0, tool: 0 }
     return {
       task: dimensionsData.taskDimensions.length,
-      data: (dimensionsData.formatDimensions?.length ?? 0) + dimensionsData.dataDimensions.reduce((sum, d) => sum + d.subTopics.length, 0),
-      output: dimensionsData.outputDimensions.length,
+      data: (dimensionsData.formatDimensions?.length ?? 0) + dimensionsData.dataDimensions.reduce((sum, d) => sum + (d.subTopics?.length ?? 0), 0),
+      output: (dimensionsData.responseDimensions ?? dimensionsData.outputDimensions).length,
       tool: dimensionsData.toolDimensions.length,
     }
   }, [dimensionsData])
@@ -1177,7 +1504,7 @@ export function ContextDimensionsV3() {
               <p className="text-xs text-gray-500 leading-relaxed">
                 Response dimensions decompose agent outputs along three axes: outcome, complexity, and interaction style.
               </p>
-              {dimensionsData.outputDimensions.map((dim, i) => (
+              {(dimensionsData.responseDimensions ?? dimensionsData.outputDimensions).map((dim, i) => (
                 <OutputDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} viewMode={viewMode} />
               ))}
             </motion.div>
@@ -1207,9 +1534,19 @@ export function ContextDimensionsV3() {
       {/* Summary */}
       <SummaryStats summaryText={dimensionsData.summaryText} accentColor={accentColor} />
 
-      {/* V3 Structural Discovery Canvas (WOW MOMENT) */}
-      {isV3Tile && v3ContextData && v3Discoveries && (
+      {/* V3 Structural Discovery Canvas — hidden behind feature flag while redesigning */}
+      {SHOW_STRUCTURAL_DISCOVERY_GRAPH && isV3Tile && v3ContextData && v3Discoveries && (
         <StructuralDiscoveryCanvas
+          discoveries={v3Discoveries}
+          dataSources={v3ContextData.dataSources}
+          tasks={v3ContextData.tasks}
+          viewMode={viewMode}
+        />
+      )}
+
+      {/* V3 Interactive Structural Discovery Explorer */}
+      {!SHOW_STRUCTURAL_DISCOVERY_GRAPH && isV3Tile && v3ContextData && v3Discoveries && (
+        <StructuralDiscoveryExplorer
           discoveries={v3Discoveries}
           dataSources={v3ContextData.dataSources}
           tasks={v3ContextData.tasks}

@@ -15,7 +15,7 @@ import {
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { AGENT_TILE_MAP } from '@/lib/agent/agentDomainData'
 import { getCombinatorialPatternsData } from '@/lib/agent/combinatorialPatternsData'
-import { getDimensionAnalysisData } from '@/lib/agent/dimensionAnalysisData'
+import { getDimensionAnalysisDataV3 as getDimensionAnalysisData } from '@/lib/agent/dimensionAnalysisDataV3'
 import { CountUpNumber } from '@/components/shared/CountUpNumber'
 import type {
   PatternTier,
@@ -52,10 +52,10 @@ function useDimensionLabels(tileId: string | null) {
     const map: Record<string, string> = {}
     for (const d of data.taskDimensions) map[d.id] = d.label
     for (const d of data.dataDimensions) map[d.id] = d.label
-    for (const d of data.outputDimensions) map[d.id] = d.label
-    for (const d of data.toolDimensions) {
-      for (const state of d.states) {
-        map[state.id] = state.label
+    for (const d of (data.responseDimensions ?? data.outputDimensions)) map[d.id] = d.label
+    if (data.toolDimensions) {
+      for (const d of data.toolDimensions) {
+        map[d.id] = d.label
       }
     }
     return map
@@ -119,7 +119,7 @@ function CounterHero({
           </span>
           <span className="text-gray-500 text-lg">&times;</span>
           <span className="text-lg font-bold" style={{ color: DIMENSION_COLORS.output.primary }}>
-            {outputCount} outputs
+            {outputCount} responses
           </span>
           <span className="text-gray-500 text-lg">&times;</span>
           <span className="text-lg font-bold" style={{ color: DIMENSION_COLORS.tool.primary }}>
@@ -180,8 +180,8 @@ function ExplosionAnimation({
 
   const tasks = analysis.taskDimensions.slice(0, 10)
   const dataDims = analysis.dataDimensions.slice(0, 5)
-  const outputs = analysis.outputDimensions.slice(0, 4)
-  const toolStates = analysis.toolDimensions.flatMap((td) => td.states).slice(0, 5)
+  const outputs = (analysis.responseDimensions ?? analysis.outputDimensions).slice(0, 4)
+  const toolStates = analysis.toolDimensions.slice(0, 5)
 
   const W = 950
   const H = 400
@@ -381,7 +381,7 @@ function ExplosionAnimation({
             DATA SOURCES
           </motion.text>
           <motion.text initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} x={COL_X[2]} y={16} textAnchor="middle" fontSize={10} fontWeight="700" fill={DIMENSION_COLORS.output.primary} letterSpacing="0.1em">
-            OUTPUTS
+            RESPONSES
           </motion.text>
           <motion.text initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} x={COL_X[3]} y={16} textAnchor="middle" fontSize={10} fontWeight="700" fill={DIMENSION_COLORS.tool.primary} letterSpacing="0.1em">
             TOOLS
@@ -446,9 +446,8 @@ function DimensionalFlow({
   const { nodes, taskDataLinks, dataOutputLinks, outputToolLinks, deadTaskDataLinks, deadDataOutputLinks, deadOutputToolLinks } = useMemo(() => {
     const tasks = analysis.taskDimensions
     const dataDims = analysis.dataDimensions
-    const outputs = analysis.outputDimensions
-    const toolDims = analysis.toolDimensions
-    const allToolStates = toolDims.flatMap(td => td.states)
+    const outputs = (analysis.responseDimensions ?? analysis.outputDimensions)
+    const allToolStates = analysis.toolDimensions
 
     const usableH = H - PADDING_TOP - PADDING_BOTTOM
 
@@ -484,7 +483,7 @@ function DimensionalFlow({
 
     // Output nodes
     const outputNodesArr: FlowNode[] = outputs.map((o, i) => {
-      const count = patterns.filter(p => p.outputDimensionId === o.id).length
+      const count = patterns.filter(p => p.responseDimensionId === o.id).length
       return {
         id: o.id,
         label: o.label,
@@ -499,7 +498,7 @@ function DimensionalFlow({
 
     // Tool state nodes
     const toolNodesArr: FlowNode[] = allToolStates.map((ts, i) => {
-      const count = patterns.filter(p => p.toolStateDimensionId === ts.id).length
+      const count = patterns.filter(p => p.toolDimensionIds.includes(ts.id)).length
       return {
         id: ts.id,
         label: ts.label,
@@ -545,7 +544,7 @@ function DimensionalFlow({
     for (const data of dataDims) {
       for (const output of outputs) {
         const matching = patterns.filter(p =>
-          p.dataDimensionIds.includes(data.id) && p.outputDimensionId === output.id
+          p.dataDimensionIds.includes(data.id) && p.responseDimensionId === output.id
         )
         if (matching.length > 0) {
           doLinks.push({
@@ -570,7 +569,7 @@ function DimensionalFlow({
     for (const output of outputs) {
       for (const toolState of allToolStates) {
         const matching = patterns.filter(p =>
-          p.outputDimensionId === output.id && p.toolStateDimensionId === toolState.id
+          p.responseDimensionId === output.id && p.toolDimensionIds.includes(toolState.id)
         )
         if (matching.length > 0) {
           otLinks.push({
@@ -759,8 +758,8 @@ function DimensionalFlow({
       : node.column === 1
         ? patterns.filter(p => p.dataDimensionIds.includes(hoveredNode))
         : node.column === 2
-          ? patterns.filter(p => p.outputDimensionId === hoveredNode)
-          : patterns.filter(p => p.toolStateDimensionId === hoveredNode)
+          ? patterns.filter(p => p.responseDimensionId === hoveredNode)
+          : patterns.filter(p => p.toolDimensionIds.includes(hoveredNode))
     return {
       total: relevant.length,
       simple: relevant.filter(p => p.tier === 'simple').length,
@@ -796,7 +795,7 @@ function DimensionalFlow({
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full" style={{ background: DIMENSION_COLORS.output.primary }} />
-              <span className="text-gray-500">Outputs</span>
+              <span className="text-gray-500">Responses</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full" style={{ background: DIMENSION_COLORS.tool.primary }} />
@@ -852,7 +851,7 @@ function DimensionalFlow({
             DATA SOURCES
           </text>
           <text x={COL_X[2]} y={22} textAnchor="middle" fontSize={11} fontWeight="700" fill={DIMENSION_COLORS.output.primary} letterSpacing="0.08em">
-            OUTPUTS
+            RESPONSES
           </text>
           <text x={COL_X[3]} y={22} textAnchor="middle" fontSize={11} fontWeight="700" fill={DIMENSION_COLORS.tool.primary} letterSpacing="0.08em">
             TOOLS
@@ -1298,7 +1297,7 @@ function DimensionalSunburst({
         let upAngle = dataStart
         for (const p of dataPatterns) {
           const upSpan = (1 / total) * TAU
-          result.push({ ring: 2, id: `up-${p.id}`, label: labels[p.userProfileDimensionId] ?? p.userProfileDimensionId, startAngle: upAngle, endAngle: upAngle + upSpan, tier: p.tier, count: 1, parentId: `data-${taskId}-${dataKey}` })
+          result.push({ ring: 2, id: `up-${p.id}`, label: labels[p.responseDimensionId] ?? p.responseDimensionId, startAngle: upAngle, endAngle: upAngle + upSpan, tier: p.tier, count: 1, parentId: `data-${taskId}-${dataKey}` })
           upAngle += upSpan
         }
         dataAngle += dataSpan
@@ -1382,7 +1381,7 @@ function DimensionalSunburst({
       <div className="flex items-center gap-2 mb-3">
         <ArrowRight className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />
         <h3 className="text-sm font-bold text-gray-900">Dimensional Sunburst</h3>
-        <span className="text-[10px] text-gray-400">Task &rarr; Data &rarr; User Profile</span>
+        <span className="text-[10px] text-gray-400">Task &rarr; Data &rarr; Response</span>
         <span className="ml-auto text-[10px] font-mono tabular-nums" style={{ color: accentColor }}>{patterns.length} patterns</span>
       </div>
 
@@ -1447,7 +1446,7 @@ function DimensionalSunburst({
           {hoveredData ? (
             <motion.div key={hoveredData.id} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.15 }} className="p-3 rounded-lg border bg-white shadow-sm text-[11px]" style={{ borderColor: RING_PALETTE[hoveredData.ring as 0|1|2].base + '40' }}>
               <div className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: RING_PALETTE[hoveredData.ring as 0|1|2].base }}>
-                {hoveredData.ring === 0 ? 'Task' : hoveredData.ring === 1 ? 'Data Source' : 'User Profile'}
+                {hoveredData.ring === 0 ? 'Task' : hoveredData.ring === 1 ? 'Data Source' : 'Response'}
               </div>
               <p className="font-bold text-gray-900 mb-1">{hoveredData.label}</p>
               {hoveredData.tier && (
@@ -1464,7 +1463,7 @@ function DimensionalSunburst({
             {[
               { label: 'Task', sublabel: 'Inner ring', color: RING_PALETTE[0].base },
               { label: 'Data Source', sublabel: 'Middle ring', color: RING_PALETTE[1].base },
-              { label: 'User Profile', sublabel: 'Outer ring', color: RING_PALETTE[2].base },
+              { label: 'Response', sublabel: 'Outer ring', color: RING_PALETTE[2].base },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: item.color + '30', border: `1.5px solid ${item.color}` }} />
@@ -1583,7 +1582,7 @@ function PatternCard({ pattern, labels, viewMode, delay, patternIndex }: { patte
           </div>
           <div className="text-xs font-medium text-gray-600 mb-2">{pattern.name}</div>
           <p className="text-xs text-gray-500 leading-relaxed mb-2">{pattern.description}</p>
-          <DimensionDNA taskId={pattern.taskDimensionId} dataIds={pattern.dataDimensionIds} outputId={pattern.outputDimensionId} toolStateIds={pattern.toolStateDimensionId ? [pattern.toolStateDimensionId] : []} labels={labels} />
+          <DimensionDNA taskId={pattern.taskDimensionId} dataIds={pattern.dataDimensionIds} outputId={pattern.responseDimensionId} toolStateIds={pattern.toolDimensionIds} labels={labels} />
         </div>
         <span className="shrink-0 text-gray-400 mt-1">
           {expanded ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
@@ -1648,6 +1647,8 @@ export function InteractionDiscovery() {
   )
   const [vizMode, setVizMode] = useState<'flow' | 'sunburst'>('flow')
   const [activeFilter, setActiveFilter] = useState<{ type: 'task' | 'data' | 'output' | 'tool'; id: string } | null>(null)
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 50
 
   const tile = activeTileId ? AGENT_TILE_MAP[activeTileId] : null
   const data = activeTileId ? getCombinatorialPatternsData(activeTileId) : null
@@ -1659,6 +1660,10 @@ export function InteractionDiscovery() {
   useEffect(() => {
     containerRef.current?.scrollTo({ top: 0 })
   }, [activeTileId])
+
+  useEffect(() => {
+    setPage(0)
+  }, [activeSection, activeFilter])
 
   const toggleSection = (key: TierTab) =>
     setActiveSection((prev) => (prev === key ? null : key))
@@ -1678,8 +1683,8 @@ export function InteractionDiscovery() {
     return data.patterns.filter((p) => {
       if (activeFilter.type === 'task') return p.taskDimensionId === activeFilter.id
       if (activeFilter.type === 'data') return p.dataDimensionIds.includes(activeFilter.id)
-      if (activeFilter.type === 'output') return p.outputDimensionId === activeFilter.id
-      if (activeFilter.type === 'tool') return p.toolStateDimensionId === activeFilter.id
+      if (activeFilter.type === 'output') return p.responseDimensionId === activeFilter.id
+      if (activeFilter.type === 'tool') return p.toolDimensionIds.includes(activeFilter.id)
       return true
     })
   }, [activeFilter, data])
@@ -1765,8 +1770,8 @@ export function InteractionDiscovery() {
             key="counter"
             taskCount={analysis.taskDimensions.length}
             dataSubsetCount={dataSubsetCount}
-            outputCount={analysis.outputDimensions.length}
-            toolStateCount={analysis.toolDimensions.flatMap(td => td.states).length}
+            outputCount={(analysis.responseDimensions ?? analysis.outputDimensions).length}
+            toolStateCount={analysis.toolDimensions.length}
             totalCombinations={data.totalCombinations}
             validPatterns={data.validPatterns}
             onComplete={goToExplosion}
@@ -1843,7 +1848,7 @@ export function InteractionDiscovery() {
             {/* Active filter indicator */}
             {activeFilter && (
               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                <Circle className="w-3 h-3" style={{ color: activeFilter.type === 'task' ? DIMENSION_COLORS.task.primary : activeFilter.type === 'data' ? DIMENSION_COLORS.data.primary : DIMENSION_COLORS.userProfile.primary }} />
+                <Circle className="w-3 h-3" style={{ color: activeFilter.type === 'task' ? DIMENSION_COLORS.task.primary : activeFilter.type === 'data' ? DIMENSION_COLORS.data.primary : DIMENSION_COLORS.output.primary }} />
                 <span className="text-xs text-gray-600">
                   Filtering by <strong className="text-gray-900">{labels[activeFilter.id] ?? activeFilter.id}</strong>
                   {filteredPatterns && <span className="text-gray-400 ml-1">({filteredPatterns.length} patterns)</span>}
@@ -1921,9 +1926,45 @@ export function InteractionDiscovery() {
                   )
                 }
 
-                return patternsToShow.map((pattern, i) => (
-                  <PatternCard key={pattern.id} pattern={pattern} labels={labels} viewMode={viewMode} delay={0.03 + i * 0.04} patternIndex={i} />
-                ))
+                const startIdx = page * PAGE_SIZE
+                const endIdx = startIdx + PAGE_SIZE
+                const paginatedPatterns = patternsToShow.slice(startIdx, endIdx)
+                const totalPages = Math.ceil(patternsToShow.length / PAGE_SIZE)
+
+                return (
+                  <div className="space-y-4">
+                    {paginatedPatterns.map((pattern, i) => (
+                      <PatternCard key={pattern.id} pattern={pattern} labels={labels} viewMode={viewMode} delay={0.03 + i * 0.04} patternIndex={startIdx + i} />
+                    ))}
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-4 py-4 rounded-lg border border-gray-200 bg-gray-50">
+                        <span className="text-xs text-gray-500">
+                          Showing {startIdx + 1}–{Math.min(endIdx, patternsToShow.length)} of {patternsToShow.length} patterns
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="px-3 py-1.5 rounded border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Previous
+                          </button>
+                          <span className="text-xs text-gray-600 font-medium">
+                            Page {page + 1} of {totalPages}
+                          </span>
+                          <button
+                            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={page === totalPages - 1}
+                            className="px-3 py-1.5 rounded border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
               })()}
             </motion.div>
           )}

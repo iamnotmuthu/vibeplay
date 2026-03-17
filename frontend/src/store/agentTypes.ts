@@ -279,13 +279,14 @@ export interface DimensionAnalysisPayload {
   dataDimensions: DataDimension[]
   formatDimensions?: FormatDimension[]           // V3: format-level data dimensions
   userProfileDimensions: UserProfileDimension[]  // KEEP for backward compat
-  outputDimensions: OutputDimension[]            // NEW
+  responseDimensions?: OutputDimension[]         // NEW: alias for outputDimensions
+  outputDimensions?: OutputDimension[]           // NEW (kept for flexibility)
   toolDimensions: ToolDimension[]                // NEW
   summaryText: string
 }
 
 // ─── Patterns / Combination Matrix (Step 4) ──────────────────────────────
-// Combinatorial output of Dimension Analysis: Task × Data (power set) × User Profile
+// Combinatorial output of Dimension Analysis: Task × Data (power set) × Response × Tool
 // Matrix heatmap with explosion animation, pattern cards with dimension DNA
 
 export type PatternTier = 'simple' | 'complex' | 'fuzzy'
@@ -296,7 +297,7 @@ export interface CombinationCell {
   isValid: boolean
   patternCount: number
   primaryTier: PatternTier
-  userProfileDimensionIds: string[]
+  responseDimensionIds: string[]
 }
 
 export interface DimensionPattern {
@@ -306,15 +307,13 @@ export interface DimensionPattern {
   tier: PatternTier
   taskDimensionId: string
   dataDimensionIds: string[] // multi-data: power set combinations
-  userProfileDimensionId: string
-  outputDimensionId?: string      // NEW: output dimension for 4D patterns
-  toolStateDimensionId?: string   // NEW: tool state for 4D patterns
+  responseDimensionId: string
+  toolDimensionIds: string[]
   patternType: PatternType
   exampleQuestions: string[]
   activatedComponents?: string[]
   inferenceNotes?: string
   ambiguityNotes?: string
-  confidence: number // 0-100
 }
 
 export interface PatternsPayload {
@@ -323,9 +322,8 @@ export interface PatternsPayload {
   tileDescription: string
   taskDimensions: string[]
   dataDimensions: string[] // includes combo IDs like 'faq-data-product+pricing'
-  userProfileDimensions: string[]
-  outputDimensions: string[]       // NEW
-  toolStateDimensions: string[]    // NEW
+  responseDimensions: string[]
+  toolDimensions: string[]
   totalCombinations: number
   validPatterns: number
   matrix: CombinationCell[][]

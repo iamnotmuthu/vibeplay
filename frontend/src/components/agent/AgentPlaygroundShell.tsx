@@ -11,9 +11,10 @@ import { AgentGlossaryPanel } from './AgentGlossaryPanel'
 import { AgentTileSelector } from './AgentTileSelector'
 import { AgentStepperNav } from './AgentStepperNav'
 import { AgentBottomBar } from './AgentBottomBar'
-import { GoalDefinition } from '@/stages/agent/GoalDefinition'
-import { ContextDefinition } from '@/stages/agent/ContextDefinition'
-import { ContextDimensions } from '@/stages/agent/ContextDimensions'
+import { GoalDefinitionV3 } from '@/stages/agent/GoalDefinitionV3'
+import { ContextDefinitionV3 } from '@/stages/agent/ContextDefinitionV3'
+import { ContextDimensionsV3 } from '@/stages/agent/ContextDimensionsV3'
+import { getGoalDataV3 } from '@/lib/agent/goalDataV3'
 import { InteractionDiscovery } from '@/stages/agent/InteractionDiscovery'
 import { AgentEvaluation } from '@/stages/agent/AgentEvaluation'
 import { SolutionArchitecture } from '@/stages/agent/SolutionArchitecture'
@@ -307,22 +308,26 @@ export function AgentPlaygroundShell({ onBack }: AgentPlaygroundShellProps) {
         </div>
       </header>
 
-      {/* Goal bar (when tile is selected) — gradient background matching VibeModel */}
-      {tile && !isTileSelection && (
-        <div
-          className="px-6 py-2 flex items-center gap-2 shrink-0"
-          style={{
-            background: 'linear-gradient(90deg, rgba(59,130,246,0.06), rgba(139,92,246,0.06))',
-            borderBottom: '1px solid rgba(59,130,246,0.12)',
-          }}
-        >
-          <Target className="w-3.5 h-3.5 shrink-0" style={{ color: tile.color }} aria-hidden="true" />
-          <span className="text-xs font-semibold text-gray-500">Goal:</span>
-          <span className="text-xs font-bold text-gray-800 truncate" title={tile.goalStatement}>
-            {tile.goalStatement}
-          </span>
-        </div>
-      )}
+      {/* Goal bar (when tile is selected) — V3 goal data takes priority */}
+      {tile && !isTileSelection && (() => {
+        const v3GoalData = activeTileId ? getGoalDataV3(activeTileId) : null
+        const goalBarText = v3GoalData?.goalStatement ?? tile?.goalStatement ?? ''
+        return (
+          <div
+            className="px-6 py-2 flex items-center gap-2 shrink-0"
+            style={{
+              background: 'linear-gradient(90deg, rgba(59,130,246,0.06), rgba(139,92,246,0.06))',
+              borderBottom: '1px solid rgba(59,130,246,0.12)',
+            }}
+          >
+            <Target className="w-3.5 h-3.5 shrink-0" style={{ color: tile.color }} aria-hidden="true" />
+            <span className="text-xs font-semibold text-gray-500">Goal:</span>
+            <span className="text-xs font-bold text-gray-800 truncate" title={goalBarText}>
+              {goalBarText}
+            </span>
+          </div>
+        )
+      })()}
 
       {/* Stepper Navigation — numbered circles with stage labels */}
       <AgentStepperNav />
@@ -332,47 +337,29 @@ export function AgentPlaygroundShell({ onBack }: AgentPlaygroundShellProps) {
 
       {/* Stage content — scrollable area between fixed header/stepper and bottom bar */}
       <main className="flex-1 min-h-0 relative overflow-hidden">
-        <AnimatePresence mode="wait">
-          {isTileSelection && (
-            <motion.div
-              key="tiles"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="h-full overflow-y-auto pt-8"
-            >
-              <AgentTileSelector onSelect={handleTileSelect} />
-            </motion.div>
-          )}
-
-          {!isTileSelection && (
-            <motion.div
-              key={currentStage}
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -40 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="h-full overflow-y-auto"
-            >
-              {currentStage === 'goal' ? (
-                <GoalDefinition />
-              ) : currentStage === 'context-definition' ? (
-                <ContextDefinition />
-              ) : currentStage === 'context-dimensions' ? (
-                <ContextDimensions />
-              ) : currentStage === 'interaction-discovery' ? (
-                <InteractionDiscovery />
-              ) : currentStage === 'agent-evaluation' ? (
-                <AgentEvaluation />
-              ) : currentStage === 'solution-architecture' ? (
-                <SolutionArchitecture />
-              ) : (
-                <StagePlaceholder stageId={currentStage} />
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {isTileSelection ? (
+          <div className="h-full overflow-y-auto pt-8">
+            <AgentTileSelector onSelect={handleTileSelect} />
+          </div>
+        ) : (
+          <div key={currentStage} className="h-full overflow-y-auto">
+            {currentStage === 'goal' ? (
+              <GoalDefinitionV3 />
+            ) : currentStage === 'context-definition' ? (
+              <ContextDefinitionV3 />
+            ) : currentStage === 'context-dimensions' ? (
+              <ContextDimensionsV3 />
+            ) : currentStage === 'interaction-discovery' ? (
+              <InteractionDiscovery />
+            ) : currentStage === 'agent-evaluation' ? (
+              <AgentEvaluation />
+            ) : currentStage === 'solution-architecture' ? (
+              <SolutionArchitecture />
+            ) : (
+              <StagePlaceholder stageId={currentStage} />
+            )}
+          </div>
+        )}
 
         {/* Transition overlay with narrative bridge */}
         <AnimatePresence>
