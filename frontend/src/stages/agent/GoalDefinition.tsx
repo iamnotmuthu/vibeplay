@@ -120,29 +120,88 @@ function useBlinkingCursor() {
   return visible
 }
 
-// ─── Sonar Pulse ─────────────────────────────────────────────────────────────
+// ─── Analyzing Loader ─────────────────────────────────────────────────────────
 
-function SonarPulse({ color }: { color: string }) {
+const ANALYZING_STEPS = [
+  'Mapping execution paths…',
+  'Identifying data sources…',
+  'Calculating complexity…',
+  'Building pattern library…',
+]
+
+function AnalyzingLoader({ color }: { color: string }) {
+  const [visibleCount, setVisibleCount] = useState(1)
+
+  useEffect(() => {
+    setVisibleCount(1)
+    const timers = ANALYZING_STEPS.slice(1).map((_, i) =>
+      setTimeout(() => setVisibleCount((v) => Math.min(v + 1, ANALYZING_STEPS.length)), (i + 1) * 320)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
   return (
-    <div className="relative flex items-center justify-center w-full py-6">
-      {[0, 1, 2].map((i) => (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.25 }}
+      className="rounded-xl border bg-white p-4 space-y-3 shadow-sm"
+      style={{ borderColor: `${color}30` }}
+    >
+      {/* Header row */}
+      <div className="flex items-center gap-2">
+        <div className="flex gap-1">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: color }}
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 0.9, delay: i * 0.22, repeat: Infinity }}
+            />
+          ))}
+        </div>
+        <span className="text-xs font-semibold text-gray-500">Analyzing your goal</span>
+      </div>
+
+      {/* Step list */}
+      <div className="space-y-2">
+        {ANALYZING_STEPS.map((step, i) => (
+          <AnimatePresence key={step}>
+            {i < visibleCount && (
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.22 }}
+                className="flex items-center gap-2"
+              >
+                <motion.div
+                  className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: `${color}18`, border: `1px solid ${color}40` }}
+                  animate={{ scale: i === visibleCount - 1 ? [1, 1.15, 1] : 1 }}
+                  transition={{ duration: 0.5, repeat: i === visibleCount - 1 ? Infinity : 0 }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+                </motion.div>
+                <span className="text-xs text-gray-600">{step}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        ))}
+      </div>
+
+      {/* Scanning bar */}
+      <div className="h-1 rounded-full overflow-hidden bg-gray-100">
         <motion.div
-          key={i}
-          className="absolute rounded-full"
-          style={{ border: `1.5px solid ${color}`, width: 24 + i * 28, height: 24 + i * 28 }}
-          initial={{ opacity: 0.7, scale: 0.6 }}
-          animate={{ opacity: 0, scale: 1.2 }}
-          transition={{ duration: 1.2, delay: i * 0.25, ease: 'easeOut' }}
+          className="h-full rounded-full"
+          style={{ background: `linear-gradient(90deg, ${color}80, ${color})` }}
+          initial={{ x: '-100%' }}
+          animate={{ x: '100%' }}
+          transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
         />
-      ))}
-      <motion.div
-        className="w-3 h-3 rounded-full"
-        style={{ background: color }}
-        initial={{ scale: 0 }}
-        animate={{ scale: [0, 1.3, 1] }}
-        transition={{ duration: 0.4 }}
-      />
-    </div>
+      </div>
+    </motion.div>
   )
 }
 
@@ -823,17 +882,10 @@ export function GoalDefinition() {
         {phase === 'pulsing' ? 'Analyzing your goal...' : phase === 'revealed' ? 'Analysis complete' : ''}
       </div>
 
-      {/* Sonar pulse */}
+      {/* Analyzing loader */}
       <AnimatePresence>
         {phase === 'pulsing' && (
-          <motion.div
-            key="sonar"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.2 } }}
-          >
-            <SonarPulse color={accentColor} />
-          </motion.div>
+          <AnalyzingLoader key="analyzing" color={accentColor} />
         )}
       </AnimatePresence>
 
