@@ -41,10 +41,10 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: 'tasks', label: 'Tasks', icon: Target, goalLink: 'What the agent does', dimensionColor: DIMENSION_COLORS.task.primary },
-  { id: 'data-sources', label: 'Data Sources', icon: Database, goalLink: 'Knowledge it uses', dimensionColor: DIMENSION_COLORS.data.primary },
-  { id: 'response-types', label: 'Response Types', icon: MessageSquareText, goalLink: 'What it produces', dimensionColor: DIMENSION_COLORS.userProfile.primary },
-  { id: 'tools', label: 'Tools', icon: Wrench, goalLink: 'Capabilities available' },
+  { id: 'tasks', label: 'Tasks', icon: Target, goalLink: 'Every job your agent handles', dimensionColor: DIMENSION_COLORS.task.primary },
+  { id: 'data-sources', label: 'Data Sources', icon: Database, goalLink: 'Where it gets its knowledge', dimensionColor: DIMENSION_COLORS.data.primary },
+  { id: 'response-types', label: 'Response Types', icon: MessageSquareText, goalLink: 'How it responds', dimensionColor: DIMENSION_COLORS.userProfile.primary },
+  { id: 'tools', label: 'Tools', icon: Wrench, goalLink: 'Tools it can use' },
 ]
 
 // ─── Goal Traceability Ribbon ───────────────────────────────────────────────
@@ -55,30 +55,28 @@ interface RibbonConfig {
 }
 
 function GoalRibbon({
-  goalStatement,
   activeTab,
   accentColor,
 }: {
-  goalStatement: string
   activeTab: ContextTab
   accentColor: string
 }) {
   const ribbonConfigs: Record<ContextTab, RibbonConfig> = {
     'tasks': {
-      title: 'WHAT THE AGENT DOES',
-      description: goalStatement.length > 90 ? goalStatement.slice(0, 90) + '...' : goalStatement,
+      title: 'CORE TASKS',
+      description: 'Every job your agent handles, broken down into the specific actions it performs end to end',
     },
     'data-sources': {
-      title: 'KNOWLEDGE IT USES',
-      description: 'Data sources the agent reads from to complete its tasks',
+      title: 'WHERE IT GETS ITS KNOWLEDGE',
+      description: 'The real-world sources your agent reads from to answer questions and complete tasks',
     },
     'response-types': {
-      title: 'WHAT IT PRODUCES',
-      description: 'Output formats and outcome states for each response type',
+      title: 'HOW IT RESPONDS',
+      description: 'The different types of answers and outputs your agent sends back to users',
     },
     'tools': {
-      title: 'CAPABILITIES AVAILABLE',
-      description: 'External services and APIs the agent can invoke',
+      title: 'TOOLS IT CAN USE',
+      description: 'The APIs, services, and integrations your agent calls on to get things done',
     },
   }
 
@@ -478,7 +476,6 @@ export function ContextDefinitionV3() {
   }
 
   const activeTabDef = TABS.find((t) => t.id === activeTab)!
-  const goalStatement = goalData?.goalStatement ?? ''
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-5">
@@ -514,7 +511,6 @@ export function ContextDefinitionV3() {
 
       {/* Goal traceability ribbon */}
       <GoalRibbon
-        goalStatement={goalStatement}
         activeTab={activeTab}
         accentColor={activeTabDef.dimensionColor ?? accentColor}
       />

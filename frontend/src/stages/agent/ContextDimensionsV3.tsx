@@ -46,10 +46,10 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: 'task', label: 'Task Dimensions', icon: Target, goalLink: 'What the agent does', dimensionColor: DIMENSION_COLORS.task.primary },
-  { id: 'data', label: 'Data Dimensions', icon: Database, goalLink: 'What the agent knows', dimensionColor: DIMENSION_COLORS.data.primary },
-  { id: 'output', label: 'Response Dimensions', icon: Users, goalLink: 'What the agent produces', dimensionColor: DIMENSION_COLORS.output.primary },
-  { id: 'tool', label: 'Tool Dimensions', icon: Layers, goalLink: 'How the agent operates', dimensionColor: DIMENSION_COLORS.tool.primary },
+  { id: 'task', label: 'Task Dimensions', icon: Target, goalLink: 'Every step your agent takes to get the job done', dimensionColor: DIMENSION_COLORS.task.primary },
+  { id: 'data', label: 'Data Dimensions', icon: Database, goalLink: 'The real-world data your agent reads and reasons over', dimensionColor: DIMENSION_COLORS.data.primary },
+  { id: 'output', label: 'Response Dimensions', icon: Users, goalLink: 'The different types of answers your agent delivers', dimensionColor: DIMENSION_COLORS.output.primary },
+  { id: 'tool', label: 'Tool Dimensions', icon: Layers, goalLink: 'The APIs and services your agent calls to do its work', dimensionColor: DIMENSION_COLORS.tool.primary },
 ]
 
 const CONFIDENCE_META: Record<
@@ -90,17 +90,31 @@ const panelVariants: Variants = {
   exit: { opacity: 0, x: -20 },
 }
 
-function GoalRibbon({ text, accentColor }: { text: string; accentColor: string }) {
+const TAB_DESCRIPTIONS: Record<DimensionTab, string> = {
+  task: 'Each task is a specific thing your agent can do. Intent categories show which user questions trigger each task.',
+  data: 'The real-world data your agent reads and reasons over, from file formats to knowledge sources.',
+  output: 'Every type of response your agent can give back to a user, from direct answers to escalations.',
+  tool: 'The external APIs and services your agent calls. Each tool can succeed, fail, or hit edge cases your agent needs to handle.',
+}
+
+function GoalRibbon({ title, description, accentColor }: { title: string; description: string; accentColor: string }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium"
-      style={{ background: `${accentColor}08`, border: `1px solid ${accentColor}15`, color: accentColor }}
+      className="rounded-lg border px-3.5 py-2.5 flex items-start gap-2.5"
+      style={{ borderColor: `${accentColor}20`, background: `${accentColor}04` }}
     >
-      <ArrowRight className="w-3 h-3 shrink-0" aria-hidden="true" />
-      <span>{text}</span>
+      <ArrowRight className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: accentColor }} aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: accentColor }}>
+          {title}
+        </p>
+        <p className="text-[11px] text-gray-500 leading-relaxed mt-0.5">
+          {description}
+        </p>
+      </div>
     </motion.div>
   )
 }
@@ -1376,7 +1390,7 @@ export function ContextDimensionsV3() {
       task: dimensionsData.taskDimensions.length,
       data: (dimensionsData.formatDimensions?.length ?? 0) + dimensionsData.dataDimensions.length,
       output: (dimensionsData.responseDimensions ?? dimensionsData.outputDimensions).length,
-      tool: dimensionsData.toolDimensions.length,
+      tool: dimensionsData.toolDimensions.reduce((sum, t) => sum + (t.states?.length ?? 0), 0),
     }
   }, [dimensionsData])
 
@@ -1425,7 +1439,7 @@ export function ContextDimensionsV3() {
       <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} accentColor={accentColor} counts={counts} />
 
       {/* Goal traceability ribbon */}
-      <GoalRibbon text={activeTabDef.goalLink} accentColor={activeTabDef.dimensionColor} />
+      <GoalRibbon title={activeTabDef.goalLink} description={TAB_DESCRIPTIONS[activeTab]} accentColor={activeTabDef.dimensionColor} />
 
       {/* Tab panels */}
       <div role="tabpanel" id={`dim-panel-${activeTab}`} aria-labelledby={`dim-tab-${activeTab}`}>
@@ -1440,9 +1454,6 @@ export function ContextDimensionsV3() {
               transition={{ duration: 0.2 }}
               className="space-y-3"
             >
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Each task dimension represents a specific sub-capability sliced from parent tasks. Intent categories show which types of queries activate each task.
-              </p>
               {dimensionsData.taskDimensions.map((dim, i) => (
                 <TaskDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} viewMode={viewMode} />
               ))}
@@ -1463,9 +1474,9 @@ export function ContextDimensionsV3() {
               {dimensionsData.formatDimensions && dimensionsData.formatDimensions.length > 0 && (
                 <div className="space-y-3">
                   <div>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Format Dimensions</p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Data Formats</p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      The structural data formats the agent must parse. Each format has distinct extraction challenges, failure modes, and confidence characteristics.
+                      The file types and data formats your agent needs to read. Each format comes with its own parsing quirks and failure risks.
                     </p>
                   </div>
                   {dimensionsData.formatDimensions.map((dim, i) => (
@@ -1479,12 +1490,12 @@ export function ContextDimensionsV3() {
                 <div className="pt-2 border-t border-gray-200" />
               )}
 
-              {/* Source Dimensions — each sub-topic is its own dimension */}
+              {/* Data Sources — each sub-topic is its own dimension */}
               <div className="space-y-3">
                 <div>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Source Dimensions</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Data Sources</p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Each data topic the agent understands, grouped by source. Depth shows how well the agent can reason about that topic.
+                    The actual data your agent pulls from, organized by source. Depth shows how deeply it can reason about each topic.
                   </p>
                 </div>
                 <SourceDimensionsGroup dimensions={dimensionsData.dataDimensions} delay={0.05} />
@@ -1502,9 +1513,6 @@ export function ContextDimensionsV3() {
               transition={{ duration: 0.2 }}
               className="space-y-3"
             >
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Response dimensions decompose agent outputs along three axes: outcome, complexity, and interaction style.
-              </p>
               {(dimensionsData.responseDimensions ?? dimensionsData.outputDimensions).map((dim, i) => (
                 <OutputDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} viewMode={viewMode} />
               ))}
@@ -1521,9 +1529,6 @@ export function ContextDimensionsV3() {
               transition={{ duration: 0.2 }}
               className="space-y-3"
             >
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Tool dimensions describe the operations and state transitions for each tool the agent uses.
-              </p>
               {dimensionsData.toolDimensions.map((dim, i) => (
                 <ToolDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} viewMode={viewMode} />
               ))}

@@ -826,7 +826,7 @@ export function ContextDimensions() {
       task: dimensionsData.taskDimensions.length,
       data: dimensionsData.dataDimensions.length,
       output: dimensionsData.outputDimensions.length,
-      tool: dimensionsData.toolDimensions.length,
+      tool: dimensionsData.toolDimensions.reduce((sum, t) => sum + (t.states?.length ?? 0), 0),
     }
   }, [dimensionsData])
 
