@@ -1241,11 +1241,11 @@ function StructuralDiscoveryExplorer({
         </svg>
 
         {/* Grid layout — 3 equal-flex columns */}
-        <div className="grid grid-cols-3 gap-6">
-          {/* Data Sources column */}
-          <div className="min-w-0">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)] gap-12">
+          {/* Data Sources column — cards constrained to 80% width (left-aligned), lines exit with room */}
+          <div className="min-w-0 flex flex-col">
             <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Data Sources</div>
-            <div className="space-y-2">
+            <div className="space-y-2" style={{ maxWidth: '80%' }}>
               {dataSources.map((src: any) => {
                 const isActive = !hasSelection || activeSourceIds.has(src.id)
                 return (
@@ -1269,7 +1269,7 @@ function StructuralDiscoveryExplorer({
             </div>
           </div>
 
-          {/* Challenges column */}
+          {/* Challenges column — full width, center of the graph */}
           <div className="min-w-0">
             <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Challenges</div>
             <div className="space-y-2">
@@ -1306,10 +1306,10 @@ function StructuralDiscoveryExplorer({
             </div>
           </div>
 
-          {/* Tasks column */}
-          <div className="min-w-0">
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Tasks</div>
-            <div className="space-y-2">
+          {/* Tasks column — cards constrained to 80% width (right-aligned), lines enter with room */}
+          <div className="min-w-0 flex flex-col items-end">
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 self-start">Tasks</div>
+            <div className="space-y-2 w-full" style={{ maxWidth: '80%' }}>
               {tasks.map((task: any) => {
                 const isActive = !hasSelection || activeTaskIds.has(task.id)
                 return (
