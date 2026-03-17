@@ -524,11 +524,9 @@ function ScrollAffordance() {
 
 function DestinationPreviewSection({
   tileId,
-  viewMode,
   delay,
 }: {
   tileId: string
-  viewMode: 'business' | 'technical'
   delay: number
 }) {
   const resolvedTileId = resolveV3TileId(tileId, 'destinationPreview')
@@ -573,16 +571,6 @@ function DestinationPreviewSection({
         ))}
       </div>
 
-      <div className="space-y-3 pt-4 border-t border-gray-200">
-        <div className="rounded-lg bg-gray-50 p-4">
-          <p className="text-xs font-mono text-gray-600 leading-relaxed">
-            {viewMode === 'technical' ? preview.structuralSignature : preview.outcomeSignature}
-          </p>
-        </div>
-        <p className="text-sm text-gray-600 italic leading-relaxed">
-          To build this reliably, VibeModel maps every execution path. Let's start.
-        </p>
-      </div>
     </motion.div>
   )
 }
@@ -1076,7 +1064,7 @@ export function GoalDefinitionV3() {
                 transition={{ duration: 0.4 }}
                 className="space-y-6 pt-4 border-t border-gray-200"
               >
-                <DestinationPreviewSection tileId={selectedTileId!} viewMode={viewMode} delay={0} />
+                <DestinationPreviewSection tileId={selectedTileId!} delay={0} />
               </motion.div>
             )}
 

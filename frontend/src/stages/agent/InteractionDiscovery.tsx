@@ -1856,42 +1856,42 @@ export function InteractionDiscovery() {
                 <button onClick={() => setActiveFilter(null)} className="ml-auto text-xs text-gray-400 hover:text-gray-600 transition-colors">Clear</button>
               </motion.div>
             )}
+
+            {/* Tier breakdown bar — below pipeline flow */}
+            {phase === 'complete' && (
+              <TierBreakdownBar breakdown={data.tierBreakdown} total={data.validPatterns} accentColor={accentColor} />
+            )}
+
+            {/* Tier tab tiles — below pipeline flow */}
+            {phase === 'complete' && (
+              <div className="flex gap-3">
+                <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} onClick={() => toggleSection('simple')}
+                  className="flex-1 rounded-xl p-4 text-center transition-all" style={{ background: activeSection === 'simple' ? '#dcfce7' : '#f0fdf4', border: '1px solid #16a34a33', borderBottom: activeSection === 'simple' ? '4px solid #16a34a' : '1px solid #16a34a33', cursor: 'pointer' }}>
+                  <div className="text-2xl font-bold" style={{ color: '#16a34a' }}><CountUpNumber end={patternsByTier.simple.length} /></div>
+                  <div className="text-sm font-semibold text-gray-700 mt-1">Simple Patterns</div>
+                  <div className="text-[10px] mt-0.5" style={{ color: '#16a34a99' }}>High-confidence patterns</div>
+                </motion.button>
+
+                <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} onClick={() => toggleSection('complex')}
+                  className="flex-1 rounded-xl p-4 text-center transition-all" style={{ background: activeSection === 'complex' ? '#fee2e2' : '#fef2f2', border: '1px solid #dc262633', borderBottom: activeSection === 'complex' ? '4px solid #dc2626' : '1px solid #dc262633', cursor: 'pointer' }}>
+                  <div className="text-2xl font-bold" style={{ color: '#dc2626' }}><CountUpNumber end={patternsByTier.complex.length} /></div>
+                  <div className="text-sm font-semibold text-gray-700 mt-1">Complex Patterns</div>
+                  <div className="text-[10px] mt-0.5" style={{ color: '#dc262699' }}>Multi-step complexity</div>
+                </motion.button>
+
+                {hasFuzzy && (
+                  <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} onClick={() => toggleSection('fuzzy')}
+                    className="flex-1 rounded-xl p-4 text-center transition-all" style={{ background: activeSection === 'fuzzy' ? '#fef3c7' : '#fffbeb', border: '1px solid #d9770633', borderBottom: activeSection === 'fuzzy' ? '4px solid #d97706' : '1px solid #d9770633', cursor: 'pointer' }}>
+                    <div className="text-2xl font-bold" style={{ color: '#d97706' }}><CountUpNumber end={patternsByTier.fuzzy.length} /></div>
+                    <div className="text-sm font-semibold text-gray-700 mt-1">Fuzzy Patterns</div>
+                    <div className="text-[10px] mt-0.5" style={{ color: '#d9770699' }}>Ambiguous confidence</div>
+                  </motion.button>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Tier breakdown bar */}
-      {phase === 'complete' && (
-        <TierBreakdownBar breakdown={data.tierBreakdown} total={data.validPatterns} accentColor={accentColor} />
-      )}
-
-      {/* Tier tab tiles */}
-      {phase === 'complete' && (
-        <div className="flex gap-3">
-          <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} onClick={() => toggleSection('simple')}
-            className="flex-1 rounded-xl p-4 text-center transition-all" style={{ background: activeSection === 'simple' ? '#dcfce7' : '#f0fdf4', border: '1px solid #16a34a33', borderBottom: activeSection === 'simple' ? '4px solid #16a34a' : '1px solid #16a34a33', cursor: 'pointer' }}>
-            <div className="text-2xl font-bold" style={{ color: '#16a34a' }}><CountUpNumber end={patternsByTier.simple.length} /></div>
-            <div className="text-sm font-semibold text-gray-700 mt-1">Simple Patterns</div>
-            <div className="text-[10px] mt-0.5" style={{ color: '#16a34a99' }}>High-confidence patterns</div>
-          </motion.button>
-
-          <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} onClick={() => toggleSection('complex')}
-            className="flex-1 rounded-xl p-4 text-center transition-all" style={{ background: activeSection === 'complex' ? '#fee2e2' : '#fef2f2', border: '1px solid #dc262633', borderBottom: activeSection === 'complex' ? '4px solid #dc2626' : '1px solid #dc262633', cursor: 'pointer' }}>
-            <div className="text-2xl font-bold" style={{ color: '#dc2626' }}><CountUpNumber end={patternsByTier.complex.length} /></div>
-            <div className="text-sm font-semibold text-gray-700 mt-1">Complex Patterns</div>
-            <div className="text-[10px] mt-0.5" style={{ color: '#dc262699' }}>Multi-step complexity</div>
-          </motion.button>
-
-          {hasFuzzy && (
-            <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} onClick={() => toggleSection('fuzzy')}
-              className="flex-1 rounded-xl p-4 text-center transition-all" style={{ background: activeSection === 'fuzzy' ? '#fef3c7' : '#fffbeb', border: '1px solid #d9770633', borderBottom: activeSection === 'fuzzy' ? '4px solid #d97706' : '1px solid #d9770633', cursor: 'pointer' }}>
-              <div className="text-2xl font-bold" style={{ color: '#d97706' }}><CountUpNumber end={patternsByTier.fuzzy.length} /></div>
-              <div className="text-sm font-semibold text-gray-700 mt-1">Fuzzy Patterns</div>
-              <div className="text-[10px] mt-0.5" style={{ color: '#d9770699' }}>Ambiguous confidence</div>
-            </motion.button>
-          )}
-        </div>
-      )}
 
       {/* Pattern cards content */}
       {phase === 'complete' && (
