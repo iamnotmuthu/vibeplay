@@ -1190,7 +1190,7 @@ function StructuralDiscoveryExplorer({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="mt-6 rounded-xl border bg-white p-5"
+      className="rounded-xl border bg-white p-6"
       style={{ borderColor: '#e5e7eb' }}
     >
       {/* Header */}
@@ -1374,7 +1374,7 @@ export function ContextDimensionsV3() {
     if (!dimensionsData) return { task: 0, data: 0, output: 0, tool: 0 }
     return {
       task: dimensionsData.taskDimensions.length,
-      data: (dimensionsData.formatDimensions?.length ?? 0) + dimensionsData.dataDimensions.reduce((sum, d) => sum + (d.subTopics?.length ?? 0), 0),
+      data: (dimensionsData.formatDimensions?.length ?? 0) + dimensionsData.dataDimensions.length,
       output: (dimensionsData.responseDimensions ?? dimensionsData.outputDimensions).length,
       tool: dimensionsData.toolDimensions.length,
     }
@@ -1413,7 +1413,8 @@ export function ContextDimensionsV3() {
   const activeTabDef = TABS.find((t) => t.id === activeTab)!
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
       {/* Stage header */}
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Dimension Analysis</h2>
@@ -1533,25 +1534,30 @@ export function ContextDimensionsV3() {
 
       {/* Summary */}
       <SummaryStats summaryText={dimensionsData.summaryText} accentColor={accentColor} />
+    </div>
 
       {/* V3 Structural Discovery Canvas — hidden behind feature flag while redesigning */}
       {SHOW_STRUCTURAL_DISCOVERY_GRAPH && isV3Tile && v3ContextData && v3Discoveries && (
-        <StructuralDiscoveryCanvas
-          discoveries={v3Discoveries}
-          dataSources={v3ContextData.dataSources}
-          tasks={v3ContextData.tasks}
-          viewMode={viewMode}
-        />
+        <div className="px-4 sm:px-6">
+          <StructuralDiscoveryCanvas
+            discoveries={v3Discoveries}
+            dataSources={v3ContextData.dataSources}
+            tasks={v3ContextData.tasks}
+            viewMode={viewMode}
+          />
+        </div>
       )}
 
-      {/* V3 Interactive Structural Discovery Explorer */}
+      {/* V3 Interactive Structural Discovery Explorer — full-width */}
       {!SHOW_STRUCTURAL_DISCOVERY_GRAPH && isV3Tile && v3ContextData && v3Discoveries && (
-        <StructuralDiscoveryExplorer
-          discoveries={v3Discoveries}
-          dataSources={v3ContextData.dataSources}
-          tasks={v3ContextData.tasks}
-          viewMode={viewMode}
-        />
+        <div className="px-4 sm:px-6">
+          <StructuralDiscoveryExplorer
+            discoveries={v3Discoveries}
+            dataSources={v3ContextData.dataSources}
+            tasks={v3ContextData.tasks}
+            viewMode={viewMode}
+          />
+        </div>
       )}
     </div>
   )
