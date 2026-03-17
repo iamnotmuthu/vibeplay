@@ -7,6 +7,7 @@ import { SolutionTypePreview } from '@/components/SolutionTypePreview'
 import { GuidedEntryWizard } from '@/components/GuidedEntryWizard'
 import { InterestVoteBar } from '@/components/InterestVoteBar'
 import { AgentPlaygroundShell } from '@/components/agent/AgentPlaygroundShell'
+import { AgentPlaygroundV3Shell } from '@/components/agent/AgentPlaygroundV3Shell'
 import { SOLUTION_TYPES } from '@/lib/solutionTypes'
 
 interface FullSpectrumLandingProps {
@@ -24,6 +25,7 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
   const [activeSolutionType, setActiveSolutionType] = useState('predictive')
   const [wizardOpen, setWizardOpen] = useState(false)
   const [activeAgentDemo, setActiveAgentDemo] = useState(false)
+  const [activePrescriptiveDemo, setActivePrescriptiveDemo] = useState(false)
 
   const ambientColor = AMBIENT_COLORS[activeSolutionType] ?? AMBIENT_COLORS.predictive
 
@@ -32,6 +34,11 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
   // Show Agent Playground shell
   if (activeAgentDemo) {
     return <AgentPlaygroundShell onBack={() => setActiveAgentDemo(false)} />
+  }
+
+  // Show Prescriptive AI (V3) Playground shell
+  if (activePrescriptiveDemo) {
+    return <AgentPlaygroundV3Shell onBack={() => setActivePrescriptiveDemo(false)} />
   }
 
   return (
@@ -82,6 +89,8 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
             onTypeChange={(typeId) => {
               if (typeId === 'agentic') {
                 setActiveAgentDemo(true)
+              } else if (typeId === 'prescriptive') {
+                setActivePrescriptiveDemo(true)
               } else {
                 setActiveSolutionType(typeId)
               }

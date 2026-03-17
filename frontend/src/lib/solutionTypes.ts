@@ -62,7 +62,9 @@ export const SOLUTION_TYPES: SolutionType[] = [
     id: 'prescriptive',
     label: 'Prescriptive AI',
     icon: Compass,
-    status: 'coming-soon',
+    status: 'active',
+    demoAvailable: true,
+    demoId: 'prescriptive',
     color: '#10b981',
     valueStatement:
       'The ultimate endgame — AI that analyzes all your data and tells you exactly what actions to take to succeed.',
