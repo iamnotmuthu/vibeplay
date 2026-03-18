@@ -6,8 +6,7 @@ import { SolutionTypeTabs } from '@/components/SolutionTypeTabs'
 import { SolutionTypePreview } from '@/components/SolutionTypePreview'
 import { GuidedEntryWizard } from '@/components/GuidedEntryWizard'
 import { InterestVoteBar } from '@/components/InterestVoteBar'
-import { AgentPlaygroundShell } from '@/components/agent/AgentPlaygroundShell'
-// AgentPlaygroundV3Shell import removed — Prescriptive tab is now "Coming Soon"
+import { AgentPlaygroundV3Shell } from '@/components/agent/AgentPlaygroundV3Shell'
 import { SOLUTION_TYPES } from '@/lib/solutionTypes'
 
 interface FullSpectrumLandingProps {
@@ -33,7 +32,7 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
 
   // Show Agent Playground shell
   if (activeAgentDemo) {
-    return <AgentPlaygroundShell onBack={() => setActiveAgentDemo(false)} />
+    return <AgentPlaygroundV3Shell onBack={() => setActiveAgentDemo(false)} />
   }
 
   // Prescriptive tab is "Coming Soon" — no demo shell to show

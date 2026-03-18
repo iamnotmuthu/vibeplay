@@ -12,7 +12,7 @@ import type { PatternClassification, DiscoveredPattern, ScenarioTest, DimensionP
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
 import { getEvaluationData } from '@/lib/agent/evaluationData'
 import { getEvalMetrics, getMetricWhy } from '@/lib/agent/componentTechData'
-import { getCombinatorialPatternsData } from '@/lib/agent/combinatorialPatternsData'
+import { generatePatterns, type GeneratedPattern } from '@/lib/agent/patternCombinationEngine'
 import { PATTERN_CLASSIFICATION_META } from '@/store/agentTypes'
 
 // ─── Map combinatorial tier → classification ────────────────────────────
@@ -359,18 +359,30 @@ export function AgentEvaluation() {
   )
   const scenarios = evalData?.scenarios ?? []
 
-  // Use the SAME combinatorial patterns as the Patterns stage — counts must match exactly
+  // Use the pattern combination engine — same source as the Patterns stage
   const groups: PatternGroup[] = useMemo(() => {
-    const payload = getCombinatorialPatternsData(activeTileId || '')
-    if (!payload) return []
+    const genResult = generatePatterns(activeTileId || '')
+    if (!genResult) return []
     const byClassification = new Map<PatternClassification, DiscoveredPattern[]>()
-    payload.patterns.forEach((dp, idx) => {
-      const mapped = mapDimensionToDiscovered(dp, idx)
-      const existing = byClassification.get(mapped.classification) ?? []
-      existing.push(mapped)
-      byClassification.set(mapped.classification, existing)
+    genResult.patterns.forEach((gp: GeneratedPattern, idx: number) => {
+      const cls = gp.tier as PatternClassification
+      const dp: DiscoveredPattern = {
+        id: gp.id,
+        patternType: gp.tier,
+        classification: cls,
+        label: gp.name,
+        description: gp.description,
+        exampleQuestions: [...gp.sampleQuestions],
+        coveragePct: cls === 'simple' ? 85 + (idx % 12) : cls === 'complex' ? 60 + (idx % 18) : 30 + (idx % 22),
+        inferenceNote: gp.inferenceNote,
+        ambiguityNote: gp.ambiguityNote,
+        activatedComponents: gp.toolLabels,
+        importanceRank: idx + 1,
+      }
+      const existing = byClassification.get(cls) ?? []
+      existing.push(dp)
+      byClassification.set(cls, existing)
     })
-    // All tiles now have hand-crafted fuzzy patterns in the payload — no dummy needed
     const result: PatternGroup[] = []
     for (const cls of ['simple', 'complex', 'fuzzy'] as PatternClassification[]) {
       const patterns = byClassification.get(cls) ?? []

@@ -983,48 +983,6 @@ export function GoalDefinitionV3() {
             {/* Risk callout */}
             <KeyRiskCallout risk={goalData.keyRisk} delay={0.2} />
 
-            {/* Decomposition cards */}
-            <div className="space-y-3">
-              <motion.h3
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="text-xs font-bold uppercase tracking-widest text-gray-400"
-              >
-                Goal Decomposition
-              </motion.h3>
-
-              <DecompCard
-                icon={<Target className="w-4 h-4" style={{ color: accentColor }} aria-hidden="true" />}
-                label="What the agent does"
-                items={goalData.decomposition.primaryActions}
-                color={accentColor}
-                delay={0.35}
-                reasoning={goalData.decomposition.reasoning}
-              />
-              <DecompCard
-                icon={<Zap className="w-4 h-4" style={{ color: '#8b5cf6' }} aria-hidden="true" />}
-                label="When it needs help"
-                items={goalData.decomposition.secondaryActions}
-                color="#8b5cf6"
-                delay={0.4}
-              />
-              <DecompCard
-                icon={<Database className="w-4 h-4" style={{ color: '#0369a1' }} aria-hidden="true" />}
-                label="Main data it uses"
-                items={goalData.decomposition.primaryData}
-                color="#0369a1"
-                delay={0.45}
-              />
-              <DecompCard
-                icon={<Database className="w-4 h-4" style={{ color: '#6b7280' }} aria-hidden="true" />}
-                label="Additional context"
-                items={goalData.decomposition.supportingData}
-                color="#6b7280"
-                delay={0.5}
-              />
-            </div>
-
             {/* Trust boundaries — technical mode */}
             {viewMode === 'technical' && goalData.decomposition.trustBoundaryHints && (
               <motion.div

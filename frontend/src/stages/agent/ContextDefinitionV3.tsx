@@ -30,7 +30,7 @@ const V3_TILE_COLORS: Record<string, string> = {
 
 // ─── Tab Configuration ──────────────────────────────────────────────────────
 
-type ContextTab = 'tasks' | 'data-sources' | 'response-types' | 'tools'
+type ContextTab = 'tasks' | 'data-sources' | 'who-uses-it' | 'tools'
 
 interface TabDef {
   id: ContextTab
@@ -43,7 +43,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { id: 'tasks', label: 'Tasks', icon: Target, goalLink: 'Every job your agent handles', dimensionColor: DIMENSION_COLORS.task.primary },
   { id: 'data-sources', label: 'Data Sources', icon: Database, goalLink: 'Where it gets its knowledge', dimensionColor: DIMENSION_COLORS.data.primary },
-  { id: 'response-types', label: 'Response Types', icon: MessageSquareText, goalLink: 'How it responds', dimensionColor: DIMENSION_COLORS.userProfile.primary },
+  { id: 'who-uses-it', label: 'Who Uses It', icon: Zap, goalLink: 'The people who interact with your agent and what kind of responses they need', dimensionColor: DIMENSION_COLORS.userProfile.primary },
   { id: 'tools', label: 'Tools', icon: Wrench, goalLink: 'Tools it can use' },
 ]
 
@@ -70,9 +70,9 @@ function GoalRibbon({
       title: 'WHERE IT GETS ITS KNOWLEDGE',
       description: 'The real-world sources your agent reads from to answer questions and complete tasks',
     },
-    'response-types': {
-      title: 'HOW IT RESPONDS',
-      description: 'The different types of answers and outputs your agent sends back to users',
+    'who-uses-it': {
+      title: 'WHO USES THIS AGENT',
+      description: 'The people who interact with your agent and what kind of responses they need',
     },
     'tools': {
       title: 'TOOLS IT CAN USE',
@@ -400,6 +400,44 @@ function TaskCard({ task, delay }: { task: AgentTaskV3; delay: number }) {
   )
 }
 
+// ─── User Profile Card (Who Uses It tab) ─────────────────────────────
+
+const WHO_USES_IT_MAP: Record<string, { label: string; description: string; responseNeeds: string[] }[]> = {
+  'doc-intelligence': [
+    { label: 'Finance Analyst (Cost Owner)', description: 'Finance team member analyzing costs for budgeting and optimization decisions. Needs drill-down from summary to line-item level.', responseNeeds: ['Cost Breakdown', 'Trend Report', 'Anomaly Alert', 'Consolidated Report'] },
+    { label: 'Executive (Budget Planning)', description: 'Executive reviewing high-level spend for forecasting and board reporting. Wants key metrics and summaries, not line-item detail.', responseNeeds: ['Consolidated Report', 'Trend Report (summary)', 'Simple Answer'] },
+    { label: 'Procurement Manager (PO Validator)', description: 'Procurement team validating invoices against POs for payment approval. Focuses on discrepancies, mismatches, and escalation.', responseNeeds: ['Validation Result', 'Anomaly Alert', 'Simple Answer'] },
+  ],
+}
+
+function UserProfileCard({ profile, delay, accentColor }: { profile: { label: string; description: string; responseNeeds: string[] }; delay: number; accentColor: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+      className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+    >
+      <div className="h-[3px]" style={{ background: accentColor }} />
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <p className="text-sm font-bold text-gray-900 flex-1 min-w-0">{profile.label}</p>
+          <AgentTooltip title="Demo Mode" content="This action is available in the full platform. This demo uses pre-configured data to walk you through the complete agent building flow." trigger="click" position="bottom">
+            <button className="p-1.5 rounded-lg text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0">
+              <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+          </AgentTooltip>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed mb-3">{profile.description}</p>
+        <div className="px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+          <p className="text-[10px] font-semibold text-gray-500 mb-0.5">Response Needs:</p>
+          <p className="text-xs text-gray-700">{profile.responseNeeds.join(', ')}</p>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 // ─── Add Input Area ──────────────────────────────────────────────────
 
 function AddInputArea({ placeholder }: { placeholder: string }) {
@@ -471,7 +509,7 @@ export function ContextDefinitionV3() {
   const counts: Record<ContextTab, number> = {
     tasks: tasks.length,
     'data-sources': dataSources.length,
-    'response-types': responseTypes.length,
+    'who-uses-it': activeTileId && WHO_USES_IT_MAP[activeTileId] ? WHO_USES_IT_MAP[activeTileId].length : responseTypes.length,
     tools: tools.length,
   }
 
@@ -552,15 +590,23 @@ export function ContextDefinitionV3() {
             </>
           )}
 
-          {/* ─── Response Types Tab ─── */}
-          {activeTab === 'response-types' && (
+          {/* ─── Who Uses It Tab ─── */}
+          {activeTab === 'who-uses-it' && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {responseTypes.map((rt, i) => (
-                  <ResponseTypeCard key={rt.id} responseType={rt} delay={0.05 + i * 0.04} />
-                ))}
-              </div>
-              <AddInputArea placeholder="Add new response type..." />
+              {activeTileId && WHO_USES_IT_MAP[activeTileId] ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {WHO_USES_IT_MAP[activeTileId].map((profile, i) => (
+                    <UserProfileCard key={profile.label} profile={profile} delay={0.05 + i * 0.04} accentColor={DIMENSION_COLORS.userProfile.primary} />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {responseTypes.map((rt, i) => (
+                    <ResponseTypeCard key={rt.id} responseType={rt} delay={0.05 + i * 0.04} />
+                  ))}
+                </div>
+              )}
+              <AddInputArea placeholder="Add new user profile..." />
             </>
           )}
 

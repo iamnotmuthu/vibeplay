@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useMemo, useEffect, useLayoutEffect, useCallback } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
   GitBranch,
@@ -8,7 +8,9 @@ import {
   Users,
   Layers,
   ArrowRight,
+  BookOpen,
   Target,
+  ChevronDown,
 } from 'lucide-react'
 import { AgentTooltip } from '@/components/agent/AgentTooltip'
 import { useAgentPlaygroundStore } from '@/store/agentPlaygroundStore'
@@ -17,21 +19,15 @@ import { getDimensionAnalysisData } from '@/lib/agent/dimensionAnalysisData'
 import { getDimensionAnalysisDataV3 } from '@/lib/agent/dimensionAnalysisDataV3'
 import { isV3SupportedTile, resolveV3TileId } from '@/lib/agent/v3TileResolver'
 import { getContextDefinitionDataV3 } from '@/lib/agent/contextDefinitionDataV3'
-import { getStructuralDiscoveries } from '@/lib/agent/structuralDiscoveryDataV3'
+import { getStructuralDiscoveries, getRiskTierSummary } from '@/lib/agent/structuralDiscoveryDataV3'
 import type {
   TaskDimension,
   DataDimension,
-  FormatDimension,
   OutputDimension,
   ToolDimension,
 } from '@/store/agentTypes'
 import { DIMENSION_COLORS } from '@/store/agentTypes'
-import type { StructuralDiscovery } from '@/lib/agent/structuralDiscoveryDataV3'
-
-// ─── Feature Flags ───────────────────────────────────────────────────────────
-// The structural discovery graph (data sources ↔ challenges ↔ tasks) is hidden
-// while we redesign it as an interactive explorer. Set to true to re-enable.
-const SHOW_STRUCTURAL_DISCOVERY_GRAPH = false
+import type { StructuralDiscovery, RiskTierSummary } from '@/lib/agent/structuralDiscoveryDataV3'
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
@@ -46,10 +42,10 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: 'task', label: 'Task Dimensions', icon: Target, goalLink: 'Every step your agent takes to get the job done', dimensionColor: DIMENSION_COLORS.task.primary },
-  { id: 'data', label: 'Data Dimensions', icon: Database, goalLink: 'The real-world data your agent reads and reasons over', dimensionColor: DIMENSION_COLORS.data.primary },
-  { id: 'output', label: 'Response Dimensions', icon: Users, goalLink: 'The different types of answers your agent delivers', dimensionColor: DIMENSION_COLORS.output.primary },
-  { id: 'tool', label: 'Tool Dimensions', icon: Layers, goalLink: 'The APIs and services your agent calls to do its work', dimensionColor: DIMENSION_COLORS.tool.primary },
+  { id: 'task', label: 'Task Dimensions', icon: Target, goalLink: 'What the agent does', dimensionColor: DIMENSION_COLORS.task.primary },
+  { id: 'data', label: 'Data Dimensions', icon: Database, goalLink: 'What the agent knows', dimensionColor: DIMENSION_COLORS.data.primary },
+  { id: 'output', label: 'Response Dimensions', icon: Users, goalLink: 'What the agent produces', dimensionColor: DIMENSION_COLORS.output.primary },
+  { id: 'tool', label: 'Tool Dimensions', icon: Layers, goalLink: 'How the agent operates', dimensionColor: DIMENSION_COLORS.tool.primary },
 ]
 
 const CONFIDENCE_META: Record<
@@ -90,31 +86,35 @@ const panelVariants: Variants = {
   exit: { opacity: 0, x: -20 },
 }
 
-const TAB_DESCRIPTIONS: Record<DimensionTab, string> = {
-  task: 'Each task is a specific thing your agent can do. Intent categories show which user questions trigger each task.',
-  data: 'The real-world data your agent reads and reasons over, from file formats to knowledge sources.',
-  output: 'Every type of response your agent can give back to a user, from direct answers to escalations.',
-  tool: 'The external APIs and services your agent calls. Each tool can succeed, fail, or hit edge cases your agent needs to handle.',
+// ─── Depth Meter ──────────────────────────────────────────────────────────────
+
+function DepthMeter({ depth, maxDepth = 5, color }: { depth: number; maxDepth?: number; color?: string }) {
+  const fillColor = color ?? DIMENSION_COLORS.data.primary
+  return (
+    <div className="flex items-center gap-1" role="meter" aria-label={`Depth: ${depth} out of ${maxDepth}`}>
+      {Array.from({ length: maxDepth }, (_, i) => (
+        <div
+          key={i}
+          className="w-2 h-2 rounded-sm transition-colors"
+          style={{ background: i < depth ? fillColor : '#e5e7eb' }}
+        />
+      ))}
+      <span className="text-[10px] text-gray-400 ml-1">{depth}/{maxDepth}</span>
+    </div>
+  )
 }
 
-function GoalRibbon({ title, description, accentColor }: { title: string; description: string; accentColor: string }) {
+function GoalRibbon({ text, accentColor }: { text: string; accentColor: string }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="rounded-lg border px-3.5 py-2.5 flex items-start gap-2.5"
-      style={{ borderColor: `${accentColor}20`, background: `${accentColor}04` }}
+      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium"
+      style={{ background: `${accentColor}08`, border: `1px solid ${accentColor}15`, color: accentColor }}
     >
-      <ArrowRight className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: accentColor }} aria-hidden="true" />
-      <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: accentColor }}>
-          {title}
-        </p>
-        <p className="text-[11px] text-gray-500 leading-relaxed mt-0.5">
-          {description}
-        </p>
-      </div>
+      <ArrowRight className="w-3 h-3 shrink-0" aria-hidden="true" />
+      <span>{text}</span>
     </motion.div>
   )
 }
@@ -249,208 +249,613 @@ function TaskDimensionCard({
   )
 }
 
-// ─── Flattened Source Dimensions ─────────────────────────────────────────────
-// Each sub-topic within a data source is its own dimension card, grouped by source.
+// ─── Phase 1: Production Data Dimensions — 3-Section Layout ──────────────────
+// Section 1: Sample Documents (tabbed data previews per format)
+// Section 2: What The Data Means (entity cards with extraction method tags)
+// Section 3: How The Data Arrives (format type cards)
 
-function SourceDimensionsGroup({
-  dimensions,
-  delay,
-}: {
-  dimensions: DataDimension[]
-  delay: number
-}) {
-  const dc = DIMENSION_COLORS.data
-  let cardIdx = 0
+interface SampleDocTab {
+  id: string
+  label: string
+  formatType: string
+  formatBadge: string
+  formatColor: string
+  columns: { header: string; subheader?: string; highlighted?: boolean }[]
+  rows: string[][]
+  totalRows?: string
+  footer?: { label: string; text: string; color: string }
+  toolsNeeded: string[]
+}
+
+interface EntityCard {
+  name: string
+  description: string
+  extractedVia: ('TEXT' | 'TABLE')[]
+  examples: string[]
+  type: 'ENTITY' | 'TEMPORAL' | 'RELATIONSHIP'
+}
+
+interface FormatTypeCard {
+  badge: string
+  badgeColor: string
+  badgeBg: string
+  label: string
+  description: string
+}
+
+// ─── Invoice Processing Data (Phase 1) ─────────────────────────────────
+
+const SAMPLE_DOCS: Record<string, SampleDocTab[]> = {
+  'doc-intelligence': [
+    {
+      id: 'aws-csv', label: 'AWS Invoice', formatType: 'CSV', formatBadge: 'CSV', formatColor: '#059669',
+      columns: [
+        { header: 'bill/PayerAccountId', subheader: 'VENDOR IDENTITY', highlighted: true },
+        { header: 'bill/InvoiceId', subheader: 'INVOICE METADATA', highlighted: true },
+        { header: 'lineItem/UsageStartDate', subheader: 'SERVICE PERIOD', highlighted: true },
+        { header: 'product/ProductName' },
+        { header: 'lineItem/UsageType' },
+        { header: 'lineItem/UnblendedCost', subheader: 'AMOUNTS & TOTALS', highlighted: true },
+      ],
+      rows: [
+        ['123456789012', 'INV-2024-00847', '2025-02-01', 'Amazon EC2', 'USW2-BoxUsage:m5.xlarge', '$86.40'],
+        ['123456789012', 'INV-2024-00847', '2025-02-03', 'Amazon S3', 'USW2-TimedStorage-ByteHrs', '$11.50'],
+        ['471829305614', 'INV-2024-00847', '2025-02-07', 'CloudFront', 'USW2-DataTransfer-Out', '$102.00'],
+        ['471829305614', 'INV-2024-00851', '2025-02-14', 'Amazon RDS', 'USW2-InstanceUsage:db.r5.lg', '$68.40'],
+        ['839201746582', 'INV-2024-00851', '2025-02-19', 'AWS Lambda', 'USW2-Lambda-GB-Second', '$1,040.00'],
+      ],
+      totalRows: '212,847',
+      footer: { label: 'CREDITS & ADJUSTMENTS', text: 'RI Savings Plan discount applied: -$1,240.00  |  Net total: $12,847.23', color: '#059669' },
+      toolsNeeded: ['CSV Parser', 'Schema Mapper'],
+    },
+    {
+      id: 'staples-pdf', label: 'Staples Invoice', formatType: 'PDF', formatBadge: 'PDF', formatColor: '#dc2626',
+      columns: [
+        { header: 'Item' }, { header: 'Description' }, { header: 'Qty' }, { header: 'Unit Price' }, { header: 'Total' },
+      ],
+      rows: [
+        ['Copy Paper A4', 'Staples Multipurpose', '50 reams', '$4.99', '$249.50'],
+        ['Ink Cartridge', 'HP 61XL Black', '12', '$24.99', '$299.88'],
+        ['Sticky Notes', '3x3 Yellow 100-pack', '24', '$3.49', '$83.76'],
+      ],
+      footer: { label: 'TOTALS', text: 'Subtotal: $633.14  |  Tax (8%): $50.65  |  Total: $683.79', color: '#dc2626' },
+      toolsNeeded: ['PDF Parser', 'OCR Engine'],
+    },
+    {
+      id: 'gcp-json', label: 'GCP Billing Export', formatType: 'JSON', formatBadge: 'JSON', formatColor: '#7c3aed',
+      columns: [
+        { header: 'service.description' }, { header: 'sku.description' }, { header: 'project.id' }, { header: 'usage.amount' }, { header: 'cost' },
+      ],
+      rows: [
+        ['Compute Engine', 'N1 Standard Instance', 'vibemodel-prod', '720 hrs', '$52.56'],
+        ['Cloud Storage', 'Regional Standard', 'vibemodel-data', '2.4 TB', '$48.00'],
+        ['BigQuery', 'Analysis Bytes', 'vibemodel-analytics', '15.2 TB scanned', '$76.00'],
+      ],
+      toolsNeeded: ['JSON Parser', 'Schema Flattener'],
+    },
+    {
+      id: 'po-sql', label: 'Purchase Order Record', formatType: 'SQL', formatBadge: 'SQL', formatColor: '#0369a1',
+      columns: [
+        { header: 'po_number' }, { header: 'vendor_name' }, { header: 'approved_amount' }, { header: 'status' }, { header: 'category' },
+      ],
+      rows: [
+        ['PO-2024-0847', 'Amazon Web Services', '$15,000.00', 'approved', 'compute'],
+        ['PO-2024-0851', 'Google Cloud Platform', '$12,000.00', 'approved', 'data'],
+        ['PO-2024-0923', 'Staples Inc.', '$8,500.00', 'pending', 'supplies'],
+      ],
+      toolsNeeded: ['SQL Connector'],
+    },
+    {
+      id: 'scan-legacy', label: 'Scanned Legacy Invoice', formatType: 'Scan', formatBadge: 'Scan', formatColor: '#d97706',
+      columns: [
+        { header: 'Extracted Field' }, { header: 'Value' }, { header: 'Confidence' },
+      ],
+      rows: [
+        ['Invoice Number', 'INV-2021-0034', '94%'],
+        ['Vendor', 'Staples Inc.', '91%'],
+        ['Total Amount', '$2,847.00', '88%'],
+        ['Date', 'Mar 15, 2021', '96%'],
+      ],
+      toolsNeeded: ['OCR Engine', 'Confidence Scorer'],
+    },
+  ],
+}
+
+const ENTITY_CARDS_DATA: Record<string, EntityCard[]> = {
+  'doc-intelligence': [
+    { name: 'Vendor Identity', description: 'Who sent the invoice — company name, address, tax ID, account number', extractedVia: ['TEXT'], examples: ['Amazon Web Services, Inc.', 'Google Cloud Platform'], type: 'ENTITY' },
+    { name: 'Invoice Metadata', description: 'Invoice number, date issued, due date, account reference, billing period', extractedVia: ['TEXT'], examples: ['INV-2024-00847', '2025-02-28'], type: 'ENTITY' },
+    { name: 'Line Items', description: 'Each service or product billed — with description, quantity, unit price, and subtotal', extractedVia: ['TABLE', 'TEXT'], examples: ['EC2 On-Demand — 720 hrs — $0.12/hr — $86.40', 'Copy Paper A4 — 50 reams — $4.99 — $249.50'], type: 'ENTITY' },
+    { name: 'Amounts & Totals', description: 'Subtotals, tax, discounts, credits, and grand total for the invoice', extractedVia: ['TEXT', 'TABLE'], examples: ['Subtotal: $4,192.00', 'Tax (8%): $335.36'], type: 'ENTITY' },
+    { name: 'Service Period', description: 'Time range the charges cover — billing cycle start/end, usage dates', extractedVia: ['TEXT'], examples: ['Feb 1 — Feb 28, 2025', 'Usage: 2025-02-01 to 2025-02-28'], type: 'TEMPORAL' },
+    { name: 'Purchase Order Reference', description: 'PO numbers, approval chains, and budget codes that link invoices to approved purchases', extractedVia: ['TEXT'], examples: ['PO-2024-0847', 'Budget Code: INFRA-CLOUD-Q1'], type: 'RELATIONSHIP' },
+    { name: 'Credits & Adjustments', description: 'Discounts, credit memos, reserved instance savings, refunds — negative amounts that offset charges', extractedVia: ['TEXT', 'TABLE'], examples: ['RI Savings: -$1,240.00', 'Credit Memo CM-2024-012'], type: 'ENTITY' },
+    { name: 'Payment Terms', description: 'How and when to pay — payment method, due date, late fees, wire instructions', extractedVia: ['TEXT'], examples: ['Net 30', 'ACH Wire Transfer'], type: 'ENTITY' },
+  ],
+}
+
+const FORMAT_CARDS_DATA: Record<string, FormatTypeCard[]> = {
+  'doc-intelligence': [
+    { badge: 'TABLE', badgeColor: '#0369a1', badgeBg: '#e0f2fe', label: 'CSV / Tabular', description: 'Structured rows and columns — AWS Cost & Usage Reports exported as CSV with 50+ columns per row' },
+    { badge: 'JSON', badgeColor: '#7c3aed', badgeBg: '#ede9fe', label: 'JSON / Hierarchical', description: 'Nested JSON from GCP BigQuery billing exports — deep hierarchy with service/SKU/project nesting' },
+    { badge: 'DOC', badgeColor: '#d97706', badgeBg: '#fef3c7', label: 'PDF with Tables', description: 'Staples invoices with well-structured tables — consistent headers, line item grids, printable format' },
+    { badge: 'DOC', badgeColor: '#d97706', badgeBg: '#fef3c7', label: 'PDF Text / Narrative', description: 'Invoices with freeform text and paragraph-style billing — amounts embedded in prose, no clear table structure' },
+    { badge: 'IMG', badgeColor: '#dc2626', badgeBg: '#fee2e2', label: 'Scanned Image (OCR)', description: 'Image-only PDFs from legacy archives and handwritten annotations — requires OCR before any extraction' },
+    { badge: 'SQL', badgeColor: '#059669', badgeBg: '#d1fae5', label: 'SQL / Relational', description: 'Purchase order database with normalized tables — joins across PO headers, line items, and vendor master' },
+  ],
+}
+
+const EXTRACT_TAG_COLORS: Record<string, { bg: string; color: string }> = {
+  TEXT: { bg: '#dbeafe', color: '#1d4ed8' },
+  TABLE: { bg: '#ede9fe', color: '#6d28d9' },
+}
+
+const TYPE_TAG_COLORS: Record<string, { bg: string; color: string }> = {
+  ENTITY: { bg: '#f3f4f6', color: '#374151' },
+  TEMPORAL: { bg: '#d1fae5', color: '#065f46' },
+  RELATIONSHIP: { bg: '#fee2e2', color: '#991b1b' },
+}
+
+function ProductionDataDimensions({ tileId, delay }: { tileId: string; delay: number }) {
+  const docs = SAMPLE_DOCS[tileId]
+  const entities = ENTITY_CARDS_DATA[tileId]
+  const formats = FORMAT_CARDS_DATA[tileId]
+  const [activeDocIdx, setActiveDocIdx] = useState(0)
+  const [hoveredEntity, setHoveredEntity] = useState<string | null>(null)
+
+  if (!docs || !entities || !formats) return null
+  const activeDoc = docs[activeDocIdx]
 
   return (
-    <div className="space-y-4">
-      {dimensions.map((dim, groupIdx) => {
-        const sourceInfo = dim.sourceAttribution?.[0]
-        return (
-          <div key={dim.id} className="space-y-1.5">
-            {/* Source group header */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, delay: delay + groupIdx * 0.05 }}
-              className="flex items-center justify-between px-1"
+    <div className="space-y-8">
+      {/* Section 1: Sample Documents */}
+      <div className="space-y-4">
+        <div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Sample Documents</p>
+          <p className="text-xs text-gray-500 mt-0.5">What your agent actually reads. Switch between sources to see how the same information looks in different formats.</p>
+        </div>
+
+        {/* Format tabs */}
+        <div className="flex gap-2 flex-wrap">
+          {docs.map((doc, idx) => (
+            <button
+              key={doc.id}
+              onClick={() => setActiveDocIdx(idx)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+              style={{
+                borderColor: idx === activeDocIdx ? doc.formatColor : '#e5e7eb',
+                background: idx === activeDocIdx ? `${doc.formatColor}08` : 'white',
+                color: idx === activeDocIdx ? doc.formatColor : '#6b7280',
+              }}
             >
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: dc.primary }}
-                />
-                <p className="text-[11px] font-bold text-gray-700">{dim.label}</p>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((d) => (
-                    <div
-                      key={d}
-                      className="w-1 h-1 rounded-full"
-                      style={{ backgroundColor: d <= dim.depthScore ? dc.primary : '#e5e7eb' }}
-                    />
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: idx === activeDocIdx ? `${doc.formatColor}15` : '#f3f4f6', color: idx === activeDocIdx ? doc.formatColor : '#9ca3af' }}>
+                {doc.formatBadge}
+              </span>
+              {doc.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Format-specific document preview (Phase 2) */}
+        <motion.div key={activeDocIdx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          {/* Window chrome */}
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-red-400" />
+              <div className="w-3 h-3 rounded-full bg-amber-400" />
+              <div className="w-3 h-3 rounded-full bg-green-400" />
+            </div>
+            <span className="text-[10px] text-gray-400 font-mono ml-1">
+              {activeDoc.id.replace(/-/g, '_')} — {activeDoc.totalRows ?? activeDoc.rows.length} rows
+            </span>
+          </div>
+
+          {/* CSV: Spreadsheet-style with colored headers and cell grid */}
+          {activeDoc.formatType === 'CSV' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr style={{ background: `${activeDoc.formatColor}08` }}>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-mono text-gray-400 border-r border-b border-gray-200 w-8">#</th>
+                    {activeDoc.columns.map((col, i) => {
+                      const isHighlighted = hoveredEntity && col.subheader && col.subheader.toUpperCase().includes(hoveredEntity.toUpperCase().split(' ')[0])
+                      return (
+                        <th key={i} className="px-3 py-2.5 text-left border-r border-b border-gray-200 last:border-r-0 transition-colors duration-200" style={{ background: isHighlighted ? `${DIMENSION_COLORS.data.primary}12` : undefined }}>
+                          {col.highlighted && col.subheader && (
+                            <span className="text-[8px] font-bold uppercase tracking-wider block" style={{ color: isHighlighted ? DIMENSION_COLORS.data.primary : activeDoc.formatColor }}>{col.subheader}</span>
+                          )}
+                          <span className="block text-[10px] font-mono text-gray-600 font-semibold">{col.header}</span>
+                        </th>
+                      )
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeDoc.rows.map((row, rIdx) => (
+                    <tr key={rIdx} className="hover:bg-blue-50/30 transition-colors">
+                      <td className="px-3 py-2 text-[10px] text-gray-300 font-mono border-r border-b border-gray-100 bg-gray-50/50">{rIdx + 1}</td>
+                      {row.map((cell, cIdx) => (
+                        <td key={cIdx} className="px-3 py-2 text-[11px] text-gray-700 font-mono whitespace-nowrap border-r border-b border-gray-100 last:border-r-0">{cell}</td>
+                      ))}
+                    </tr>
                   ))}
+                </tbody>
+              </table>
+              {activeDoc.totalRows && (
+                <div className="px-4 py-1.5 text-center text-[10px] text-gray-400 border-t border-gray-100">... {activeDoc.totalRows} more rows</div>
+              )}
+            </div>
+          )}
+
+          {/* PDF: Invoice document style with header + table + totals */}
+          {activeDoc.formatType === 'PDF' && (
+            <div className="p-5 space-y-4" style={{ background: '#fafafa' }}>
+              {/* Invoice header */}
+              <div className="flex items-start justify-between pb-3 border-b-2 border-gray-300">
+                <div>
+                  <p className="text-lg font-black text-gray-900">INVOICE</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Staples Business Advantage</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-500">Invoice #: <span className="font-mono font-semibold text-gray-700">INV-2025-0847</span></p>
+                  <p className="text-[10px] text-gray-500">Date: <span className="font-mono text-gray-700">Feb 15, 2025</span></p>
                 </div>
               </div>
-              {sourceInfo && (
-                <span className="text-[9px] text-gray-400">{sourceInfo.count}</span>
-              )}
-            </motion.div>
-
-            {/* Sub-topic dimension cards */}
-            <div className="space-y-1 pl-4">
-              {(dim.subTopics ?? []).map((st) => {
-                const currentIdx = cardIdx++
-                return (
-                  <motion.div
-                    key={`${dim.id}-${st.name}`}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2, delay: delay + currentIdx * 0.03 }}
-                    className="rounded-lg border bg-white px-3 py-2 flex items-center gap-3"
-                    style={{ borderColor: '#e5e7eb' }}
-                  >
-                    {/* Depth dots */}
-                    <div className="flex gap-0.5 shrink-0">
-                      {[1, 2, 3, 4, 5].map((d) => (
-                        <div
-                          key={d}
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: d <= st.depth ? dc.primary : '#e5e7eb' }}
-                        />
+              {/* Line items */}
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b-2 border-gray-300">
+                    {activeDoc.columns.map((col, i) => (
+                      <th key={i} className="px-2 py-2 text-left text-[10px] font-bold text-gray-600 uppercase">{col.header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeDoc.rows.map((row, rIdx) => (
+                    <tr key={rIdx} className="border-b border-gray-200">
+                      {row.map((cell, cIdx) => (
+                        <td key={cIdx} className="px-2 py-2 text-[11px] text-gray-700">{cell}</td>
                       ))}
-                    </div>
-
-                    {/* Dimension name */}
-                    <p className="text-[12px] font-medium text-gray-800 flex-1">{st.name}</p>
-
-                    {/* Depth score */}
-                    <span className="text-[10px] text-gray-400 shrink-0">{st.depth}/5</span>
-                  </motion.div>
-                )
-              })}
-
-              {/* Key entities row */}
-              {dim.keyEntities.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1 pb-1">
-                  {dim.keyEntities.map((entity) => (
-                    <span key={entity} className="text-[9px] text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded">
-                      {entity}
-                    </span>
+                    </tr>
                   ))}
+                </tbody>
+              </table>
+              {/* Totals box */}
+              {activeDoc.footer && (
+                <div className="flex justify-end">
+                  <div className="border-2 border-gray-300 rounded px-4 py-2 text-right min-w-[200px]">
+                    <p className="text-[10px] text-gray-600">{activeDoc.footer.text}</p>
+                  </div>
                 </div>
               )}
             </div>
+          )}
+
+          {/* JSON: Syntax-highlighted tree view */}
+          {activeDoc.formatType === 'JSON' && (
+            <div className="p-4 font-mono text-[11px] leading-relaxed" style={{ background: '#1e1e2e', color: '#cdd6f4' }}>
+              <p><span style={{ color: '#89b4fa' }}>{'{'}</span></p>
+              {activeDoc.rows.map((row, rIdx) => (
+                <div key={rIdx} className="pl-4">
+                  <p>
+                    <span style={{ color: '#f38ba8' }}>"billing_record_{rIdx + 1}"</span>
+                    <span style={{ color: '#a6adc8' }}>: {'{'}</span>
+                  </p>
+                  {activeDoc.columns.map((col, cIdx) => (
+                    <p key={cIdx} className="pl-4">
+                      <span style={{ color: '#89dceb' }}>"{col.header}"</span>
+                      <span style={{ color: '#a6adc8' }}>: </span>
+                      <span style={{ color: row[cIdx]?.startsWith('$') ? '#a6e3a1' : '#fab387' }}>
+                        {row[cIdx]?.startsWith('$') || !isNaN(Number(row[cIdx])) ? row[cIdx] : `"${row[cIdx]}"`}
+                      </span>
+                      {cIdx < activeDoc.columns.length - 1 && <span style={{ color: '#a6adc8' }}>,</span>}
+                    </p>
+                  ))}
+                  <p><span style={{ color: '#a6adc8' }}>{'}'}{rIdx < activeDoc.rows.length - 1 ? ',' : ''}</span></p>
+                </div>
+              ))}
+              <p><span style={{ color: '#89b4fa' }}>{'}'}</span></p>
+            </div>
+          )}
+
+          {/* SQL: Database table with types */}
+          {activeDoc.formatType === 'SQL' && (
+            <div>
+              <div className="px-4 py-2 bg-gray-800 text-gray-300 font-mono text-[10px]">
+                <span style={{ color: '#569cd6' }}>SELECT</span> * <span style={{ color: '#569cd6' }}>FROM</span> purchase_orders <span style={{ color: '#569cd6' }}>WHERE</span> status = <span style={{ color: '#ce9178' }}>'approved'</span> <span style={{ color: '#569cd6' }}>LIMIT</span> 5;
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      {activeDoc.columns.map((col, i) => (
+                        <th key={i} className="px-3 py-2 text-left border-b-2 border-gray-300">
+                          <span className="text-[10px] font-mono font-bold text-gray-700">{col.header}</span>
+                          <span className="block text-[8px] font-mono text-gray-400 mt-0.5">
+                            {col.header.includes('amount') ? 'DECIMAL(12,2)' : col.header.includes('number') ? 'VARCHAR(20)' : col.header.includes('name') ? 'VARCHAR(255)' : 'VARCHAR(50)'}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeDoc.rows.map((row, rIdx) => (
+                      <tr key={rIdx} className="border-b border-gray-100 hover:bg-blue-50/20">
+                        {row.map((cell, cIdx) => (
+                          <td key={cIdx} className="px-3 py-2 text-[11px] font-mono text-gray-700">{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-4 py-1.5 bg-gray-50 border-t border-gray-200 text-[10px] text-gray-500 font-mono">
+                {activeDoc.rows.length} rows returned
+              </div>
+            </div>
+          )}
+
+          {/* Scan: OCR extracted with confidence indicators */}
+          {activeDoc.formatType === 'Scan' && (
+            <div className="p-5 space-y-3" style={{ background: 'linear-gradient(135deg, #f5f0e8 0%, #ede8df 100%)' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-[10px] font-semibold text-amber-700">OCR Processing — Extracted Fields</span>
+              </div>
+              <div className="space-y-2">
+                {activeDoc.rows.map((row, rIdx) => {
+                  const confidence = parseInt(row[2] ?? '0')
+                  const confColor = confidence >= 95 ? '#16a34a' : confidence >= 90 ? '#d97706' : '#dc2626'
+                  return (
+                    <div key={rIdx} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/80 border border-gray-200/60">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-gray-500 font-medium w-24">{row[0]}</span>
+                        <span className="text-[11px] font-mono text-gray-800 font-semibold">{row[1]}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${confidence}%`, background: confColor }} />
+                        </div>
+                        <span className="text-[10px] font-bold" style={{ color: confColor }}>{row[2]}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Phase 3: Tool badges */}
+          <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2">
+            <span className="text-[10px] text-gray-400">Tools needed:</span>
+            {activeDoc.toolsNeeded.map((t) => (
+              <span key={t} className="text-[10px] font-medium text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">{t}</span>
+            ))}
           </div>
-        )
-      })}
+
+          {/* Footer (CSV/general) */}
+          {activeDoc.footer && activeDoc.formatType === 'CSV' && (
+            <div className="px-4 py-2 border-t border-gray-200" style={{ background: `${activeDoc.footer.color}08` }}>
+              <span className="text-[8px] font-bold uppercase tracking-wider" style={{ color: activeDoc.footer.color }}>{activeDoc.footer.label}</span>
+              <p className="text-[10px] font-mono mt-0.5" style={{ color: activeDoc.footer.color }}>{activeDoc.footer.text}</p>
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Section 2: What The Data Means */}
+      <div className="space-y-4">
+        <div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">What The Data Means</p>
+          <p className="text-xs text-gray-500 mt-0.5">The information your agent extracts, regardless of which document or format it comes from. Same meaning, different sources.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {entities.map((entity, idx) => {
+            const typeTag = TYPE_TAG_COLORS[entity.type]
+            return (
+              <motion.div
+                key={entity.name}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: delay + idx * 0.03 }}
+                className="rounded-xl border bg-white p-4 space-y-2.5 transition-all duration-200"
+                style={{
+                  borderColor: hoveredEntity === entity.name ? DIMENSION_COLORS.data.primary : '#e5e7eb',
+                  boxShadow: hoveredEntity === entity.name ? `0 0 0 2px ${DIMENSION_COLORS.data.primary}20` : 'none',
+                }}
+                onMouseEnter={() => setHoveredEntity(entity.name)}
+                onMouseLeave={() => setHoveredEntity(null)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: DIMENSION_COLORS.data.primary }} />
+                    <p className="text-sm font-bold text-gray-900">{entity.name}</p>
+                  </div>
+                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: typeTag.bg, color: typeTag.color }}>{entity.type}</span>
+                </div>
+                <p className="text-xs text-gray-500 leading-relaxed">{entity.description}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] text-gray-400">Extracted via:</span>
+                  {entity.extractedVia.map((method) => {
+                    const tag = EXTRACT_TAG_COLORS[method]
+                    return <span key={method} className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: tag.bg, color: tag.color }}>{method}</span>
+                  })}
+                </div>
+                <div className="space-y-1 pt-1 border-t border-gray-100">
+                  {entity.examples.map((ex) => (
+                    <p key={ex} className="text-[10px] font-mono text-gray-600">{ex}</p>
+                  ))}
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Section 3: How The Data Arrives */}
+      <div className="space-y-4">
+        <div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">How The Data Arrives</p>
+          <p className="text-xs text-gray-500 mt-0.5">The file types and formats your agent parses. Each format requires different tools and has different failure risks.</p>
+        </div>
+        <div className="space-y-2">
+          {formats.map((fmt, idx) => (
+            <motion.div key={fmt.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: delay + idx * 0.04 }} className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: fmt.badgeBg }}>
+                <span className="text-[10px] font-bold" style={{ color: fmt.badgeColor }}>{fmt.badge}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900">{fmt.label}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{fmt.description}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
 
-// ─── Format Dimension Card ────────────────────────────────────────────────────
+// ─── Persona-Grouped Response Dimensions ─────────────────────────────────────
 
-const FORMAT_TYPE_ICONS: Record<string, { label: string; color: string; bg: string }> = {
-  tabular: { label: 'TABLE', color: '#0369a1', bg: '#e0f2fe' },
-  hierarchical: { label: 'JSON', color: '#7c3aed', bg: '#ede9fe' },
-  document: { label: 'DOC', color: '#b45309', bg: '#fef3c7' },
-  image: { label: 'IMG', color: '#be123c', bg: '#ffe4e6' },
-  relational: { label: 'SQL', color: '#047857', bg: '#d1fae5' },
-  mixed: { label: 'MIX', color: '#6b7280', bg: '#f3f4f6' },
+interface PersonaResponseMapping {
+  personaId: string
+  personaLabel: string
+  personaDescription: string
+  responseTypes: { label: string; description: string }[]
 }
 
-function FormatDimensionCard({
+const PERSONA_RESPONSE_MAP: Record<string, PersonaResponseMapping[]> = {
+  'doc-intelligence': [
+    {
+      personaId: 'inv-up-finance-analyst', personaLabel: 'Finance Analyst',
+      personaDescription: 'Finance team member analyzing costs for budgeting and optimization. Needs drill-down from summary to line-item detail.',
+      responseTypes: [
+        { label: 'Cost Breakdown', description: 'Detailed cost breakdown by category, vendor, and period with itemized amounts, percentages, and drill-down to line items' },
+        { label: 'Trend Report', description: 'Full time-series trend analysis with MoM/YoY growth rates, seasonal patterns, and statistical baseline comparison' },
+        { label: 'Anomaly Alert', description: 'Statistical anomaly notification with z-score justification, root cause attribution, and recommended action' },
+        { label: 'Consolidated Report', description: 'Complete monthly/quarterly report with all vendors, categories, trends, charts, and source citations' },
+      ],
+    },
+    {
+      personaId: 'inv-up-exec-brief', personaLabel: 'Executive',
+      personaDescription: 'Executive reviewing high-level spend for forecasting and board reporting. Wants key metrics and summaries, not line-item detail.',
+      responseTypes: [
+        { label: 'Consolidated Report', description: 'Executive summary with top-line metrics, key cost drivers, budget variance, and forward projections' },
+        { label: 'Trend Report (Summary)', description: 'High-level trend overview showing total spend trajectory, largest growth categories, and forecast' },
+        { label: 'Simple Answer', description: 'Direct factual response to quick questions like "What was total cloud spend last quarter?"' },
+      ],
+    },
+    {
+      personaId: 'inv-up-procurement', personaLabel: 'Procurement Manager',
+      personaDescription: 'Procurement team validating invoices against POs for payment approval. Focuses on discrepancies, mismatches, and escalation.',
+      responseTypes: [
+        { label: 'Validation Result', description: 'PO matching results showing matched/unmatched line items, discrepancy amounts, and confidence scores' },
+        { label: 'Anomaly Alert', description: 'Flagged invoices with unusual amounts, duplicate charges, or charges exceeding PO limits' },
+        { label: 'Simple Answer', description: 'Quick lookup answers like "Has PO-4521 been matched?" or "What invoices are pending approval?"' },
+      ],
+    },
+  ],
+}
+
+function PersonaGroupedResponses({ tileId, delay }: { tileId: string; delay: number }) {
+  const dc = DIMENSION_COLORS.output
+  const personas = PERSONA_RESPONSE_MAP[tileId]
+  if (!personas) return null
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border px-3.5 py-2.5 flex items-start gap-2.5" style={{ borderColor: `${dc.primary}20`, background: `${dc.primary}04` }}>
+        <ArrowRight className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: dc.primary }} />
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: dc.primary }}>Responses Tailored to Each User Persona</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">What each user persona gets back from your agent. Response types are tailored to who is asking.</p>
+        </div>
+      </div>
+      {personas.map((persona, pIdx) => (
+        <motion.div key={persona.personaId} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: delay + pIdx * 0.1 }} className="space-y-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: dc.primary }}>{persona.personaLabel}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{persona.personaDescription}</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {persona.responseTypes.map((rt, rIdx) => (
+              <motion.div key={`${persona.personaId}-${rIdx}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: delay + pIdx * 0.1 + rIdx * 0.04 }} className="rounded-xl border border-gray-200 bg-white p-4">
+                <p className="text-sm font-bold text-gray-900 mb-1.5">{rt.label}</p>
+                <p className="text-xs text-gray-500 leading-relaxed">{rt.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Legacy DataDimensionCard (fallback for tiles without production data) ────
+
+function DataDimensionCard({
   dim,
   delay,
+  viewMode,
 }: {
-  dim: FormatDimension
+  dim: DataDimension
   delay: number
+  viewMode: 'business' | 'technical'
 }) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const fmtStyle = FORMAT_TYPE_ICONS[dim.formatType] ?? FORMAT_TYPE_ICONS.mixed
+  const dc = DIMENSION_COLORS.data
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay }}
-      className="rounded-xl border bg-white overflow-hidden cursor-pointer"
-      style={{ borderColor: '#e5e7eb' }}
-      onClick={() => setIsExpanded(!isExpanded)}
+      className="rounded-xl border bg-white p-4 overflow-hidden"
+      style={{ borderColor: dc.medium }}
     >
-      <div className="p-4">
-        {/* Header row: format badge + label + confidence */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-[9px] font-bold tracking-wider"
-              style={{ background: fmtStyle.bg, color: fmtStyle.color }}
-            >
-              {fmtStyle.label}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-gray-900">{dim.label}</p>
-              <p className="text-[11px] text-gray-500 mt-0.5">{dim.description}</p>
-            </div>
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: dc.light }}>
+            <BookOpen className="w-4 h-4" style={{ color: dc.primary }} aria-hidden="true" />
           </div>
-          <div className="shrink-0 text-right">
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Confidence</p>
-            <p className="text-sm font-bold" style={{ color: fmtStyle.color }}>{dim.confidenceRange}</p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-sm font-bold text-gray-900 truncate">{dim.label}</p>
+              {viewMode === 'technical' && (
+                <span className="text-[8px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                  {dim.id}
+                </span>
+              )}
+            </div>
+            <DepthMeter depth={dim.depthScore} />
           </div>
-        </div>
-
-        {/* Parsing challenge */}
-        <div className="mt-3 p-2.5 rounded-lg" style={{ background: fmtStyle.bg, opacity: 0.5 }}>
-          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Parsing Challenge</p>
-          <p className="text-[11px] text-gray-700 leading-relaxed">{dim.parsingChallenge}</p>
-        </div>
-
-        {/* Sources using this format */}
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {dim.sourcesUsing.map((source) => (
-            <span key={source} className="text-[10px] text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
-              {source}
-            </span>
-          ))}
         </div>
       </div>
 
-      {/* Expandable: failure modes + tools */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 pt-1 border-t border-gray-100 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Failure Modes</p>
-                <div className="space-y-1">
-                  {dim.failureModes.map((mode) => (
-                    <div key={mode} className="flex items-start gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-red-400 mt-1.5 shrink-0" />
-                      <span className="text-[11px] text-gray-600">{mode}</span>
-                    </div>
-                  ))}
-                </div>
+      <div className="ml-[42px] space-y-3">
+        <div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Sub-Topics</p>
+          <div className="space-y-1">
+            {dim.subTopics.map((st) => (
+              <div key={st.name} className="flex items-center justify-between">
+                <span className="text-[11px] text-gray-600">{st.name}</span>
+                <DepthMeter depth={st.depth} />
               </div>
-              <div>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Tools Required</p>
-                <div className="space-y-1">
-                  {dim.toolsRequired.map((tool) => (
-                    <div key={tool} className="flex items-start gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                      <span className="text-[11px] text-gray-600">{tool}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Key Entities</p>
+          <div className="flex flex-wrap gap-1">
+            {dim.keyEntities.map((entity) => (
+              <span key={entity} className="text-[10px] font-medium text-gray-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
+                {entity}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
     </motion.div>
   )
 }
@@ -597,27 +1002,24 @@ function SummaryStats({ summaryText, accentColor }: { summaryText: string; accen
   )
 }
 
-// ─── Structural Discovery Canvas (V3 — Option D: Two-column + curved Bezier) ──
+// ─── Structural Discovery Canvas (V3 WOW MOMENT) ──────────────────────────────
 
 function StructuralDiscoveryCanvas({
   discoveries,
   dataSources,
   tasks,
+  riskTiers,
   viewMode,
 }: {
   discoveries: StructuralDiscovery[]
   dataSources: any[]
   tasks: any[]
+  riskTiers: RiskTierSummary
   viewMode: 'business' | 'technical'
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
-  const [hoveredDiscovery, setHoveredDiscovery] = useState<string | null>(null)
-  const [animatedCount, setAnimatedCount] = useState(0)
-  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null)
-
-  // Fixed SVG coordinate space — viewBox matches this, preserveAspectRatio handles scaling
-  const svgCoordW = 300
+  const [activeConnectionIndex, setActiveConnectionIndex] = useState(-1)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -629,739 +1031,383 @@ function StructuralDiscoveryCanvas({
       },
       { threshold: 0.1 }
     )
-    if (containerRef.current) observer.observe(containerRef.current)
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current)
+    }
+
     return () => observer.disconnect()
   }, [])
 
-  // Risk colors
-  const riskColor: Record<string, string> = {
+  // Orchestrate connection animations sequentially
+  useEffect(() => {
+    if (!isVisible) return
+
+    if (activeConnectionIndex === -1) {
+      // Start first animation immediately
+      setActiveConnectionIndex(0)
+      return
+    }
+
+    if (activeConnectionIndex >= discoveries.length) return
+
+    const timer = setTimeout(() => {
+      setActiveConnectionIndex((prev) => prev + 1)
+    }, 1200) // 800ms draw + 400ms wait
+
+    return () => clearTimeout(timer)
+  }, [isVisible, activeConnectionIndex, discoveries.length])
+
+  // Risk color mapping
+  const riskColorMap = {
     green: '#22c55e',
     amber: '#f59e0b',
     red: '#ef4444',
   }
-  const riskBg: Record<string, string> = {
-    green: 'rgba(34,197,94,0.1)',
-    amber: 'rgba(245,158,11,0.1)',
-    red: 'rgba(239,68,68,0.1)',
-  }
-
-  // Layout constants
-  const sourceColW = 220
-  const taskColW = 300
-  const headerH = 36
-  const sourceCardH = 60
-  const sourceGap = 10
-  const taskCardH = 72
-  const taskGap = 10
-  const totalSourceH = dataSources.length * sourceCardH + (dataSources.length - 1) * sourceGap
-  const totalTaskH = tasks.length * taskCardH + (tasks.length - 1) * taskGap
-  const canvasH = Math.max(totalSourceH, totalTaskH, 360) + headerH
-  const sourceOffsetY = headerH + (canvasH - headerH - totalSourceH) / 2
-  const taskOffsetY = headerH + (canvasH - headerH - totalTaskH) / 2
-
-  const sourceYCenter = (idx: number) => sourceOffsetY + idx * (sourceCardH + sourceGap) + sourceCardH / 2
-  const taskYCenter = (idx: number) => taskOffsetY + idx * (taskCardH + taskGap) + taskCardH / 2
-
-  // Build unique connections from discoveries
-  const connections = discoveries.flatMap((d) => {
-    const sourceIndices = d.affectedDataSources
-      .map((sid) => dataSources.findIndex((s: any) => s.id === sid))
-      .filter((i) => i >= 0)
-    const taskIndices = d.affectedTasks
-      .map((tid) => tasks.findIndex((t: any) => t.id === tid))
-      .filter((i) => i >= 0)
-
-    return sourceIndices.flatMap((si) =>
-      taskIndices.map((ti) => ({
-        key: `${d.id}-${si}-${ti}`,
-        discoveryId: d.id,
-        discoveryTitle: d.title,
-        discoveryDesc: viewMode === 'technical' ? d.technicalDetail : d.description,
-        riskLevel: d.riskLevel,
-        sourceIdx: si,
-        taskIdx: ti,
-      }))
-    )
-  })
-
-  // Deduplicate: keep highest risk for same source-task pair
-  const riskPriority = { red: 3, amber: 2, green: 1 }
-  const connMap = new Map<string, typeof connections[0]>()
-  for (const conn of connections) {
-    const pairKey = `${conn.sourceIdx}-${conn.taskIdx}`
-    const existing = connMap.get(pairKey)
-    if (!existing || riskPriority[conn.riskLevel as keyof typeof riskPriority] > riskPriority[existing.riskLevel as keyof typeof riskPriority]) {
-      connMap.set(pairKey, conn)
-    }
-  }
-  const uniqueConnections = Array.from(connMap.values())
-
-  // Count connections per source for low-connection indicator
-  const connectionsPerSource = dataSources.map((_: any, idx: number) =>
-    uniqueConnections.filter((c) => c.sourceIdx === idx).length
-  )
-
-  // Stagger path animations — must count up to uniqueConnections.length
-  const totalConns = uniqueConnections.length
-  useEffect(() => {
-    if (!isVisible) return
-    if (animatedCount >= totalConns) return
-    const delay = Math.max(80, 300 - totalConns * 8)
-    const timer = setTimeout(() => setAnimatedCount((c) => c + 1), delay)
-    return () => clearTimeout(timer)
-  }, [isVisible, animatedCount, totalConns])
-
-  // Generate cubic Bezier path in SVG coordinate space
-  const makePath = (si: number, ti: number) => {
-    const w = svgCoordW
-    const x1 = 0
-    const y1 = sourceYCenter(si)
-    const x2 = w
-    const y2 = taskYCenter(ti)
-    const cx1 = w * 0.35
-    const cx2 = w * 0.65
-    return `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`
-  }
-
-  // Bezier midpoint for tooltip positioning (percentage-based for CSS positioning)
-  const bezierMidpoint = (si: number, ti: number) => {
-    const y1 = sourceYCenter(si)
-    const y2 = taskYCenter(ti)
-    return { xPct: 50, y: (y1 + y2) / 2 }
-  }
-
-  // Determine which connections to highlight on hover
-  const hoveredConns = hoveredDiscovery
-    ? uniqueConnections.filter((c) => c.discoveryId === hoveredDiscovery)
-    : []
-  const hoveredSourceIds = new Set(hoveredConns.map((c) => c.sourceIdx))
-  const hoveredTaskIds = new Set(hoveredConns.map((c) => c.taskIdx))
-
-  // Active discovery for tooltip
-  const activeDiscovery = hoveredDiscovery
-    ? discoveries.find((d) => d.id === hoveredDiscovery)
-    : null
-
-  // Hover handler that also computes tooltip position
-  const handleHover = (discoveryId: string, sourceIdx: number, taskIdx: number) => {
-    setHoveredDiscovery(discoveryId)
-    const mid = bezierMidpoint(sourceIdx, taskIdx)
-    setTooltipPos({ x: mid.xPct, y: mid.y })
-  }
-  const handleHoverEnd = () => {
-    setHoveredDiscovery(null)
-    setTooltipPos(null)
-  }
 
   return (
-    <div ref={containerRef} className="mt-12 pt-8 border-t border-gray-200">
+    <div ref={containerRef} className="space-y-8 mt-12 pt-8 border-t border-gray-200">
       {/* Section title */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={isVisible ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.4 }}
-        className="mb-6"
       >
-        <h3 className="text-xl font-bold text-gray-900 mb-1">Structural Discovery Canvas</h3>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Structural Discovery Canvas</h3>
         <p className="text-sm text-gray-500">
-          Each line is an integration challenge the agent must handle. Hover any connection to see the details.
+          Connections between data sources and tasks that reveal where your agent will face integration challenges.
         </p>
       </motion.div>
 
-      {/* Canvas container */}
-      <div className="relative" style={{ height: canvasH + 24 }}>
-
-        {/* ── Left column: Data Sources ── */}
-        <div className="absolute left-0 top-0" style={{ width: sourceColW }}>
-          {/* Column header */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={isVisible ? { opacity: 1 } : {}}
-            transition={{ duration: 0.3 }}
-            className="flex items-center gap-2 mb-3 px-1"
-            style={{ height: headerH - 12 }}
-          >
-            <Database className="w-3.5 h-3.5 text-blue-500" />
-            <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Data Sources</span>
-            <span className="text-[10px] font-semibold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-full">{dataSources.length}</span>
-          </motion.div>
-
-          <div style={{ paddingTop: sourceOffsetY - headerH }}>
-            {dataSources.map((source: any, idx: number) => {
-              const connCount = connectionsPerSource[idx]
-              const isLowConn = connCount <= 1
-              const isSourceHovered = hoveredSourceIds.has(idx)
-              return (
-                <motion.div
-                  key={source.id}
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={isVisible ? { opacity: 1, x: 0 } : {}}
-                  transition={{ duration: 0.3, delay: idx * 0.06 }}
-                  className="rounded-lg border px-3 py-2 text-xs transition-all duration-200"
-                  style={{
-                    height: sourceCardH,
-                    marginBottom: idx < dataSources.length - 1 ? sourceGap : 0,
-                    borderColor: isSourceHovered ? '#3b82f6' : '#dbeafe',
-                    background: isSourceHovered ? '#eff6ff' : '#f0f7ff',
-                    boxShadow: isSourceHovered ? '0 0 0 2px rgba(59,130,246,0.3)' : 'none',
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-900 truncate">{source.name}</p>
-                      <p className="text-gray-500 mt-0.5">{source.format}</p>
-                    </div>
-                    {isLowConn && connCount === 0 && (
-                      <span className="text-[8px] font-bold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full shrink-0 ml-1">
-                        LOW RISK
-                      </span>
-                    )}
-                  </div>
-                  {viewMode === 'technical' && (
-                    <p className="text-[9px] font-mono text-gray-400 mt-0.5">{source.id}</p>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* ── Right column: Agent Tasks ── */}
-        <div className="absolute right-0 top-0" style={{ width: taskColW }}>
-          {/* Column header */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={isVisible ? { opacity: 1 } : {}}
-            transition={{ duration: 0.3 }}
-            className="flex items-center gap-2 mb-3 px-1"
-            style={{ height: headerH - 12 }}
-          >
-            <Target className="w-3.5 h-3.5 text-violet-500" />
-            <span className="text-[11px] font-bold text-violet-600 uppercase tracking-wider">Agent Tasks</span>
-            <span className="text-[10px] font-semibold text-violet-500 bg-violet-50 px-1.5 py-0.5 rounded-full">{tasks.length}</span>
-          </motion.div>
-
-          <div style={{ paddingTop: taskOffsetY - headerH }}>
-            {tasks.map((task: any, idx: number) => {
-              const isTaskHovered = hoveredTaskIds.has(idx)
-              return (
-                <motion.div
-                  key={task.id}
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={isVisible ? { opacity: 1, x: 0 } : {}}
-                  transition={{ duration: 0.3, delay: idx * 0.06 }}
-                  className="rounded-lg border px-3 py-2 text-xs transition-all duration-200"
-                  style={{
-                    height: taskCardH,
-                    marginBottom: idx < tasks.length - 1 ? taskGap : 0,
-                    borderColor: isTaskHovered ? '#8b5cf6' : '#ede9fe',
-                    background: isTaskHovered ? '#f5f3ff' : '#faf8ff',
-                    boxShadow: isTaskHovered ? '0 0 0 2px rgba(139,92,246,0.3)' : 'none',
-                  }}
-                >
-                  <p className="font-semibold text-gray-900">{task.name}</p>
-                  <p className="text-gray-500 mt-1 line-clamp-2">{task.description}</p>
-                  {viewMode === 'technical' && (
-                    <p className="text-[9px] font-mono text-gray-400 mt-0.5">{task.id}</p>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* ── Center: SVG Bezier connections ── */}
-        <div
-          className="absolute top-0"
-          style={{ left: sourceColW, right: taskColW, height: canvasH + 24 }}
+      {/* Main canvas layout: Left | SVG | Right */}
+      <div className="grid grid-cols-3 gap-6 min-h-[400px] items-start">
+        {/* Left panel: Data Sources */}
+        <motion.div
+          initial={isVisible ? { opacity: 0, x: -20 } : {}}
+          animate={isVisible ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.3 }}
+          className="space-y-2"
         >
-          {/* Hover hint (shows when nothing is hovered) */}
-          <AnimatePresence>
-            {!hoveredDiscovery && isVisible && animatedCount >= uniqueConnections.length && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-[10px] text-gray-400 bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded-full border border-gray-100 z-10 pointer-events-none whitespace-nowrap"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </svg>
-                hover a line to explore
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Data Sources</p>
+          {dataSources.map((source) => (
+            <div key={source.id} className="p-3 rounded-lg border border-gray-200 bg-blue-50 text-xs">
+              <p className="font-semibold text-gray-900">{source.name}</p>
+              <p className="text-gray-600 mt-1">{source.format}</p>
+            </div>
+          ))}
+        </motion.div>
 
+        {/* Center: SVG Canvas with animated connections */}
+        <motion.div
+          initial={isVisible ? { opacity: 0 } : {}}
+          animate={isVisible ? { opacity: 1 } : {}}
+          transition={{ duration: 0.3, delay: 0.15 }}
+          className="col-span-1"
+        >
           <svg
             width="100%"
-            height={canvasH + 24}
-            viewBox={`0 0 ${svgCoordW} ${canvasH + 24}`}
+            height="100%"
+            viewBox="0 0 200 400"
             preserveAspectRatio="none"
-            className="overflow-visible"
-            style={{ display: 'block' }}
+            className="w-full h-full min-h-[400px] bg-white rounded-lg border border-gray-200"
           >
-            {uniqueConnections.map((conn, idx) => {
-              const isHovered = hoveredDiscovery === conn.discoveryId
-              const isOtherHovered = hoveredDiscovery !== null && !isHovered
-              const isAnimated = idx < animatedCount
-              const pathD = makePath(conn.sourceIdx, conn.taskIdx)
-              const color = riskColor[conn.riskLevel]
-              const midY = (sourceYCenter(conn.sourceIdx) + taskYCenter(conn.taskIdx)) / 2
-              const midX = svgCoordW / 2
-
-              return (
-                <g
-                  key={conn.key}
-                  onMouseEnter={() => handleHover(conn.discoveryId, conn.sourceIdx, conn.taskIdx)}
-                  onMouseLeave={handleHoverEnd}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {/* Invisible wider hit area */}
-                  <path d={pathD} fill="none" stroke="transparent" strokeWidth="24" vectorEffect="non-scaling-stroke" />
-                  {/* Visible path */}
-                  <motion.path
-                    d={pathD}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={isHovered ? 3 : 1.5}
-                    strokeLinecap="round"
-                    vectorEffect="non-scaling-stroke"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={isAnimated ? {
-                      pathLength: 1,
-                      opacity: isOtherHovered ? 0.12 : isHovered ? 1 : 0.55,
-                    } : {}}
-                    transition={{
-                      pathLength: { duration: 0.6, ease: 'easeInOut' },
-                      opacity: { duration: 0.2 },
-                    }}
-                  />
-                  {/* Risk dot at midpoint */}
-                  {isAnimated && (
-                    <motion.circle
-                      cx={midX}
-                      cy={midY}
-                      r={isHovered ? 5 : 3}
-                      fill={color}
-                      vectorEffect="non-scaling-stroke"
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{
-                        opacity: isOtherHovered ? 0.12 : isHovered ? 1 : 0.6,
-                        scale: isHovered ? 1.2 : 1,
-                      }}
-                      transition={{ duration: 0.25, delay: isAnimated ? 0 : 0.5 }}
-                    />
-                  )}
-                </g>
-              )
-            })}
-          </svg>
-
-          {/* ── Floating tooltip near the hovered line ── */}
-          <AnimatePresence>
-            {activeDiscovery && tooltipPos && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.12 }}
-                className="absolute z-20 w-[260px] rounded-lg border shadow-lg p-3 pointer-events-none -translate-x-1/2"
-                style={{
-                  left: `${tooltipPos.x}%`,
-                  top: tooltipPos.y + 16,
-                  borderColor: riskColor[activeDiscovery.riskLevel],
-                  background: '#ffffff',
-                }}
+            <defs>
+              <marker
+                id="arrowGreen"
+                markerWidth="10"
+                markerHeight="10"
+                refX="9"
+                refY="3"
+                orient="auto"
+                markerUnits="strokeWidth"
               >
-                <div className="flex items-start gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full mt-1 shrink-0"
-                    style={{ backgroundColor: riskColor[activeDiscovery.riskLevel] }}
-                  />
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <p className="text-[11px] font-bold text-gray-900 leading-tight">{activeDiscovery.title}</p>
-                    <p className="text-[10px] text-gray-600 leading-relaxed line-clamp-3">
-                      {viewMode === 'technical' ? activeDiscovery.technicalDetail : activeDiscovery.description}
-                    </p>
-                    <div className="flex items-center gap-2 pt-0.5">
-                      <span
-                        className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
-                        style={{
-                          color: riskColor[activeDiscovery.riskLevel],
-                          background: riskBg[activeDiscovery.riskLevel],
+                <path d="M0,0 L0,6 L9,3 z" fill="#22c55e" />
+              </marker>
+              <marker
+                id="arrowAmber"
+                markerWidth="10"
+                markerHeight="10"
+                refX="9"
+                refY="3"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path d="M0,0 L0,6 L9,3 z" fill="#f59e0b" />
+              </marker>
+              <marker
+                id="arrowRed"
+                markerWidth="10"
+                markerHeight="10"
+                refX="9"
+                refY="3"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
+              </marker>
+            </defs>
+
+            {/* Animated connection lines */}
+            {isVisible &&
+              discoveries.map((discovery, idx) => {
+                const shouldDraw = idx <= activeConnectionIndex
+                const startY = 50 + (idx % 4) * 80
+                const endY = 50 + (idx % 3) * 120
+
+                return (
+                  <g key={discovery.id}>
+                    {/* Animated path */}
+                    <motion.line
+                      x1="20"
+                      y1={startY}
+                      x2="180"
+                      y2={endY}
+                      stroke={riskColorMap[discovery.riskLevel]}
+                      strokeWidth="2"
+                      initial={{ pathLength: 0 }}
+                      animate={shouldDraw ? { pathLength: 1 } : { pathLength: 0 }}
+                      transition={{ duration: 0.8, ease: 'easeInOut' }}
+                      markerEnd={`url(#arrow${discovery.riskLevel.charAt(0).toUpperCase() + discovery.riskLevel.slice(1)})`}
+                      vectorEffect="non-scaling-stroke"
+                    />
+
+                    {/* Marching ants after line completes */}
+                    {shouldDraw && (
+                      <motion.line
+                        x1="20"
+                        y1={startY}
+                        x2="180"
+                        y2={endY}
+                        stroke={riskColorMap[discovery.riskLevel]}
+                        strokeWidth="2"
+                        strokeDasharray="6 5"
+                        opacity="0.6"
+                        initial={{ strokeDashoffset: 0 }}
+                        animate={{ strokeDashoffset: -11 }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: 'linear',
+                        }}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    )}
+
+                    {/* Annotation label */}
+                    {shouldDraw && (
+                      <motion.foreignObject
+                        x="40"
+                        y={startY + (endY - startY) / 2 - 15}
+                        width="140"
+                        height="50"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{
+                          duration: 0.3,
+                          delay: 0.8,
                         }}
                       >
-                        {activeDiscovery.riskLevel} risk
-                      </span>
-                      <span className="text-[9px] text-gray-400">
-                        {activeDiscovery.relationType}
-                      </span>
-                      <span className="text-[9px] text-gray-400 ml-auto">
-                        {activeDiscovery.affectedTasks.length}T / {activeDiscovery.affectedDataSources.length}S
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                        <div className="text-[8px] font-semibold text-gray-700 whitespace-normal break-words leading-tight">{discovery.title}</div>
+                      </motion.foreignObject>
+                    )}
+                  </g>
+                )
+              })}
+          </svg>
+        </motion.div>
+
+        {/* Right panel: Tasks */}
+        <motion.div
+          initial={isVisible ? { opacity: 0, x: 20 } : {}}
+          animate={isVisible ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.3 }}
+          className="space-y-2"
+        >
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Tasks</p>
+          {tasks.slice(0, 4).map((task) => (
+            <div key={task.id} className="p-3 rounded-lg border border-gray-200 bg-amber-50 text-xs">
+              <p className="font-semibold text-gray-900">{task.name}</p>
+              <p className="text-gray-600 mt-1">{task.description}</p>
+            </div>
+          ))}
+        </motion.div>
       </div>
 
-      {/* ── Risk legend ── */}
+      {/* Risk Tier Summary */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={isVisible && animatedCount >= uniqueConnections.length ? { opacity: 1 } : {}}
-        transition={{ duration: 0.3 }}
-        className="mt-5 flex items-center gap-5 text-[11px] text-gray-500"
+        initial={isVisible ? { opacity: 0, y: 12 } : {}}
+        animate={isVisible && activeConnectionIndex >= discoveries.length - 1 ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.4 }}
+        className="space-y-3 mt-8 pt-6 border-t border-gray-200"
       >
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Risk Level</span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ef4444' }} />
-          High ({discoveries.filter((d) => d.riskLevel === 'red').length})
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
-          Medium ({discoveries.filter((d) => d.riskLevel === 'amber').length})
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#22c55e' }} />
-          Low ({discoveries.filter((d) => d.riskLevel === 'green').length})
-        </span>
-        <span className="text-gray-400 ml-auto">
-          {discoveries.length} challenges across {uniqueConnections.length} connections
-        </span>
+        <p className="text-sm font-bold text-gray-700">Risk Tier Summary</p>
+
+        {/* Green Tier */}
+        <RiskTierCard
+          riskLevel="green"
+          label={riskTiers.green.label}
+          count={riskTiers.green.count}
+          items={riskTiers.green.items}
+          startDelay={activeConnectionIndex >= discoveries.length - 1 ? 0 : 999}
+          viewMode={viewMode}
+        />
+
+        {/* Amber Tier */}
+        <RiskTierCard
+          riskLevel="amber"
+          label={riskTiers.amber.label}
+          count={riskTiers.amber.count}
+          items={riskTiers.amber.items}
+          startDelay={activeConnectionIndex >= discoveries.length - 1 ? 0.3 : 999}
+          viewMode={viewMode}
+        />
+
+        {/* Red Tier */}
+        <RiskTierCard
+          riskLevel="red"
+          label={riskTiers.red.label}
+          count={riskTiers.red.count}
+          items={riskTiers.red.items}
+          startDelay={activeConnectionIndex >= discoveries.length - 1 ? 0.6 : 999}
+          viewMode={viewMode}
+          withPulse
+        />
       </motion.div>
     </div>
   )
 }
 
-// ─── Interactive Structural Discovery Explorer (V3 Redesign) ─────────────────
-// Click a data source, challenge, or task to see ONLY its connections.
-// No spaghetti — one relationship at a time.
+// ─── Count Badge with Animated Counter ─────────────────────────────────────────
 
-function StructuralDiscoveryExplorer({
-  discoveries,
-  dataSources,
-  tasks,
-  viewMode,
+function CountBadge({
+  count,
+  bgColor,
+  textColor,
+  startDelay,
 }: {
-  discoveries: StructuralDiscovery[]
-  dataSources: any[]
-  tasks: any[]
-  viewMode: 'business' | 'technical'
+  count: number
+  bgColor: string
+  textColor: string
+  startDelay: number
 }) {
-  const [selected, setSelected] = useState<{ type: 'source' | 'challenge' | 'task'; id: string } | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const gridRef = useRef<HTMLDivElement>(null)
-  const svgRef = useRef<SVGSVGElement>(null)
+  const [displayCount, setDisplayCount] = useState(0)
 
-  // Ref maps for each card DOM element
-  const sourceRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-  const challengeRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-  const taskRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-
-  // Connection line state — computed from actual DOM positions
-  const [connections, setConnections] = useState<{ x1: number; y1: number; x2: number; y2: number; color: string; key: string }[]>([])
-
-  const riskColor: Record<string, string> = { green: '#22c55e', amber: '#f59e0b', red: '#ef4444' }
-  const riskBg: Record<string, string> = { green: 'rgba(34,197,94,0.08)', amber: 'rgba(245,158,11,0.08)', red: 'rgba(239,68,68,0.08)' }
-
-  // Determine which nodes are "active" based on selection
-  const activeSourceIds = useMemo(() => {
-    if (!selected) return new Set<string>()
-    if (selected.type === 'source') return new Set([selected.id])
-    if (selected.type === 'challenge') {
-      const d = discoveries.find(x => x.id === selected.id)
-      return new Set(d?.affectedDataSources ?? [])
-    }
-    const relevantDiscs = discoveries.filter(d => d.affectedTasks.includes(selected.id))
-    return new Set(relevantDiscs.flatMap(d => d.affectedDataSources))
-  }, [selected, discoveries])
-
-  const activeChallengeIds = useMemo(() => {
-    if (!selected) return new Set<string>()
-    if (selected.type === 'challenge') return new Set([selected.id])
-    if (selected.type === 'source') {
-      return new Set(discoveries.filter(d => d.affectedDataSources.includes(selected.id)).map(d => d.id))
-    }
-    return new Set(discoveries.filter(d => d.affectedTasks.includes(selected.id)).map(d => d.id))
-  }, [selected, discoveries])
-
-  const activeTaskIds = useMemo(() => {
-    if (!selected) return new Set<string>()
-    if (selected.type === 'task') return new Set([selected.id])
-    if (selected.type === 'challenge') {
-      const d = discoveries.find(x => x.id === selected.id)
-      return new Set(d?.affectedTasks ?? [])
-    }
-    const relevantDiscs = discoveries.filter(d => d.affectedDataSources.includes(selected.id))
-    return new Set(relevantDiscs.flatMap(d => d.affectedTasks))
-  }, [selected, discoveries])
-
-  const hasSelection = selected !== null
-
-  // Click outside to deselect
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setSelected(null)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    if (startDelay >= 999) return
 
-  // Compute SVG connections from actual DOM positions
-  const computeConnections = useCallback(() => {
-    if (!hasSelection || !gridRef.current) {
-      setConnections([])
-      return
-    }
-    const gridRect = gridRef.current.getBoundingClientRect()
-    const lines: typeof connections = []
+    const startTime = Date.now() + startDelay * 1000
+    const duration = 600 // 600ms animation
 
-    const getCenter = (el: HTMLDivElement | undefined, side: 'right' | 'left') => {
-      if (!el) return null
-      const r = el.getBoundingClientRect()
-      return {
-        x: side === 'right' ? r.right - gridRect.left : r.left - gridRect.left,
-        y: r.top - gridRect.top + r.height / 2,
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      if (elapsed >= duration) {
+        setDisplayCount(count)
+      } else {
+        const progress = elapsed / duration
+        setDisplayCount(Math.floor(count * progress))
+        requestAnimationFrame(animate)
       }
     }
 
-    discoveries.forEach(d => {
-      if (!activeChallengeIds.has(d.id)) return
-      const chalEl = challengeRefs.current.get(d.id)
+    requestAnimationFrame(animate)
+  }, [count, startDelay])
 
-      // Source → Challenge connections
-      d.affectedDataSources.forEach(sid => {
-        if (!activeSourceIds.has(sid)) return
-        const srcEl = sourceRefs.current.get(sid)
-        const from = getCenter(srcEl, 'right')
-        const to = getCenter(chalEl, 'left')
-        if (from && to) {
-          lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, color: riskColor[d.riskLevel] || '#94a3b8', key: `s-${sid}-c-${d.id}` })
-        }
-      })
+  return (
+    <div
+      className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
+      style={{ background: bgColor, color: textColor }}
+    >
+      {displayCount}
+    </div>
+  )
+}
 
-      // Challenge → Task connections
-      d.affectedTasks.forEach(tid => {
-        if (!activeTaskIds.has(tid)) return
-        const taskEl = taskRefs.current.get(tid)
-        const from = getCenter(chalEl, 'right')
-        const to = getCenter(taskEl, 'left')
-        if (from && to) {
-          lines.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y, color: riskColor[d.riskLevel] || '#94a3b8', key: `c-${d.id}-t-${tid}` })
-        }
-      })
-    })
+// ─── Risk Tier Card ───────────────────────────────────────────────────────────
 
-    setConnections(lines)
-  }, [hasSelection, activeChallengeIds, activeSourceIds, activeTaskIds, discoveries])
-
-  // Recalculate connections whenever selection changes
-  useLayoutEffect(() => {
-    computeConnections()
-  }, [computeConnections])
-
-  // Also recalculate on window resize
-  useEffect(() => {
-    const onResize = () => computeConnections()
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [computeConnections])
-
-  const handleClick = (type: 'source' | 'challenge' | 'task', id: string) => {
-    if (selected?.type === type && selected?.id === id) {
-      setSelected(null)
-    } else {
-      setSelected({ type, id })
-    }
+function RiskTierCard({
+  riskLevel,
+  label,
+  count,
+  items,
+  startDelay,
+  viewMode,
+  withPulse,
+}: {
+  riskLevel: 'green' | 'amber' | 'red'
+  label: string
+  count: number
+  items: StructuralDiscovery[]
+  startDelay: number
+  viewMode: 'business' | 'technical'
+  withPulse?: boolean
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const riskColorMap = {
+    green: { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', light: '#dcfce7' },
+    amber: { bg: '#fffbeb', border: '#fde047', text: '#92400e', light: '#fef3c7' },
+    red: { bg: '#fef2f2', border: '#fca5a5', text: '#991b1b', light: '#fee2e2' },
   }
-
-  const nodeOpacity = (isActive: boolean) => hasSelection ? (isActive ? 1 : 0.25) : 1
-  const nodeBorder = (isActive: boolean, accent?: string) => hasSelection && isActive ? (accent || '#3b82f6') : '#e5e7eb'
-
-  // Ref callback helpers
-  const setSourceRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    if (el) sourceRefs.current.set(id, el)
-    else sourceRefs.current.delete(id)
-  }, [])
-  const setChallengeRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    if (el) challengeRefs.current.set(id, el)
-    else challengeRefs.current.delete(id)
-  }, [])
-  const setTaskRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    if (el) taskRefs.current.set(id, el)
-    else taskRefs.current.delete(id)
-  }, [])
+  const colors = riskColorMap[riskLevel]
 
   return (
     <motion.div
-      ref={containerRef}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="rounded-xl border bg-white p-6"
-      style={{ borderColor: '#e5e7eb' }}
+      initial={startDelay < 999 ? { opacity: 0, y: 8 } : {}}
+      animate={startDelay < 999 ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.4, delay: startDelay }}
+      className={`rounded-lg border p-4 ${withPulse ? 'relative overflow-hidden' : ''}`}
+      style={{ borderColor: colors.border, background: colors.bg }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900">Structural Discovery Map</h3>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Click any node to explore its connections. {discoveries.length} challenges across {dataSources.length} data sources and {tasks.length} tasks.
-          </p>
+      {/* Subtle pulse glow for red tier */}
+      {withPulse && (
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.1, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{ background: 'radial-gradient(circle, #ef4444 0%, transparent 70%)' }}
+        />
+      )}
+
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between relative z-10"
+      >
+        <div className="flex items-center gap-3">
+          <CountBadge
+            count={count}
+            bgColor={colors.light}
+            textColor={colors.text}
+            startDelay={startDelay}
+          />
+          <p className="font-semibold text-gray-900">{label}</p>
         </div>
-        {hasSelection && (
-          <button
-            onClick={() => setSelected(null)}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 rounded border border-gray-200 hover:border-gray-300"
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+          <ChevronDown className="w-4 h-4" style={{ color: colors.text }} aria-hidden="true" />
+        </motion.div>
+      </button>
+
+      {/* Expandable detail */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mt-3 pt-3 border-t relative z-10"
+            style={{ borderColor: colors.border }}
           >
-            Clear selection
-          </button>
-        )}
-      </div>
-
-      {/* 3-Column Explorer with SVG overlay */}
-      <div ref={gridRef} className="relative">
-        {/* SVG layer for bezier curves — sized to match grid */}
-        <svg
-          ref={svgRef}
-          className="absolute inset-0 pointer-events-none z-10"
-          style={{ width: '100%', height: '100%', overflow: 'visible' }}
-        >
-          <AnimatePresence>
-            {connections.map(conn => {
-              const dx = Math.abs(conn.x2 - conn.x1)
-              return (
-                <motion.path
-                  key={conn.key}
-                  d={`M ${conn.x1} ${conn.y1} C ${conn.x1 + dx * 0.4} ${conn.y1}, ${conn.x2 - dx * 0.4} ${conn.y2}, ${conn.x2} ${conn.y2}`}
-                  fill="none"
-                  stroke={conn.color}
-                  strokeWidth={2}
-                  strokeOpacity={0.55}
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ pathLength: 1, opacity: 1 }}
-                  exit={{ pathLength: 0, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: 'easeOut' }}
-                />
-              )
-            })}
-          </AnimatePresence>
-        </svg>
-
-        {/* Grid layout — 3 equal-flex columns */}
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)] gap-12">
-          {/* Data Sources column — cards constrained to 80% width (left-aligned), lines exit with room */}
-          <div className="min-w-0 flex flex-col">
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Data Sources</div>
-            <div className="space-y-2" style={{ maxWidth: '80%' }}>
-              {dataSources.map((src: any) => {
-                const isActive = !hasSelection || activeSourceIds.has(src.id)
-                return (
-                  <div
-                    key={src.id}
-                    ref={(el) => setSourceRef(src.id, el)}
-                    onClick={() => handleClick('source', src.id)}
-                    className="rounded-lg border px-3 py-2.5 cursor-pointer transition-all duration-200 hover:shadow-sm"
-                    style={{
-                      borderColor: nodeBorder(isActive, '#3b82f6'),
-                      opacity: nodeOpacity(isActive),
-                      boxShadow: selected?.type === 'source' && selected?.id === src.id ? '0 0 0 2px rgba(59,130,246,0.3)' : 'none',
-                      background: selected?.type === 'source' && selected?.id === src.id ? 'rgba(59,130,246,0.04)' : '#fff',
-                    }}
-                  >
-                    <div className="text-xs font-medium text-gray-900 truncate">{src.name || src.label}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5 truncate">{src.format || (Array.isArray(src.detectedFormats) ? src.detectedFormats.join(', ') : src.detectedFormats) || ''}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Challenges column — full width, center of the graph */}
-          <div className="min-w-0">
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Challenges</div>
             <div className="space-y-2">
-              {discoveries.map((d) => {
-                const isActive = !hasSelection || activeChallengeIds.has(d.id)
-                const color = riskColor[d.riskLevel] || '#94a3b8'
-                return (
-                  <div
-                    key={d.id}
-                    ref={(el) => setChallengeRef(d.id, el)}
-                    onClick={() => handleClick('challenge', d.id)}
-                    className="rounded-lg border px-3 py-2.5 cursor-pointer transition-all duration-200 hover:shadow-sm"
-                    style={{
-                      borderColor: nodeBorder(isActive, color),
-                      opacity: nodeOpacity(isActive),
-                      boxShadow: selected?.type === 'challenge' && selected?.id === d.id ? `0 0 0 2px ${color}40` : 'none',
-                      background: selected?.type === 'challenge' && selected?.id === d.id ? riskBg[d.riskLevel] : '#fff',
-                    }}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                      <span className="text-xs font-medium text-gray-900 truncate">{d.title}</span>
-                    </div>
-                    <div className="text-[10px] text-gray-500 line-clamp-2">
-                      {viewMode === 'technical' ? d.technicalDetail : d.description}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[9px] font-medium uppercase" style={{ color }}>{d.riskLevel} risk</span>
-                      <span className="text-[9px] text-gray-400">{d.relationType}</span>
-                    </div>
-                  </div>
-                )
-              })}
+              {items.map((item) => (
+                <div key={item.id} className="text-xs">
+                  <p className="font-semibold text-gray-900">{item.title}</p>
+                  <p className="text-gray-600 mt-0.5">{viewMode === 'technical' ? item.technicalDetail : item.description}</p>
+                </div>
+              ))}
             </div>
-          </div>
-
-          {/* Tasks column — label + cards share same right-aligned container so they stay aligned */}
-          <div className="min-w-0 flex flex-col items-end">
-            <div className="space-y-2" style={{ width: '80%' }}>
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Tasks</div>
-              {tasks.map((task: any) => {
-                const isActive = !hasSelection || activeTaskIds.has(task.id)
-                return (
-                  <div
-                    key={task.id}
-                    ref={(el) => setTaskRef(task.id, el)}
-                    onClick={() => handleClick('task', task.id)}
-                    className="rounded-lg border px-3 py-2.5 cursor-pointer transition-all duration-200 hover:shadow-sm"
-                    style={{
-                      borderColor: nodeBorder(isActive, '#7c3aed'),
-                      opacity: nodeOpacity(isActive),
-                      boxShadow: selected?.type === 'task' && selected?.id === task.id ? '0 0 0 2px rgba(124,58,237,0.3)' : 'none',
-                      background: selected?.type === 'task' && selected?.id === task.id ? 'rgba(124,58,237,0.04)' : '#fff',
-                    }}
-                  >
-                    <div className="text-xs font-medium text-gray-900 truncate">{task.name || task.id}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5 truncate">{task.triggerCondition || task.description || ''}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Risk summary */}
-      <div className="flex items-center gap-4 mt-4 pt-3 border-t text-[10px]" style={{ borderColor: '#f3f4f6' }}>
-        <span className="font-medium text-gray-500 uppercase tracking-wider">Risk Level</span>
-        {(['red', 'amber', 'green'] as const).map(level => {
-          const count = discoveries.filter(d => d.riskLevel === level).length
-          return (
-            <span key={level} className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: riskColor[level] }} />
-              {level === 'red' ? 'High' : level === 'amber' ? 'Medium' : 'Low'} ({count})
-            </span>
-          )
-        })}
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
@@ -1383,16 +1429,21 @@ export function ContextDimensionsV3() {
   // Load V3 data if supported
   const v3ContextData = isV3Tile && activeTileId ? getContextDefinitionDataV3(resolveV3TileId(activeTileId, 'contextDefinition')) : null
   const v3Discoveries = isV3Tile && activeTileId ? getStructuralDiscoveries(resolveV3TileId(activeTileId, 'structuralDiscovery')) : null
+  const v3RiskTiers = isV3Tile && activeTileId ? getRiskTierSummary(resolveV3TileId(activeTileId, 'structuralDiscovery')) : null
 
   const counts = useMemo<Record<DimensionTab, number>>(() => {
     if (!dimensionsData) return { task: 0, data: 0, output: 0, tool: 0 }
     return {
       task: dimensionsData.taskDimensions.length,
-      data: (dimensionsData.formatDimensions?.length ?? 0) + dimensionsData.dataDimensions.length,
-      output: (dimensionsData.responseDimensions ?? dimensionsData.outputDimensions).length,
+      data: activeTileId && ENTITY_CARDS_DATA[activeTileId] && FORMAT_CARDS_DATA[activeTileId]
+        ? ENTITY_CARDS_DATA[activeTileId].length + FORMAT_CARDS_DATA[activeTileId].length
+        : dimensionsData.dataDimensions.length,
+      output: activeTileId && PERSONA_RESPONSE_MAP[activeTileId]
+        ? PERSONA_RESPONSE_MAP[activeTileId].reduce((sum, p) => sum + p.responseTypes.length, 0)
+        : (dimensionsData.responseDimensions ?? dimensionsData.outputDimensions).length,
       tool: dimensionsData.toolDimensions.reduce((sum, t) => sum + (t.states?.length ?? 0), 0),
     }
-  }, [dimensionsData])
+  }, [dimensionsData, activeTileId])
 
   const accentColor = tile?.color ?? '#3b82f6'
 
@@ -1427,8 +1478,7 @@ export function ContextDimensionsV3() {
   const activeTabDef = TABS.find((t) => t.id === activeTab)!
 
   return (
-    <div className="py-8 space-y-6">
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       {/* Stage header */}
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Dimension Analysis</h2>
@@ -1439,7 +1489,7 @@ export function ContextDimensionsV3() {
       <TabBar tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} accentColor={accentColor} counts={counts} />
 
       {/* Goal traceability ribbon */}
-      <GoalRibbon title={activeTabDef.goalLink} description={TAB_DESCRIPTIONS[activeTab]} accentColor={activeTabDef.dimensionColor} />
+      <GoalRibbon text={activeTabDef.goalLink} accentColor={activeTabDef.dimensionColor} />
 
       {/* Tab panels */}
       <div role="tabpanel" id={`dim-panel-${activeTab}`} aria-labelledby={`dim-tab-${activeTab}`}>
@@ -1454,6 +1504,9 @@ export function ContextDimensionsV3() {
               transition={{ duration: 0.2 }}
               className="space-y-3"
             >
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Each task dimension represents a specific sub-capability sliced from parent tasks. Intent categories show which types of queries activate each task.
+              </p>
               {dimensionsData.taskDimensions.map((dim, i) => (
                 <TaskDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} viewMode={viewMode} />
               ))}
@@ -1470,36 +1523,18 @@ export function ContextDimensionsV3() {
               transition={{ duration: 0.2 }}
               className="space-y-3"
             >
-              {/* Format Dimensions (primary view) */}
-              {dimensionsData.formatDimensions && dimensionsData.formatDimensions.length > 0 && (
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Data Formats</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      The file types and data formats your agent needs to read. Each format comes with its own parsing quirks and failure risks.
-                    </p>
-                  </div>
-                  {dimensionsData.formatDimensions.map((dim, i) => (
-                    <FormatDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} />
-                  ))}
-                </div>
-              )}
-
-              {/* Divider between formats and sources */}
-              {dimensionsData.formatDimensions && dimensionsData.formatDimensions.length > 0 && (
-                <div className="pt-2 border-t border-gray-200" />
-              )}
-
-              {/* Data Sources — each sub-topic is its own dimension */}
-              <div className="space-y-3">
-                <div>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Data Sources</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    The actual data your agent pulls from, organized by source. Depth shows how deeply it can reason about each topic.
+              {activeTileId && SAMPLE_DOCS[activeTileId] ? (
+                <ProductionDataDimensions tileId={activeTileId} delay={0.05} />
+              ) : (
+                <>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Knowledge map showing what the agent knows, how deep its understanding goes for each topic, and which sources contribute.
                   </p>
-                </div>
-                <SourceDimensionsGroup dimensions={dimensionsData.dataDimensions} delay={0.05} />
-              </div>
+                  {dimensionsData.dataDimensions.map((dim, i) => (
+                    <DataDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} viewMode={viewMode} />
+                  ))}
+                </>
+              )}
             </motion.div>
           )}
 
@@ -1513,9 +1548,18 @@ export function ContextDimensionsV3() {
               transition={{ duration: 0.2 }}
               className="space-y-3"
             >
-              {(dimensionsData.responseDimensions ?? dimensionsData.outputDimensions).map((dim, i) => (
-                <OutputDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} viewMode={viewMode} />
-              ))}
+              {activeTileId && PERSONA_RESPONSE_MAP[activeTileId] ? (
+                <PersonaGroupedResponses tileId={activeTileId} delay={0.05} />
+              ) : (
+                <>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Output dimensions decompose agent outputs along three axes: outcome, complexity, and interaction style.
+                  </p>
+                  {(dimensionsData.responseDimensions ?? dimensionsData.outputDimensions).map((dim, i) => (
+                    <OutputDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} viewMode={viewMode} />
+                  ))}
+                </>
+              )}
             </motion.div>
           )}
 
@@ -1529,6 +1573,9 @@ export function ContextDimensionsV3() {
               transition={{ duration: 0.2 }}
               className="space-y-3"
             >
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Tool dimensions describe the operations and state transitions for each tool the agent uses.
+              </p>
               {dimensionsData.toolDimensions.map((dim, i) => (
                 <ToolDimensionCard key={dim.id} dim={dim} delay={0.05 + i * 0.06} viewMode={viewMode} />
               ))}
@@ -1539,30 +1586,16 @@ export function ContextDimensionsV3() {
 
       {/* Summary */}
       <SummaryStats summaryText={dimensionsData.summaryText} accentColor={accentColor} />
-    </div>
 
-      {/* V3 Structural Discovery Canvas — hidden behind feature flag while redesigning */}
-      {SHOW_STRUCTURAL_DISCOVERY_GRAPH && isV3Tile && v3ContextData && v3Discoveries && (
-        <div className="px-4 sm:px-6">
-          <StructuralDiscoveryCanvas
-            discoveries={v3Discoveries}
-            dataSources={v3ContextData.dataSources}
-            tasks={v3ContextData.tasks}
-            viewMode={viewMode}
-          />
-        </div>
-      )}
-
-      {/* V3 Interactive Structural Discovery Explorer — full-width */}
-      {!SHOW_STRUCTURAL_DISCOVERY_GRAPH && isV3Tile && v3ContextData && v3Discoveries && (
-        <div className="px-4 sm:px-6">
-          <StructuralDiscoveryExplorer
-            discoveries={v3Discoveries}
-            dataSources={v3ContextData.dataSources}
-            tasks={v3ContextData.tasks}
-            viewMode={viewMode}
-          />
-        </div>
+      {/* V3 Structural Discovery Canvas (WOW MOMENT) */}
+      {isV3Tile && v3ContextData && v3Discoveries && v3RiskTiers && (
+        <StructuralDiscoveryCanvas
+          discoveries={v3Discoveries}
+          dataSources={v3ContextData.dataSources}
+          tasks={v3ContextData.tasks}
+          riskTiers={v3RiskTiers}
+          viewMode={viewMode}
+        />
       )}
     </div>
   )
