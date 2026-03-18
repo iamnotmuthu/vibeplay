@@ -24,7 +24,7 @@ import { GoalDefinitionV3 } from '@/stages/agent/GoalDefinitionV3'
 import { ContextDefinitionV3 } from '@/stages/agent/ContextDefinitionV3'
 import { ContextDimensionsV3 } from '@/stages/agent/ContextDimensionsV3'
 import { InteractionDiscoveryV3 } from '@/stages/agent/InteractionDiscoveryV3'
-import { TestDataPrepV3 } from '@/stages/agent/TestDataPrepV3'
+import { AgentEvaluation } from '@/stages/agent/AgentEvaluation'
 import { SolutionArchitectureV3 } from '@/stages/agent/SolutionArchitectureV3'
 import { MonitoringModal } from '@/stages/agent/MonitoringModal'
 import { AgentCompletionModal } from './AgentCompletionModal'
@@ -375,7 +375,7 @@ export function AgentPlaygroundV3Shell({ onBack }: AgentPlaygroundV3ShellProps) 
               ) : currentStage === 'interaction-discovery' ? (
                 <InteractionDiscoveryV3 />
               ) : currentStage === 'agent-evaluation' ? (
-                <TestDataPrepV3 />
+                <AgentEvaluation />
               ) : currentStage === 'solution-architecture' ? (
                 <SolutionArchitectureV3 />
               ) : (

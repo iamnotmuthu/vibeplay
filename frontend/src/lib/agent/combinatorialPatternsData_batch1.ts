@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { DimensionPattern } from '@/store/agentTypes'
 
 export const DOC_INTELLIGENCE_PATTERNS: DimensionPattern[] = [

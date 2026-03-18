@@ -86,11 +86,11 @@ const TILE_META: Record<string, TileMeta> = {
 // autonomously and must escalate to a human operator.
 // ============================================================================
 
-const FUZZY_COMPONENTS = [
-  'api-gateway', 'auth', 'input-validation', 'rag', 'cross-encoder-reranking',
-  'workflow-orchestrator', 'failure-handling', 'output-guardrails',
-  'policy-enforcement', 'logging-analytics',
-]
+// const FUZZY_COMPONENTS = [
+//   'api-gateway', 'auth', 'input-validation', 'rag', 'cross-encoder-reranking',
+//   'workflow-orchestrator', 'failure-handling', 'output-guardrails',
+//   'policy-enforcement', 'logging-analytics',
+// ]
 
 const FUZZY_OVERRIDE_PATTERNS: Record<string, DimensionPattern[]> = {}
 
@@ -124,8 +124,10 @@ export function getCombinatorialPatternsData(
       if (!payload.dataDimensions.includes(fp.dataDimensionIds.join('+'))) {
         payload.dataDimensions.push(fp.dataDimensionIds.join('+'))
       }
-      if (fp.toolStateDimensionId && !payload.toolStateDimensions.includes(fp.toolStateDimensionId)) {
-        payload.toolStateDimensions.push(fp.toolStateDimensionId)
+      for (const toolId of (fp.toolDimensionIds ?? [])) {
+        if (!payload.toolDimensions.includes(toolId)) {
+          payload.toolDimensions.push(toolId)
+        }
       }
     }
   }

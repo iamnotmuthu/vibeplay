@@ -22,7 +22,7 @@ export interface GeneratedPattern {
   responseLabel: string
   toolDimensionIds: string[]
   toolLabels: string[]
-  sampleQuestions: [string, string]   // exactly 2
+  sampleQuestions: string[]   // 4 for simple, 5 for complex, 6 for fuzzy
   inferenceNote?: string
   ambiguityNote?: string
 }
@@ -407,36 +407,150 @@ const QUESTION_BANK: Record<string, Record<string, string[]>> = {
   },
 }
 
+// ─── Contextual Question Templates ──────────────────────────────────────
+// Questions are generated FROM the pattern's actual data sources, task, and response type.
+// No generic bank — every question references the specific pattern context.
+
+const TASK_QUESTION_TEMPLATES: Record<string, string[]> = {
+  'invoice-ingestion': [
+    'How many {source} invoices were ingested this month?',
+    'When was the last {source} invoice received?',
+    'Is the {source} ingestion pipeline running on schedule?',
+    'Show me ingestion status for {source}.',
+    'Were there any {source} ingestion failures this week?',
+    'What file formats did {source} send in the latest batch?',
+    'How does {source} invoice volume compare to last month?',
+    'What is the average {source} ingestion latency?',
+  ],
+  'line-item-extraction': [
+    'How many line items were extracted from {source}?',
+    'What is the extraction confidence for {source} invoices?',
+    'Show me {source} line items over $1,000.',
+    'Which {source} line items failed extraction?',
+    'What are the top 10 {source} line items by spend?',
+    'How many {source} SKUs were extracted this month?',
+    'Compare {source} extraction accuracy to last batch.',
+    'Show me {source} extractions flagged for manual review.',
+  ],
+  'format-normalization': [
+    'How many {source} fields failed normalization?',
+    'What percentage of {source} invoices normalized successfully?',
+    'Which {source} schema fields had mismatches?',
+    'Show me {source} normalization errors.',
+    'What currency conversions were needed for {source}?',
+    'How does {source} normalization accuracy compare to other sources?',
+  ],
+  'po-matching': [
+    'Which {source} invoices are unmatched to a PO?',
+    'Show me PO matches for {source} with discrepancies over 2%.',
+    'What is the PO match rate for {source} this quarter?',
+    'Has the latest {source} invoice been matched to a PO?',
+    'List {source} invoices pending PO approval.',
+    'Which {source} PO matches required fuzzy matching?',
+  ],
+  'charge-validation': [
+    'Are there any {source} charges exceeding the approved PO amount?',
+    'Show me {source} invoices with rate discrepancies.',
+    'Which {source} charges deviate from contracted rates?',
+    'Flag duplicate charges in {source} this month.',
+    'What is the total value of flagged {source} charges?',
+    'How many {source} charges passed validation on first check?',
+  ],
+  'cost-aggregation': [
+    'What was total {source} spend last month?',
+    'Break down {source} costs by category.',
+    'How much did we spend on {source} this quarter?',
+    'Show me the top 5 {source} cost categories.',
+    'Compare {source} spend month-over-month.',
+    'What percentage of total spend comes from {source}?',
+  ],
+  'trend-analysis': [
+    'Show me the 6-month spending trend for {source}.',
+    'How has {source} spend grown year-over-year?',
+    'Are there seasonal patterns in {source} costs?',
+    'What is the projected {source} spend for next quarter?',
+    'Flag any {source} categories with unusual growth.',
+    'Which {source} cost categories are trending up?',
+  ],
+  'report-generation': [
+    'Generate a monthly cost report for {source}.',
+    'Create a {source} spending summary for the board.',
+    'Build a {source} cost breakdown with drill-down.',
+    'Compile a {source} vendor comparison report.',
+    'Generate a {source} trend report with forecasts.',
+    'Create a {source} cost allocation report by department.',
+  ],
+}
+
+// Response-specific question additions
+const RESPONSE_TEMPLATES: Record<string, string[]> = {
+  'Anomaly Alert': [
+    'Are there any {source} spending anomalies this month?',
+    'Flag unusual {source} charges that deviate from baseline.',
+  ],
+  'Validation Result': [
+    'Has {source} passed charge validation?',
+    'Show me {source} validation results with confidence scores.',
+  ],
+  'Trend Report': [
+    'Plot the {source} cost trajectory over 12 months.',
+    'What should the CFO know about {source} trends?',
+  ],
+  'Consolidated Report': [
+    'Generate a complete {source} reconciliation report.',
+    'Build a board-ready {source} summary for Q1.',
+  ],
+}
+
 function generateSampleQuestions(
   parentTaskId: string,
   dataLabels: string[],
   responseLabel: string,
   patternIdx: number,
-): [string, string] {
-  const taskQuestions = QUESTION_BANK[parentTaskId]
-  if (!taskQuestions) {
-    return [
-      `What are the results of ${parentTaskId.replace(/-/g, ' ')}?`,
-      `Show me the ${responseLabel.toLowerCase()} for this analysis.`,
-    ]
-  }
+  tier: 'simple' | 'complex' | 'fuzzy',
+): string[] {
+  const questionCount = tier === 'simple' ? 4 : tier === 'complex' ? 5 : 6
 
-  // Find matching question set: exact response match, then _default
-  const qSet = taskQuestions[responseLabel] ?? taskQuestions['_default'] ?? Object.values(taskQuestions)[0]
-  if (!qSet || qSet.length < 2) {
-    return [
-      `What are the results of ${parentTaskId.replace(/-/g, ' ')}?`,
-      `Show me the ${responseLabel.toLowerCase()} for this analysis.`,
-    ]
-  }
+  // Get the primary data source name (short form)
+  const primarySource = dataLabels[0]?.split('(')[0].trim() ?? 'the data source'
+  // For multi-source patterns, always list ALL actual source names
+  const shortLabels = dataLabels.map(d => d.split('(')[0].trim())
+  const sourceRef = shortLabels.length === 1
+    ? shortLabels[0]
+    : shortLabels.length === 2
+      ? `${shortLabels[0]} and ${shortLabels[1]}`
+      : `${shortLabels.slice(0, -1).join(', ')}, and ${shortLabels[shortLabels.length - 1]}`
 
-  // Use pattern index + data combo hash to pick 2 diverse questions
+  const questions: string[] = []
+
+  // Get task-specific templates
+  const taskTemplates = TASK_QUESTION_TEMPLATES[parentTaskId] ?? []
+  // Get response-specific templates
+  const responseTemplates = RESPONSE_TEMPLATES[responseLabel] ?? []
+
+  // Combine and fill in templates with actual source references
+  const allTemplates = [...taskTemplates, ...responseTemplates]
+
+  // Use hash for deterministic but varied selection
   const hash = dataLabels.join('').split('').reduce((a, c) => a + c.charCodeAt(0), patternIdx)
-  const q1Idx = hash % qSet.length
-  let q2Idx = (hash + 1 + Math.floor(hash / qSet.length)) % qSet.length
-  if (q2Idx === q1Idx) q2Idx = (q1Idx + 1) % qSet.length
 
-  return [qSet[q1Idx], qSet[q2Idx]]
+  // Fill templates with source reference
+  const filled = allTemplates.map(t => t.replace(/\{source\}/g, sourceRef))
+
+  // Pick unique questions using hash-based selection
+  const available = [...filled]
+  for (let i = 0; i < questionCount && available.length > 0; i++) {
+    const idx = (hash + i * 7 + i * i * 3) % available.length
+    questions.push(available[idx])
+    available.splice(idx, 1)
+  }
+
+  // If we still need more, generate from the pattern context directly
+  while (questions.length < questionCount) {
+    questions.push(`Analyze ${sourceRef} for ${parentTaskId.replace(/-/g, ' ')} — scenario ${questions.length + 1}.`)
+  }
+
+  return questions
 }
 
 // ─── Main Generator ─────────────────────────────────────────────────────────
@@ -599,7 +713,7 @@ export function generatePatterns(tileId: string): PatternGenerationResult | null
 
           const name = generatePatternName(taskDim.label, dataLabels, responseLabel, tier)
           const description = generateDescription(taskDim.label, dataLabels, toolLabels, responseLabel, tier)
-          const sampleQuestions = generateSampleQuestions(parentTaskId, dataLabels, responseLabel, allPatterns.length)
+          const sampleQuestions = generateSampleQuestions(parentTaskId, dataLabels, responseLabel, allPatterns.length, tier)
 
           allPatterns.push({
             id: patternId,

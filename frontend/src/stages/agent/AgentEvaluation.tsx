@@ -224,7 +224,7 @@ const EVAL_METRIC_COLORS: { color: string; bg: string }[] = [
 // ─── Measurement Plan (target only — tests haven't run yet) ──────────────
 
 function AgentMeasurementPlan({ tileId }: { tileId: string }) {
-  const [collapsed, setCollapsed] = useState(true)
+  const [collapsed, setCollapsed] = useState(false) // expanded by default
   const metrics = getEvalMetrics(tileId)
   const why = getMetricWhy(tileId)
   if (!metrics || !why) return null
@@ -241,16 +241,11 @@ function AgentMeasurementPlan({ tileId }: { tileId: string }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1, duration: 0.3 }}
-      className="mb-6"
+      className="rounded-xl border border-gray-200 bg-white overflow-hidden"
     >
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg cursor-pointer transition-all"
-        style={{
-          background: collapsed ? '#fafafa' : 'transparent',
-          border: collapsed ? '1px solid #e5e7eb' : 'none',
-          boxShadow: collapsed ? '0 1px 2px rgba(0,0,0,0.04)' : 'none',
-        }}
+        className="flex items-center gap-2.5 w-full px-4 py-3.5 cursor-pointer transition-all hover:bg-gray-50"
         aria-expanded={!collapsed}
       >
         <div className="flex items-center gap-1.5 shrink-0">
@@ -261,7 +256,7 @@ function AgentMeasurementPlan({ tileId }: { tileId: string }) {
           )}
         </div>
         
-        <span className="text-xs font-bold uppercase tracking-widest text-gray-600">Measurement Plan</span>
+        <span className="text-sm font-bold text-gray-900">Measurement Plan</span>
         
         {collapsed && (
           <div className="flex items-center gap-1.5 flex-1">
@@ -339,6 +334,86 @@ function AgentMeasurementPlan({ tileId }: { tileId: string }) {
           )
         })}
       </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ─── Eval Pattern Card (matches production screenshot) ──────────────────
+
+function EvalPatternCard({ pattern, delay }: { pattern: DiscoveredPattern; delay: number }) {
+  const [expanded, setExpanded] = useState(false)
+  const tierColors = TIER_COLOR_MAP[pattern.classification] ?? TIER_COLOR_MAP.simple
+  const queryCount = pattern.exampleQuestions.length
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, delay }}
+      className="rounded-lg border bg-white overflow-hidden"
+      style={{ borderColor: expanded ? tierColors.color + '40' : '#e5e7eb' }}
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors"
+      >
+        {/* Color-coded pill ID */}
+        <span
+          className="font-mono font-bold px-2.5 py-1 rounded-md text-xs shrink-0"
+          style={{ background: tierColors.bg, color: tierColors.color, border: `1px solid ${tierColors.color}30` }}
+        >
+          {pattern.id}
+        </span>
+
+        {/* Name + description */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900">{pattern.label}</p>
+          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{pattern.description}</p>
+        </div>
+
+        {/* Query count + expand */}
+        <div className="flex items-center gap-2 shrink-0 text-gray-400">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full border border-gray-200 bg-gray-50">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">{queryCount}</span>
+          </div>
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+              {/* Validation queries header */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                  Validation Queries (Synthetic)
+                </span>
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                  auto-generated
+                </span>
+              </div>
+
+              {/* Questions list */}
+              <div className="space-y-2">
+                {pattern.exampleQuestions.map((q, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <FlaskConical className="w-3 h-3 text-blue-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-gray-700 leading-relaxed">{q}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -449,55 +524,67 @@ export function AgentEvaluation() {
         </p>
       </motion.div>
 
-      {/* Measurement Plan (4 metrics) */}
+      {/* Measurement Plan (accordion, expanded by default, prominent) */}
       {activeTileId && (
         <AgentMeasurementPlan tileId={activeTileId} />
       )}
 
-      {/* Metrics Bar (doubles as tab selector) */}
-      <MetricsBar
-        simpleCount={simpleCount}
-        complexCount={complexCount}
-        fuzzyCount={fuzzyCount}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+      {/* 3 large tier tab cards — below measurement plan */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { key: 'simple' as const, label: 'Simple Patterns', count: simpleCount, color: '#16a34a', borderColor: 'border-emerald-200', bgFrom: 'from-emerald-50' },
+          { key: 'complex' as const, label: 'Complex Patterns', count: complexCount, color: '#dc2626', borderColor: 'border-red-200', bgFrom: 'from-red-50' },
+          { key: 'fuzzy' as const, label: 'Fuzzy Patterns', count: fuzzyCount, color: '#d97706', borderColor: 'border-amber-200', bgFrom: 'from-amber-50' },
+        ].map((tier) => {
+          const isActive = activeTab === tier.key
+          return (
+            <button
+              key={tier.key}
+              onClick={() => setActiveTab(tier.key)}
+              className={`rounded-xl border-2 ${tier.borderColor} bg-gradient-to-br ${tier.bgFrom} to-white px-4 py-4 text-center transition-all duration-200 cursor-pointer`}
+              style={{
+                boxShadow: isActive ? `0 0 0 3px ${tier.color}25` : 'none',
+                opacity: isActive ? 1 : 0.65,
+                transform: isActive ? 'scale(1)' : 'scale(0.98)',
+              }}
+            >
+              <p className="text-3xl font-bold font-mono tabular-nums" style={{ color: tier.color }}>
+                {tier.count}
+              </p>
+              <p className="text-sm font-semibold mt-1" style={{ color: tier.color }}>{tier.label}</p>
+            </button>
+          )
+        })}
+      </div>
 
-      {/* Tab content */}
-      <div>
-        <div role="tabpanel" aria-live="polite" aria-atomic="true">
-          <AnimatePresence mode="wait">
-            {activeGroup && (
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-4 mt-4"
-              >
-                {/* Classification description */}
-                <div className="px-1 py-2">
-                  <p className="text-xs text-gray-600 leading-relaxed">
-                    {PATTERN_CLASSIFICATION_META[activeTab].description}
-                  </p>
-                </div>
+      {/* Tab content — pattern list */}
+      <div role="tabpanel" aria-live="polite">
+        <AnimatePresence mode="wait">
+          {activeGroup && (
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-3"
+            >
+              <p className="text-xs text-gray-500">
+                {PATTERN_CLASSIFICATION_META[activeTab].description}
+              </p>
 
-                {/* Patterns flat list */}
-                <div className="space-y-2">
-                  {activeGroup.patterns.map((pattern, i) => (
-                    <PatternRow
-                      key={pattern.id}
-                      pattern={pattern}
-                      validationCount={patternValidationCounts.get(pattern.id) ?? 0}
-                      delay={0.05 + i * 0.04}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              <div className="space-y-2">
+                {activeGroup.patterns.map((pattern, i) => (
+                  <EvalPatternCard
+                    key={pattern.id}
+                    pattern={pattern}
+                    delay={0.03 + i * 0.02}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   )

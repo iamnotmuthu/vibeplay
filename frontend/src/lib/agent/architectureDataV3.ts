@@ -2,7 +2,15 @@
  * Architecture Data for VibeModel Agent Playground V3 Stage 6
  * Extracted from use case Section 6.2 specifications
  * Keyed by tileId for stage execution
+ *
+ * DYNAMIC COMPOSITION:
+ * When a tile has pattern data (via generatePatterns), this module
+ * dynamically composes the architecture using the MetaPattern Taxonomy engine.
+ * Hardcoded data is used as fallback for tiles without pattern data.
  */
+
+import { generatePatterns } from './patternCombinationEngine'
+import { analyzeAndCompose, type ComposedComponent } from './metaPatternTaxonomy'
 
 export interface ComponentSelectionV3 {
   id: string
@@ -807,10 +815,68 @@ const FAQ_BOUNDARIES: TrustBoundaryV3[] = [
   },
 ]
 
+// ─── Dynamic composition cache ───────────────────────────────────────────
+const compositionCache = new Map<string, ArchitectureDataV3>()
+
+function composedToV3(comp: ComposedComponent): ComponentSelectionV3 {
+  return { id: comp.id, categoryId: comp.categoryId, categoryName: comp.categoryName, selectedTechnology: comp.selectedTechnology, justification: comp.justification, triggeredBy: comp.triggeredByPatterns, layer: comp.layer }
+}
+
+function generateDynamicBoundaries(components: ComponentSelectionV3[]): TrustBoundaryV3[] {
+  const boundaries: TrustBoundaryV3[] = []
+  let idx = 0
+  const ingestion = components.filter(c => c.layer === 'ingestion')
+  if (ingestion.length > 0) boundaries.push({ id: `dyn-tb-${String(idx++).padStart(3, '0')}`, name: 'Autonomous Data Retrieval', zone: 'autonomous', components: ingestion.map(c => c.id), description: 'Read-only data fetching and parsing. No decisions made.' })
+  const context = components.filter(c => c.layer === 'context')
+  if (context.length > 0) boundaries.push({ id: `dyn-tb-${String(idx++).padStart(3, '0')}`, name: 'Autonomous Context Enrichment', zone: 'autonomous', components: context.map(c => c.id), description: 'Context building and retrieval. Read-only enrichment.' })
+  const output = components.filter(c => c.layer === 'output')
+  if (output.length > 0) boundaries.push({ id: `dyn-tb-${String(idx++).padStart(3, '0')}`, name: 'Autonomous Response Generation', zone: 'autonomous', components: output.map(c => c.id), description: 'Deterministic response formatting and delivery.' })
+  const execution = components.filter(c => c.layer === 'execution')
+  if (execution.length > 0) boundaries.push({ id: `dyn-tb-${String(idx++).padStart(3, '0')}`, name: 'Supervised Execution & Reasoning', zone: 'supervised', components: execution.map(c => c.id), description: 'Tool execution and multi-step reasoning. Human spot-check recommended.' })
+  const routing = components.filter(c => c.layer === 'routing')
+  if (routing.length > 0) boundaries.push({ id: `dyn-tb-${String(idx++).padStart(3, '0')}`, name: 'Supervised Orchestration & Routing', zone: 'supervised', components: routing.map(c => c.id), description: 'Confidence-based routing and escalation logic.' })
+  const ops = components.filter(c => c.layer === 'ops')
+  if (ops.length > 0) boundaries.push({ id: `dyn-tb-${String(idx++).padStart(3, '0')}`, name: 'Escalation: Monitoring & Compliance', zone: 'escalation', components: ops.map(c => c.id), description: 'Policy enforcement and anomaly detection. Investigation required.' })
+  return boundaries
+}
+
+function dynamicCompose(realTileId: string): ArchitectureDataV3 | null {
+  if (compositionCache.has(realTileId)) return compositionCache.get(realTileId)!
+  const genResult = generatePatterns(realTileId)
+  if (!genResult || genResult.patterns.length === 0) return null
+  const dimPatterns = genResult.patterns.map(gp => ({
+    id: gp.id, tier: gp.tier as 'simple' | 'complex' | 'fuzzy', patternType: gp.tier,
+    name: gp.name, description: gp.description,
+    taskDimensionId: gp.taskDimensionId, dataDimensionIds: gp.dataDimensionIds,
+    responseDimensionId: gp.responseDimensionId, toolDimensionIds: gp.toolDimensionIds,
+    exampleQuestions: gp.sampleQuestions,
+  }))
+  const { architecture } = analyzeAndCompose(dimPatterns as any)
+  if (architecture.components.length === 0) return null
+  const v3Components = architecture.components.map(composedToV3)
+  const dynamicBoundaries = generateDynamicBoundaries(v3Components)
+  const notes: string[] = []
+  const layers = new Set(v3Components.map(c => c.layer))
+  if (layers.has('ingestion')) notes.push('Ensure all data source APIs are accessible with proper authentication')
+  if (layers.has('context')) notes.push('Vector indices must be pre-built and updated on a regular schedule')
+  if (layers.has('execution')) notes.push('Use streaming for multi-step reasoning to reduce perceived latency')
+  if (layers.has('routing')) notes.push('Confidence thresholds should be tuned per use case after deployment')
+  if (layers.has('output')) notes.push('Output validation schemas must sync with downstream consumers')
+  if (layers.has('ops')) notes.push('Configure monitoring alerts for latency p95, error rates, and confidence drift')
+  const result: ArchitectureDataV3 = { components: v3Components, trustBoundaries: dynamicBoundaries, deploymentNotes: notes }
+  compositionCache.set(realTileId, result)
+  return result
+}
+
 /**
  * Main export function - retrieves architecture data by tileId
+ * Priority: 1. Dynamic composition, 2. Hardcoded fallback
  */
-export function getArchitectureDataV3(tileId: string): ArchitectureDataV3 | null {
+export function getArchitectureDataV3(tileId: string, realTileId?: string): ArchitectureDataV3 | null {
+  const dynamicResult = dynamicCompose(realTileId ?? tileId)
+  if (dynamicResult) return dynamicResult
+
+  // Fallback to hardcoded data
   let components: ComponentSelectionV3[] = []
   let boundaries: TrustBoundaryV3[] = []
 

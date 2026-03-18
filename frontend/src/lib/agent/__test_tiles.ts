@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getDimensionAnalysisData } from './dimensionAnalysisData'
 import { getCombinatorialPatternsData } from './combinatorialPatternsData'
 import { getContextDefinitionData } from './contextDefinitionData'

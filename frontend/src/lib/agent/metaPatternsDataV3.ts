@@ -2,7 +2,15 @@
  * Meta-Patterns Data for VibeModel Agent Playground V3 Stage 6
  * Extracted from use case Section 6.1 specifications
  * Keyed by tileId for stage execution
+ *
+ * DYNAMIC DERIVATION:
+ * When a tile has pattern data (via generatePatterns), this module
+ * dynamically derives meta-patterns using the MetaPattern Taxonomy engine.
+ * Hardcoded data is used as fallback for tiles without pattern data.
  */
+
+import { generatePatterns } from './patternCombinationEngine'
+import { analyzeAndCompose, type DerivedMetaPattern } from './metaPatternTaxonomy'
 
 export interface MetaPatternV3 {
   id: string
@@ -336,10 +344,44 @@ const FAQ_PATTERNS: MetaPatternV3[] = [
   },
 ]
 
+// ─── Dynamic derivation cache ────────────────────────────────────────────
+const derivationCache = new Map<string, MetaPatternsCollection>()
+
+function derivedToV3(mp: DerivedMetaPattern): MetaPatternV3 {
+  return { id: mp.id, name: mp.name, family: mp.family, description: mp.description, executionPathCount: mp.executionPathCount, triggeredComponents: mp.triggeredComponents }
+}
+
+function dynamicDerive(realTileId: string): MetaPatternsCollection | null {
+  if (derivationCache.has(realTileId)) return derivationCache.get(realTileId)!
+  const genResult = generatePatterns(realTileId)
+  if (!genResult || genResult.patterns.length === 0) return null
+  // Convert GeneratedPattern[] to DimensionPattern-like for the taxonomy engine
+  const dimPatterns = genResult.patterns.map(gp => ({
+    id: gp.id, tier: gp.tier as 'simple' | 'complex' | 'fuzzy', patternType: gp.tier,
+    name: gp.name, description: gp.description,
+    taskDimensionId: gp.taskDimensionId, dataDimensionIds: gp.dataDimensionIds,
+    responseDimensionId: gp.responseDimensionId, toolDimensionIds: gp.toolDimensionIds,
+    exampleQuestions: gp.sampleQuestions,
+  }))
+  const { metaPatterns } = analyzeAndCompose(dimPatterns as any)
+  if (metaPatterns.length === 0) return null
+  const v3Patterns = metaPatterns.map(derivedToV3)
+  const families = [...new Set(v3Patterns.map(p => p.family))].sort()
+  const collection: MetaPatternsCollection = { patterns: v3Patterns, totalPatterns: v3Patterns.length, totalFamilies: families.length, families }
+  derivationCache.set(realTileId, collection)
+  return collection
+}
+
 /**
  * Main export function - retrieves meta-patterns by tileId
+ * Priority: 1. Dynamic derivation from pattern engine, 2. Hardcoded fallback
  */
-export function getMetaPatternsV3(tileId: string): MetaPatternsCollection | null {
+export function getMetaPatternsV3(tileId: string, realTileId?: string): MetaPatternsCollection | null {
+  // Try dynamic derivation first
+  const dynamicResult = dynamicDerive(realTileId ?? tileId)
+  if (dynamicResult) return dynamicResult
+
+  // Fallback to hardcoded data
   let patterns: MetaPatternV3[] = []
 
   switch (tileId) {

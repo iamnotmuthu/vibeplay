@@ -587,7 +587,7 @@ function PatternCard({ pattern, delay }: { pattern: GeneratedPattern; delay: num
                   <MessageSquare className="w-3 h-3 text-gray-400" />
                   <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Sample Questions</span>
                 </div>
-                {pattern.sampleQuestions.map((q, i) => (
+                {pattern.sampleQuestions.slice(0, 2).map((q, i) => (
                   <p key={i} className="text-[11px] text-gray-600 pl-5 leading-relaxed">{q}</p>
                 ))}
               </div>
