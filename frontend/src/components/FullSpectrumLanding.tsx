@@ -66,9 +66,9 @@ export function FullSpectrumLanding({ onSelect }: FullSpectrumLandingProps) {
       >
         <div className="flex items-center gap-3 shrink-0">
           <a
-            href="/playground"
+            href="https://vibemodel.ai"
             className="flex items-center hover:opacity-80 transition-opacity"
-            aria-label="VibeModel playground home"
+            aria-label="Go to VibeModel.ai"
           >
             <img
               src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}

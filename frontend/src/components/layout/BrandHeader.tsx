@@ -24,19 +24,19 @@ export function BrandHeader({ onChangeDomain, onGoHome }: BrandHeaderProps) {
     >
       {/* Left: Logo + domain badge */}
       <div className="flex items-center gap-3 min-w-0">
-        <motion.button
-          onClick={onGoHome}
+        <motion.a
+          href="https://vibemodel.ai"
           whileHover={{ opacity: 0.8 }}
           whileTap={{ scale: 0.97 }}
           className="flex items-center gap-2.5 shrink-0 cursor-pointer"
-          title="Back to home"
+          title="Go to VibeModel.ai"
         >
           <img
             src={`${import.meta.env.BASE_URL}VM_Logo_Full Color.png`}
             alt="VibeModel"
             style={{ height: 48, width: 'auto', objectFit: 'contain' }}
           />
-        </motion.button>
+        </motion.a>
 
         {/* Active domain badge */}
         {domain && (
